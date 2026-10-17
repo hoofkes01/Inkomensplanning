@@ -142,23 +142,31 @@ function postCaoFactorCentraal(type, vanDatum, totDatum, pct){
   .rp-pagina { break-after: page; page-break-after: always; }
   .rp-pagina:last-child { break-after: auto; page-break-after: auto; }
   .rp-pagina svg, .rp-kpi, .rp-banner { break-inside: avoid; page-break-inside: avoid; }
-  .rp td, .rp th { padding-top: 3px !important; padding-bottom: 3px !important; }
 }
 /* Rapport (scherm en print) */
-.rp { max-width: 820px; margin: 0 auto; color: #0f172a; }
+.rp { max-width: 820px; margin: 0 auto; color: #0f172a; font-size: 14px; line-height: 1.5; }
 .rp-pagina { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
-.rp-kop { background: #0f172a; color: #fff; border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-.rp-kpi { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
-.rp-kaart { border-radius: 10px; padding: 10px 12px; color: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-.rp h2 { font: 600 17px Georgia, serif; margin: 16px 0 6px; color: #0f172a; break-after: avoid; }
-.rp table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-.rp th { text-align: right; color: #64748b; font-weight: 500; padding: 4px 3px; font-size: 11.5px; }
-.rp td { padding: 5px 3px; border-top: 1px solid #e2e8f0; text-align: right; font-variant-numeric: tabular-nums; }
+.rp-kop { background: #0f172a; color: #fff; border-radius: 10px; padding: 16px 18px; margin-bottom: 14px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.rp-kpi { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.rp-kaart { border-radius: 10px; padding: 12px 14px; color: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.rp h2 { font: 600 19px Georgia, serif; margin: 0; color: #0f172a; break-after: avoid; }
+.rp-pagekop { margin: 18px 0 8px; border-bottom: 2px solid #0f172a; padding-bottom: 4px; break-after: avoid; }
+.rp-pagina > .rp-pagekop:first-child { margin-top: 0; }
+.rp-sub { font-size: 12px; color: #64748b; font-weight: 400; margin-top: 1px; }
+.rp-tabel, .rp table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.rp th { text-align: right; color: #475569; font-weight: 600; padding: 6px 4px; font-size: 12px; border-bottom: 1px solid #94a3b8; }
+.rp td { padding: 6px 4px; border-top: 1px solid #e2e8f0; text-align: right; font-variant-numeric: tabular-nums; vertical-align: top; }
 .rp th:first-child, .rp td:first-child { text-align: left; }
-@media (max-width: 480px) { .rp table { font-size: 11.5px; } .rp th, .rp td { padding-left: 1px; padding-right: 1px; } .rp-pagina { padding: 12px; } }
-.rp-noot { font-size: 11.5px; color: #64748b; margin: 6px 0 10px; line-height: 1.4; }
-.rp-banner { border: 1px solid; border-radius: 8px; padding: 9px 11px; font-size: 13px; margin: 8px 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-@media print { .rp-pagina { border: 0; border-radius: 0; padding: 0; margin: 0; } .rp { max-width: none; } .rp-kpi { grid-template-columns: repeat(4, 1fr); } }
+.rp-lijst { margin: 6px 0 10px; padding-left: 20px; line-height: 1.55; }
+.rp-lijst li { margin: 4px 0; }
+@media (max-width: 480px) { .rp-tabel, .rp table { font-size: 11.5px; display: block; overflow-x: auto; max-width: 100%; } .rp th, .rp td { padding-left: 2px; padding-right: 2px; } .rp-pagina { padding: 12px; } }
+.rp-noot { font-size: 12px; color: #64748b; margin: 8px 0 12px; line-height: 1.45; }
+.rp-banner { border: 1px solid; border-radius: 8px; padding: 10px 12px; font-size: 14px; margin: 10px 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.rp-fasen td:first-child, .rp-fasen td:nth-child(2) { white-space: nowrap; }
+.rp-fasen td:nth-child(3), .rp-fasen td:nth-child(4) { width: 30%; }
+.rp-fasen .rp-sub { font-size: 8pt; line-height: 1.25; }
+@media print { .rp-pagina svg { max-height: 95mm; width: 100%; } }
+@media print { .rp { font-size: 10.5pt; } .rp-pagina { border: 0; border-radius: 0; padding: 0; margin: 0; } .rp { max-width: none; } .rp-kpi { grid-template-columns: repeat(4, 1fr); } .rp-tabel, .rp table { font-size: 10pt; } .rp th { font-size: 9.5pt; } .rp-noot, .rp-sub { font-size: 9pt; } .rp-banner { font-size: 10.5pt; } }
 </style>
 <style id="hide-rente-overrides">
 /* 2026 blijft intern op €200 staan; vanaf 2027 automatische dagrentelogica. */
@@ -252,7 +260,7 @@ function postCaoFactorCentraal(type, vanDatum, totDatum, pct){
 </style>
 </head>
 <body>
-<script>(function(){var d={"inkomensplanning_ovNaam":"\"\"","inkomensplanning_vrouwStopJaar":"2032","inkomensplanning_obStart":"\"2027-01-01\"","inkomensplanning_grotePostenVolledigHerstelVersie":"grote-posten-volledig-herstel-2026-08-23-v2","inkomensplanning_spaarStartsaldo":"12750","inkomensplanning_lijfrenteRendementUitkeringVrouw":"0","inkomensplanning_volledigHerstelVersie":"index9-volledig-herstel-2026-08-15-v3","inkomensplanning_spaarRenteOverrides":"{\"2026\":200}","inkomensplanning_stopDatumMan":"\"2027-12-31\"","inkomensplanning_abpBasisjaar":"2026","inkomensplanning_nieuweMutFreq":"\"eenmalig\"","inkomensplanning_nieuweBronNaam":"\"\"","inkomensplanning_indexABPMan":"3.4","inkomensplanning_extraVermogensItems":"[{\"id\":\"dep_resurs_2027_07\",\"label\":\"Deposito Raisin Resurs Bank\",\"bedrag\":10000,\"custom\":true,\"deposito\":true,\"vervaldatum\":\"2027-07-13\",\"stortingUitRabo\":false,\"stortingDatum\":\"2026-10-13\"},{\"id\":\"dep_brocc_2027_01_06\",\"label\":\"Deposito Raisin Brocc Finance\",\"bedrag\":10000,\"custom\":true,\"deposito\":true,\"vervaldatum\":\"2027-01-06\",\"stortingUitRabo\":false,\"stortingDatum\":\"2026-10-06\"},{\"id\":\"dep_brocc_2028_04\",\"label\":\"Deposito Raisin Brocc Finance\",\"bedrag\":10000,\"custom\":true,\"deposito\":true,\"vervaldatum\":\"2028-04-05\",\"stortingUitRabo\":false,\"stortingDatum\":\"2026-10-05\"},{\"id\":\"dep_brocc_2027_01_02\",\"label\":\"Deposito Raisin Brocc Finance\",\"bedrag\":2250,\"custom\":true,\"deposito\":true,\"vervaldatum\":\"2027-01-02\",\"stortingUitRabo\":false,\"stortingDatum\":\"2026-10-02\"},{\"id\":\"dep_coop_2027_07\",\"label\":\"Deposito Raisin Coop Pank\",\"bedrag\":20000,\"custom\":true,\"deposito\":true,\"vervaldatum\":\"2027-07-02\",\"stortingUitRabo\":false,\"stortingDatum\":\"2026-10-02\"},{\"id\":\"dep_inbank_2028_10\",\"label\":\"Deposito Raisin Inbank\",\"bedrag\":20000,\"custom\":true,\"deposito\":true,\"vervaldatum\":\"2028-10-01\",\"stortingUitRabo\":false,\"stortingDatum\":\"2026-10-01\"},{\"id\":\"dep_brocc_2027_01_01\",\"label\":\"Deposito Raisin Brocc Finance\",\"bedrag\":3400,\"custom\":true,\"deposito\":true,\"vervaldatum\":\"2027-01-01\",\"stortingUitRabo\":false,\"stortingDatum\":\"2026-10-01\"},{\"id\":\"dep_younited_2027_09\",\"label\":\"Deposito Raisin Younited\",\"bedrag\":25000,\"custom\":true,\"deposito\":true,\"vervaldatum\":\"2027-09-20\",\"stortingUitRabo\":false,\"stortingDatum\":\"2026-03-20\"},{\"id\":\"dep_younited_2027_03\",\"label\":\"Deposito Raisin Younited\",\"bedrag\":15000,\"custom\":true,\"deposito\":true,\"vervaldatum\":\"2027-03-20\",\"stortingUitRabo\":false,\"stortingDatum\":\"2026-03-20\"},{\"id\":\"dep_collector_2028_07\",\"label\":\"Deposito Raisin Collector Bank\",\"bedrag\":5379.1,\"custom\":true,\"deposito\":true,\"vervaldatum\":\"2028-07-31\",\"stortingUitRabo\":false,\"stortingDatum\":\"2026-01-31\"},{\"id\":\"dep_hoist_2029_01\",\"label\":\"Deposito Raisin HoistSpar\",\"bedrag\":15000,\"custom\":true,\"deposito\":true,\"vervaldatum\":\"2029-01-15\",\"stortingUitRabo\":false,\"stortingDatum\":\"2026-01-15\"},{\"id\":\"dep_hoist_2030_01_15\",\"label\":\"Deposito Raisin HoistSpar\",\"bedrag\":15000,\"custom\":true,\"deposito\":true,\"vervaldatum\":\"2030-01-15\",\"stortingUitRabo\":false,\"stortingDatum\":\"2026-01-15\"},{\"id\":\"dep_hoist_2030_01_06\",\"label\":\"Deposito Raisin HoistSpar\",\"bedrag\":5000,\"custom\":true,\"deposito\":true,\"vervaldatum\":\"2030-01-06\",\"stortingUitRabo\":false,\"stortingDatum\":\"2026-01-06\"},{\"id\":\"dep_rabo\",\"label\":\"Deposito Rabo\",\"bedrag\":15000,\"custom\":true,\"deposito\":true,\"vervaldatum\":\"2026-12-24\",\"stortingUitRabo\":false,\"stortingDatum\":\"2025-12-24\",\"renteAlVerwerkt\":true}]","inkomensplanning_nieuwePost":"{\"soort\":\"last\",\"label\":\"\",\"bedrag\":\"\",\"index\":\"\",\"start\":\"\",\"eind\":\"\",\"frequentie\":\"maandelijks\"}","inkomensplanning_potSaldi":"{\"vl_res_rente\":2250,\"vl_res_zorg\":345,\"vl_res_auto\":285}","inkomensplanning_manStopDatum":"null","inkomensplanning_pensioenIndexMigratie":"\"\"","inkomensplanning_spaarBufferMinimum":"15000","inkomensplanning_nieuwePotId":"\"vl_res_rente\"","inkomensplanning_looptijdOverrideVrouw":"false","inkomensplanning_indexLincare":"\"3.6\"","inkomensplanning_nieuwItemUitRabo":"true","inkomensplanning_nieuweMutIndex":"\"\"","inkomensplanning_raboBasisjaar":"2026","inkomensplanning_vrouwAOWy":"67","inkomensplanning_ovDoelId":"\"degiro_vrij\"","inkomensplanning_ovBedrag":"\"\"","inkomensplanning_depositoSetVersie":"2026-10-13-v1","inkomensplanning_stopDatumVrouw":"\"\"","inkomensplanning_vrijvalNaar":"{}","inkomensplanning_geboortedatumMan":"\"\"","inkomensplanning_nsBedrag":"\"\"","inkomensplanning_manAOWy":"67","inkomensplanning_nieuwItemStorting":"\"\"","inkomensplanning_ovLooptijdEenheid":"\"mnd\"","inkomensplanning_fiscaal":"{\"schijf1_max\":39247,\"schijf2_max\":78426,\"tarief1\":36.23,\"tarief1_aow\":18.33,\"tarief2\":38.16,\"tarief3\":49.5,\"algemene_heffingskorting_max\":3154,\"ahk_afbouwgrens\":30910,\"ahk_afbouwpct\":6.638,\"ouderenkorting_max\":1993,\"ouderenkorting_afbouwgrens\":46577,\"ouderenkorting_afbouwpct\":15,\"ahk_na_aow_max\":1596,\"ahk_na_aow_afbouwpct\":3.359,\"arbeidskorting_max\":5929,\"arbeidskorting_afbouwgrens\":47834,\"arbeidskorting_afbouwpct\":6.51,\"zvw_laag_pct\":4.85,\"zvw_max_bijdrage_inkomen\":79409,\"max_jaaruitkering_tijdelijke_lijfrente_5_20jr\":27192,\"aow_bruto_gehuwd_pm\":1139.39,\"aow_netto_gehuwd_met_hef_pm\":1084.13,\"aow_netto_gehuwd_zonder_hef_pm\":880.96,\"indexatie_schijven\":3.4,\"_stand\":\"2026-09-20\"}","inkomensplanning_schenkingJaarlijks":"7000","inkomensplanning_verwijderdeBasisItems":"[]","inkomensplanning_nieuwOverrideJaar":"\"\"","inkomensplanning_abp2027Pct":"10","inkomensplanning_stortingsdatums":"{\"dep_santander\":\"2025-10-06\",\"dep_rabo_groen\":\"2025-10-06\",\"dep_rabo\":\"2025-12-24\",\"dep_raisin_1\":\"2026-03-20\",\"dep_raisin_2\":\"2026-03-20\",\"dep_raisin_3\":\"2026-01-31\",\"dep_raisin_4\":\"2026-01-15\",\"dep_raisin_5\":\"2026-01-15\",\"dep_raisin_6\":\"2026-01-06\",\"dep_resurs_2027_07\":\"2026-10-13\",\"dep_brocc_2027_01_06\":\"2026-10-06\",\"dep_brocc_2028_04\":\"2026-10-05\",\"dep_brocc_2027_01_02\":\"2026-10-02\",\"dep_coop_2027_07\":\"2026-10-02\",\"dep_inbank_2028_10\":\"2026-10-01\",\"dep_brocc_2027_01_01\":\"2026-10-01\",\"dep_younited_2027_09\":\"2026-03-20\",\"dep_younited_2027_03\":\"2026-03-20\",\"dep_collector_2028_07\":\"2026-01-31\",\"dep_hoist_2029_01\":\"2026-01-15\",\"dep_hoist_2030_01_15\":\"2026-01-15\",\"dep_hoist_2030_01_06\":\"2026-01-06\"}","inkomensplanning_koppelingenHerstelVersie":"koppelingen-herstel-2026-08-15-v3","inkomensplanning_nieuwItemBedrag":"\"\"","inkomensplanning_nieuwePotDatum":"\"\"","inkomensplanning_obvionRente":"\"6\"","inkomensplanning_migratieVersie":"2026-08-14-01","inkomensplanning_aandachtWeggehaald":"[\"post|m_huur|2026-09-18\",\"post|m8|2026-10-14\"]","inkomensplanning_nieuwItemRendement":"\"\"","inkomensplanning_nieuweLastBedrag":"\"\"","inkomensplanning_indexSalarisManNaCao":"3.4","inkomensplanning_lijfrenteStortingen":"[]","inkomensplanning_loonmodelVersie":"2","inkomensplanning_lijfrenteRendementUitkeringMan":"\"3\"","inkomensplanning_spaarRentePercentages":"[{\"id\":\"r1\",\"vanaf\":\"2026-10-01\",\"pct\":2},{\"id\":\"r_1788091898039\",\"vanaf\":\"\",\"pct\":15},{\"id\":\"r_1788091904871\",\"vanaf\":\"\",\"pct\":15},{\"id\":\"r_1790097369516\",\"vanaf\":\"\",\"pct\":15},{\"id\":\"r_1790856972076\",\"vanaf\":\"\",\"pct\":15},{\"id\":\"r_1790856973346\",\"vanaf\":\"\",\"pct\":15},{\"id\":\"r_1790856975114\",\"vanaf\":\"\",\"pct\":15},{\"id\":\"r_1790856975338\",\"vanaf\":\"\",\"pct\":15}]","inkomensplanning_manAOWm":"3","inkomensplanning_vrouwStopDatum":"\"2032-02-09\"","inkomensplanning_obTerugDatum":"\"\"","inkomensplanning_cpiCheck":"{\"status\":\"done\",\"pct\":3.4,\"maand\":\"2026MM09\",\"definitief\":false,\"voorlopig\":null,\"bron\":\"CBS StatLine, tabel 86141NED — kolom \\\"Jaarmutatie CPI\\\" (voorlopig, status volgens het CBS)\",\"error\":null,\"checkedAt\":\"2026-10-15T04:01:23.545Z\"}","inkomensplanning_nieuweMutDatum":"\"\"","inkomensplanning_proefLooptijdVrouw":"\"10\"","inkomensplanning_ovRente":"\"\"","inkomensplanning_lijfrenteRendementMan":"5","inkomensplanning_sparenRaboHandmatig":"null","inkomensplanning_looptijdOverrideMan":"true","inkomensplanning_indexDagelijkseUitgaven":"3.4","inkomensplanning_nieuwItemLooptijdEenheid":"\"mnd\"","inkomensplanning_customPosten":"[{\"id\":\"post_1785908638977\",\"soort\":\"last\",\"label\":\"Claude\",\"bedrag\":23,\"index\":3,\"start\":\"2026-08-20\",\"eind\":null,\"frequentie\":\"maandelijks\"}]","inkomensplanning_beleggingsUploadMutaties":"{\"pensioenBnd\":{\"totaal\":27506,\"datum\":\"2026-10-02\",\"mutatie\":-295.2800000000025,\"mutatiePct\":-1.062109370503813,\"jaar\":2026,\"jaarBasisTotaal\":28051.28,\"jaarBasisDatum\":\"2026-08-17\",\"jaarStortingenTotaal\":0,\"jaarMutatie\":-545.2799999999988,\"jaarMutatiePct\":-1.9438685150909292,\"eersteUploadTotaal\":27257.59,\"eersteUploadDatum\":\"2026-09-13\",\"stortingenTotaalAlleJaren\":0,\"mutatieSindsAanschaf\":248.40999999999985,\"mutatieSindsAanschafPct\":0.9113424921278802,\"fondsen\":{\"BND Wereld Indexfonds Hedged\":{\"totaal\":0,\"datum\":\"2026-10-02\",\"mutatie\":null,\"mutatiePct\":null,\"jaar\":2026,\"jaarBasisTotaal\":0,\"jaarBasisDatum\":\"2026-10-02\",\"jaarStortingenTotaal\":0,\"jaarMutatie\":0,\"jaarMutatiePct\":null,\"eersteUploadTotaal\":0,\"eersteUploadDatum\":\"2026-10-02\",\"stortingenTotaalAlleJaren\":0,\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":null},\"BND Europa Indexfonds\":{\"totaal\":0,\"datum\":\"2026-10-02\",\"mutatie\":null,\"mutatiePct\":null,\"jaar\":2026,\"jaarBasisTotaal\":0,\"jaarBasisDatum\":\"2026-10-02\",\"jaarStortingenTotaal\":0,\"jaarMutatie\":0,\"jaarMutatiePct\":null,\"eersteUploadTotaal\":0,\"eersteUploadDatum\":\"2026-10-02\",\"stortingenTotaalAlleJaren\":0,\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":null},\"BND Wereld Indexfonds Unhedged\":{\"totaal\":0,\"datum\":\"2026-10-02\",\"mutatie\":null,\"mutatiePct\":null,\"jaar\":2026,\"jaarBasisTotaal\":0,\"jaarBasisDatum\":\"2026-10-02\",\"jaarStortingenTotaal\":0,\"jaarMutatie\":0,\"jaarMutatiePct\":null,\"eersteUploadTotaal\":0,\"eersteUploadDatum\":\"2026-10-02\",\"stortingenTotaalAlleJaren\":0,\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":null},\"BND Wereld Indexfonds 3 Totaal Carbon Screened\":{\"totaal\":0,\"datum\":\"2026-10-02\",\"mutatie\":null,\"mutatiePct\":null,\"jaar\":2026,\"jaarBasisTotaal\":0,\"jaarBasisDatum\":\"2026-10-02\",\"jaarStortingenTotaal\":0,\"jaarMutatie\":0,\"jaarMutatiePct\":null,\"eersteUploadTotaal\":0,\"eersteUploadDatum\":\"2026-10-02\",\"stortingenTotaalAlleJaren\":0,\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":null},\"BND Cashallocatie Vraag en antwoord Wat is het verschil tussen risicoverdeling en fondsen & geld? [1 O <\":{\"totaal\":0,\"datum\":\"2026-10-02\",\"mutatie\":null,\"mutatiePct\":null,\"jaar\":2026,\"jaarBasisTotaal\":0,\"jaarBasisDatum\":\"2026-10-02\",\"jaarStortingenTotaal\":0,\"jaarMutatie\":0,\"jaarMutatiePct\":null,\"eersteUploadTotaal\":0,\"eersteUploadDatum\":\"2026-10-02\",\"stortingenTotaalAlleJaren\":0,\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":null}}},\"vrijeBeleggingen\":{\"totaal\":54670.59,\"datum\":\"2026-10-13\",\"mutatie\":213.13999999999942,\"mutatiePct\":0.3913881388129621,\"jaar\":2026,\"jaarBasisTotaal\":46978.31,\"jaarBasisDatum\":\"2026-08-17\",\"jaarStortingenTotaal\":3112,\"jaarMutatie\":4580.279999999999,\"jaarMutatiePct\":9.749776013653959,\"eersteUploadTotaal\":50378.57,\"eersteUploadDatum\":\"2026-09-13\",\"stortingenTotaalAlleJaren\":1362,\"mutatieSindsAanschaf\":2930.019999999997,\"mutatieSindsAanschafPct\":5.816004701999276,\"fondsen\":{\"Amundi Core MSCI World UCITS ETF Acc\":{\"totaal\":10267.51,\"datum\":\"2026-10-13\",\"mutatie\":119.96999999999935,\"mutatiePct\":1.1822569805095555,\"jaar\":2026,\"jaarBasisTotaal\":10050.51,\"jaarBasisDatum\":\"2026-09-25\",\"jaarStortingenTotaal\":0,\"jaarMutatie\":217,\"jaarMutatiePct\":2.1590944141143082,\"eersteUploadTotaal\":10050.51,\"eersteUploadDatum\":\"2026-09-25\",\"stortingenTotaalAlleJaren\":0,\"mutatieSindsAanschaf\":217,\"mutatieSindsAanschafPct\":2.1590944141143082},\"Amundi Core Stoxx Europe 600 UCITS ETF A\":{\"totaal\":10340.55,\"datum\":\"2026-10-13\",\"mutatie\":42.899999999999636,\"mutatiePct\":0.4165999038615571,\"jaar\":2026,\"jaarBasisTotaal\":10456.05,\"jaarBasisDatum\":\"2026-09-27\",\"jaarStortingenTotaal\":0,\"jaarMutatie\":-115.5,\"jaarMutatiePct\":-1.1046236389458735,\"eersteUploadTotaal\":10456.05,\"eersteUploadDatum\":\"2026-09-27\",\"stortingenTotaalAlleJaren\":0,\"mutatieSindsAanschaf\":-115.5,\"mutatieSindsAanschafPct\":-1.1046236389458735},\"iShares Core MSCI EM IMI UCITS ETF USD Acc\":{\"totaal\":5057.33,\"datum\":\"2026-10-13\",\"mutatie\":-115.39000000000033,\"mutatiePct\":-2.230741273449951,\"jaar\":2026,\"jaarBasisTotaal\":10236.24,\"jaarBasisDatum\":\"2026-09-25\",\"jaarStortingenTotaal\":-5175.24,\"jaarMutatie\":-3.6700000000000728,\"jaarMutatiePct\":-0.03585300852656906,\"eersteUploadTotaal\":10236.24,\"eersteUploadDatum\":\"2026-09-25\",\"stortingenTotaalAlleJaren\":-5175.24,\"mutatieSindsAanschaf\":-3.6700000000000728,\"mutatieSindsAanschafPct\":-0.03585300852656906},\"iShares Core S&P 500 UCITS ETF USD (Acc)\":{\"totaal\":5260.08,\"datum\":\"2026-10-13\",\"mutatie\":80.22000000000025,\"mutatiePct\":1.548690505148793,\"jaar\":2026,\"jaarBasisTotaal\":10236.8,\"jaarBasisDatum\":\"2026-09-25\",\"jaarStortingenTotaal\":-5179.86,\"jaarMutatie\":203.14000000000033,\"jaarMutatiePct\":1.9844091903719947,\"eersteUploadTotaal\":10236.8,\"eersteUploadDatum\":\"2026-09-25\",\"stortingenTotaalAlleJaren\":-5179.86,\"mutatieSindsAanschaf\":203.14000000000033,\"mutatieSindsAanschafPct\":1.9844091903719947},\"iShares Edge MSCI Europe Minimum Volatility Advanced UCITS ETF\":{\"totaal\":5251.66,\"datum\":\"2026-10-13\",\"mutatie\":79.59999999999945,\"mutatiePct\":1.539038603573807,\"jaar\":2026,\"jaarBasisTotaal\":10458,\"jaarBasisDatum\":\"2026-09-25\",\"jaarStortingenTotaal\":-5172.06,\"jaarMutatie\":-34.279999999999745,\"jaarMutatiePct\":-0.32778733983553016,\"eersteUploadTotaal\":10458,\"eersteUploadDatum\":\"2026-09-25\",\"stortingenTotaalAlleJaren\":-5172.06,\"mutatieSindsAanschaf\":-34.279999999999745,\"mutatieSindsAanschafPct\":-0.32778733983553016},\"iShares Edge MSCI WId Val Fctr UCITS ETF USD A\":{\"totaal\":7097,\"datum\":\"2026-10-13\",\"mutatie\":-76,\"mutatiePct\":-1.0595287885124773,\"jaar\":2026,\"jaarBasisTotaal\":7173,\"jaarBasisDatum\":\"2026-10-02\",\"jaarStortingenTotaal\":0,\"jaarMutatie\":-76,\"jaarMutatiePct\":-1.0595287885124773,\"eersteUploadTotaal\":7173,\"eersteUploadDatum\":\"2026-10-02\",\"stortingenTotaalAlleJaren\":0,\"mutatieSindsAanschaf\":-76,\"mutatieSindsAanschafPct\":-1.0595287885124773},\"iShares MSCI World Small Cap UCITS ETF USD (Acc)\":{\"totaal\":6638.78,\"datum\":\"2026-10-13\",\"mutatie\":-35.620000000000346,\"mutatiePct\":-0.5818436046207782,\"jaar\":2026,\"jaarBasisTotaal\":6121.92,\"jaarBasisDatum\":\"2026-10-02\",\"jaarStortingenTotaal\":552.48,\"jaarMutatie\":-35.620000000000346,\"jaarMutatiePct\":-0.5818436046207782,\"eersteUploadTotaal\":6121.92,\"eersteUploadDatum\":\"2026-10-02\",\"stortingenTotaalAlleJaren\":552.48,\"mutatieSindsAanschaf\":-35.620000000000346,\"mutatieSindsAanschafPct\":-0.5818436046207782},\"VanEck Semiconductor UCITS ETF USD A\":{\"totaal\":4686.36,\"datum\":\"2026-10-13\",\"mutatie\":null,\"mutatiePct\":null,\"jaar\":2026,\"jaarBasisTotaal\":4686.36,\"jaarBasisDatum\":\"2026-10-13\",\"jaarStortingenTotaal\":0,\"jaarMutatie\":0,\"jaarMutatiePct\":0,\"eersteUploadTotaal\":4686.36,\"eersteUploadDatum\":\"2026-10-13\",\"stortingenTotaalAlleJaren\":0,\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0}}},\"pensioenDegiro\":{\"totaal\":50967,\"datum\":\"2026-10-02\",\"mutatie\":-2.8300000000017462,\"mutatiePct\":-0.005552304176807625,\"jaar\":2026,\"jaarBasisTotaal\":50371.45,\"jaarBasisDatum\":\"2026-08-17\",\"jaarStortingenTotaal\":0,\"jaarMutatie\":595.5500000000029,\"jaarMutatiePct\":1.18231657019999,\"eersteUploadTotaal\":50168.32,\"eersteUploadDatum\":\"2026-09-13\",\"stortingenTotaalAlleJaren\":0,\"mutatieSindsAanschaf\":798.6800000000003,\"mutatieSindsAanschafPct\":1.5920006888809517,\"fondsen\":{\"HSBC MSCI World UCITS ETF USD\":{\"totaal\":10123.45,\"datum\":\"2026-10-02\",\"mutatie\":50.14000000000124,\"mutatiePct\":0.4977509875105724,\"jaar\":2026,\"jaarBasisTotaal\":17100,\"jaarBasisDatum\":\"2026-09-13\",\"jaarStortingenTotaal\":0,\"jaarMutatie\":-6976.549999999999,\"jaarMutatiePct\":-40.7985380116959,\"eersteUploadTotaal\":17100,\"eersteUploadDatum\":\"2026-09-13\",\"stortingenTotaalAlleJaren\":0,\"mutatieSindsAanschaf\":-6976.549999999999,\"mutatieSindsAanschafPct\":-40.7985380116959},\"iShares Automation & Robotics UCITS ETF USD A\":{\"totaal\":6889.91,\"datum\":\"2026-10-02\",\"mutatie\":625.3899999999994,\"mutatiePct\":4.7542194942840466,\"jaar\":2026,\"jaarBasisTotaal\":13199.43,\"jaarBasisDatum\":\"2026-09-25\",\"jaarStortingenTotaal\":-6889.9,\"jaarMutatie\":580.3799999999992,\"jaarMutatiePct\":4.397008052620448,\"eersteUploadTotaal\":13199.43,\"eersteUploadDatum\":\"2026-09-25\",\"stortingenTotaalAlleJaren\":-6889.9,\"mutatieSindsAanschaf\":580.3799999999992,\"mutatieSindsAanschafPct\":4.397008052620448},\"iShares EURO STOXX Banks 30-15 UCITS (DE) EUR (Dist) ETF\":{\"totaal\":4988.93,\"datum\":\"2026-10-02\",\"mutatie\":-699.3899999999994,\"mutatiePct\":-6.550288276745671,\"jaar\":2026,\"jaarBasisTotaal\":10711.44,\"jaarBasisDatum\":\"2026-09-13\",\"jaarStortingenTotaal\":-4988.92,\"jaarMutatie\":-733.5900000000001,\"jaarMutatiePct\":-6.848659003831418,\"eersteUploadTotaal\":10711.44,\"eersteUploadDatum\":\"2026-09-13\",\"stortingenTotaalAlleJaren\":-4988.92,\"mutatieSindsAanschaf\":-733.5900000000001,\"mutatieSindsAanschafPct\":-6.848659003831418},\"VanEck Semiconductor UCITS ETF USD A\":{\"totaal\":6854.9,\"datum\":\"2026-10-02\",\"mutatie\":null,\"mutatiePct\":null,\"jaar\":2026,\"jaarBasisTotaal\":6854.9,\"jaarBasisDatum\":\"2026-10-02\",\"jaarStortingenTotaal\":0,\"jaarMutatie\":0,\"jaarMutatiePct\":0,\"eersteUploadTotaal\":6854.9,\"eersteUploadDatum\":\"2026-10-02\",\"stortingenTotaalAlleJaren\":0,\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},\"Vanguard FTSE All-World UCITS - (USD) Accumulating ETF\":{\"totaal\":17128,\"datum\":\"2026-10-02\",\"mutatie\":80,\"mutatiePct\":0.4692632566870014,\"jaar\":2026,\"jaarBasisTotaal\":22855.04,\"jaarBasisDatum\":\"2026-09-22\",\"jaarStortingenTotaal\":0,\"jaarMutatie\":-5727.040000000001,\"jaarMutatiePct\":-25.058105345691807,\"eersteUploadTotaal\":22855.04,\"eersteUploadDatum\":\"2026-09-22\",\"stortingenTotaalAlleJaren\":0,\"mutatieSindsAanschaf\":-5727.040000000001,\"mutatieSindsAanschafPct\":-25.058105345691807},\"Vanguard FTSE Developed Europe UCITS - (EUR) Accumulating ETF\":{\"totaal\":4953.48,\"datum\":\"2026-10-02\",\"mutatie\":null,\"mutatiePct\":null,\"jaar\":2026,\"jaarBasisTotaal\":4953.48,\"jaarBasisDatum\":\"2026-10-02\",\"jaarStortingenTotaal\":0,\"jaarMutatie\":0,\"jaarMutatiePct\":0,\"eersteUploadTotaal\":4953.48,\"eersteUploadDatum\":\"2026-10-02\",\"stortingenTotaalAlleJaren\":0,\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0}}}}","inkomensplanning_nieuweMutEind":"\"\"","inkomensplanning_tekst":"null","inkomensplanning_nieuwePotBedrag":"\"\"","inkomensplanning_ovLooptijd":"\"\"","inkomensplanning_nieuweObLabel":"\"\"","inkomensplanning_proefLooptijdMan":"\"20\"","inkomensplanning_handmatige_update_202609":"1","inkomensplanning_nieuweBronPersoon":"\"man\"","inkomensplanning_vrouwStoptBijAOW":"true","inkomensplanning_indexLincareNaCao":"3.4","inkomensplanning_verkochtFondsen":"[{\"id\":\"vf_1789710408816_Vngrd FTSE All-WId Hgh Div YId UCITS ETF USD A\",\"sleutel\":\"vrijeBeleggingen\",\"sleutelTitel\":\"Hoofkes02 — vrij beleggen\",\"fondsNaam\":\"Vngrd FTSE All-WId Hgh Div YId UCITS ETF USD A\",\"datum\":\"2026-09-18\",\"verkoopopbrengst\":14584.44,\"vorig\":14584.44,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-13\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},{\"id\":\"vf_1789710481016_Vanguard FTSE All-World UCITS - (USD) Accumulating ETF\",\"sleutel\":\"pensioenDegiro\",\"sleutelTitel\":\"Hoofkes04 — pensioen\",\"fondsNaam\":\"Vanguard FTSE All-World UCITS - (USD) Accumulating ETF\",\"datum\":\"2026-09-18\",\"verkoopopbrengst\":22321.72,\"vorig\":22321.72,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-13\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},{\"id\":\"vf_1790097530081_VanEck Semiconductor UCITS ETF USD A\",\"sleutel\":\"vrijeBeleggingen\",\"sleutelTitel\":\"Hoofkes02 — vrij beleggen\",\"fondsNaam\":\"VanEck Semiconductor UCITS ETF USD A\",\"datum\":\"2026-09-22\",\"verkoopopbrengst\":13593.8,\"vorig\":13593.8,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-13\",\"mutatieSindsAanschaf\":-19.2400000000016,\"mutatieSindsAanschafPct\":-0.1413350728419339},{\"id\":\"vf_1790097530081_Vanguard FTSE All-WId Hgh Div YId UCITS ETF USD A\",\"sleutel\":\"vrijeBeleggingen\",\"sleutelTitel\":\"Hoofkes02 — vrij beleggen\",\"fondsNaam\":\"Vanguard FTSE All-WId Hgh Div YId UCITS ETF USD A\",\"datum\":\"2026-09-22\",\"verkoopopbrengst\":14681.16,\"vorig\":14681.16,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-18\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},{\"id\":\"vf_1790097593334_Vanguard FTSE All-World UCITS - (USD) €22.47716 Accumulating ETF\",\"sleutel\":\"pensioenDegiro\",\"sleutelTitel\":\"Hoofkes04 — pensioen\",\"fondsNaam\":\"Vanguard FTSE All-World UCITS - (USD) €22.47716 Accumulating ETF\",\"datum\":\"2026-09-22\",\"verkoopopbrengst\":22.477,\"vorig\":22.477,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-18\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},{\"id\":\"vf_1790097684858_Wereld Indexfonds Hedged\",\"sleutel\":\"pensioenBnd\",\"sleutelTitel\":\"Brand New Day — pensioen Vrouw\",\"fondsNaam\":\"Wereld Indexfonds Hedged\",\"datum\":\"2026-09-22\",\"verkoopopbrengst\":6850.98,\"vorig\":6850.98,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-13\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},{\"id\":\"vf_1790097684858_Europa Indexfonds\",\"sleutel\":\"pensioenBnd\",\"sleutelTitel\":\"Brand New Day — pensioen Vrouw\",\"fondsNaam\":\"Europa Indexfonds\",\"datum\":\"2026-09-22\",\"verkoopopbrengst\":9467.84,\"vorig\":9467.84,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-13\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},{\"id\":\"vf_1790097684858_Wereld Indexfonds Unhedged\",\"sleutel\":\"pensioenBnd\",\"sleutelTitel\":\"Brand New Day — pensioen Vrouw\",\"fondsNaam\":\"Wereld Indexfonds Unhedged\",\"datum\":\"2026-09-22\",\"verkoopopbrengst\":2809.41,\"vorig\":2809.41,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-13\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},{\"id\":\"vf_1790097684858_Wereld Index- Carbon\",\"sleutel\":\"pensioenBnd\",\"sleutelTitel\":\"Brand New Day — pensioen Vrouw\",\"fondsNaam\":\"Wereld Index- Carbon\",\"datum\":\"2026-09-22\",\"verkoopopbrengst\":8129.36,\"vorig\":8129.36,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-13\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},{\"id\":\"vf_1790338998610_VanEck Ms Developed Markets Div Lead UCITS ETF\",\"sleutel\":\"vrijeBeleggingen\",\"sleutelTitel\":\"Hoofkes02 — vrij beleggen\",\"fondsNaam\":\"VanEck Ms Developed Markets Div Lead UCITS ETF\",\"datum\":\"2026-09-25\",\"verkoopopbrengst\":37091.25,\"vorig\":37091.25,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-13\",\"mutatieSindsAanschaf\":14936,\"mutatieSindsAanschafPct\":67.41517247604969},{\"id\":\"vf_1790338998610_Vanguard FTSE All-WId Hgh Div YId UCITS ETF UsD A\",\"sleutel\":\"vrijeBeleggingen\",\"sleutelTitel\":\"Hoofkes02 — vrij beleggen\",\"fondsNaam\":\"Vanguard FTSE All-WId Hgh Div YId UCITS ETF UsD A\",\"datum\":\"2026-09-25\",\"verkoopopbrengst\":14648.4,\"vorig\":14648.4,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-22\",\"mutatieSindsAanschaf\":-4.680000000000291,\"mutatieSindsAanschafPct\":-0.0319386777387436},{\"id\":\"vf_1790380448014_Amundi Core Stoxx Europe 600 UCITS ETF A\",\"sleutel\":\"vrijeBeleggingen\",\"sleutelTitel\":\"Hoofkes02 — vrij beleggen\",\"fondsNaam\":\"Amundi Core Stoxx Europe 600 UCITS ETF A\",\"datum\":\"2026-09-25\",\"verkoopopbrengst\":10416.45,\"vorig\":10416.45,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-25\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},{\"id\":\"vf_1790380448014_VanEck Crypto and Blckchn Innvtrs UCITS ETF €628/13 USD A £2.53\",\"sleutel\":\"vrijeBeleggingen\",\"sleutelTitel\":\"Hoofkes02 — vrij beleggen\",\"fondsNaam\":\"VanEck Crypto and Blckchn Innvtrs UCITS ETF €628/13 USD A £2.53\",\"datum\":\"2026-09-25\",\"verkoopopbrengst\":628,\"vorig\":628,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-25\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},{\"id\":\"vf_1790551171287_Amundi Core Stoxx Europe 600 UCITS ETF A €10.447.80\",\"sleutel\":\"vrijeBeleggingen\",\"sleutelTitel\":\"Hoofkes02 — vrij beleggen\",\"fondsNaam\":\"Amundi Core Stoxx Europe 600 UCITS ETF A €10.447.80\",\"datum\":\"2026-09-27\",\"verkoopopbrengst\":10.447,\"vorig\":10.447,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-25\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},{\"id\":\"vf_1790857161581_VanEck Crypto and Blckchn Innvtrs UCITS ETF usD A\",\"sleutel\":\"vrijeBeleggingen\",\"sleutelTitel\":\"Hoofkes02 — vrij beleggen\",\"fondsNaam\":\"VanEck Crypto and Blckchn Innvtrs UCITS ETF usD A\",\"datum\":\"2026-10-01\",\"verkoopopbrengst\":598.94,\"vorig\":598.94,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-27\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},{\"id\":\"vf_1790857161581_Cash\",\"sleutel\":\"vrijeBeleggingen\",\"sleutelTitel\":\"Hoofkes02 — vrij beleggen\",\"fondsNaam\":\"Cash\",\"datum\":\"2026-10-01\",\"verkoopopbrengst\":1002,\"vorig\":1002,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-27\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},{\"id\":\"vf_1790957065968_VanEck Crypto and Blckchn Innvtrs UCITS ETF USD A (+0,05%)\",\"sleutel\":\"vrijeBeleggingen\",\"sleutelTitel\":\"Hoofkes02 — vrij beleggen\",\"fondsNaam\":\"VanEck Crypto and Blckchn Innvtrs UCITS ETF USD A (+0,05%)\",\"datum\":\"2026-10-02\",\"verkoopopbrengst\":574.66,\"vorig\":574.66,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-10-01\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},{\"id\":\"vf_1790957139893_iShares Automation & Robotics UCITS ETF USD A\",\"sleutel\":\"vrijeBeleggingen\",\"sleutelTitel\":\"Hoofkes02 — vrij beleggen\",\"fondsNaam\":\"iShares Automation & Robotics UCITS ETF USD A\",\"datum\":\"2026-10-02\",\"verkoopopbrengst\":2333.34,\"vorig\":2333.34,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-10-01\",\"mutatieSindsAanschaf\":61.82999999999993,\"mutatieSindsAanschafPct\":2.721977891358608},{\"id\":\"vf_1790957318787_BND Wereld Indexfonds\",\"sleutel\":\"pensioenBnd\",\"sleutelTitel\":\"Brand New Day — pensioen Vrouw\",\"fondsNaam\":\"BND Wereld Indexfonds\",\"datum\":\"2026-10-02\",\"verkoopopbrengst\":2885.54,\"vorig\":2885.54,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-22\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},{\"id\":\"vf_1790957318787_Hedged BND Europa Indexfonds\",\"sleutel\":\"pensioenBnd\",\"sleutelTitel\":\"Brand New Day — pensioen Vrouw\",\"fondsNaam\":\"Hedged BND Europa Indexfonds\",\"datum\":\"2026-10-02\",\"verkoopopbrengst\":9563.04,\"vorig\":9563.04,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-22\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},{\"id\":\"vf_1790957318787_Unhedged BND Wereld Indexfonds\",\"sleutel\":\"pensioenBnd\",\"sleutelTitel\":\"Brand New Day — pensioen Vrouw\",\"fondsNaam\":\"Unhedged BND Wereld Indexfonds\",\"datum\":\"2026-10-02\",\"verkoopopbrengst\":8376.04,\"vorig\":8376.04,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-22\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},{\"id\":\"vf_1791905195385_iShares MSCI WId HIth Care Sec Adv UCITS ETF USD A\",\"sleutel\":\"vrijeBeleggingen\",\"sleutelTitel\":\"Hoofkes02 — vrij beleggen\",\"fondsNaam\":\"iShares MSCI WId HIth Care Sec Adv UCITS ETF USD A\",\"datum\":\"2026-10-13\",\"verkoopopbrengst\":5179,\"vorig\":5179,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-10-02\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0}]","inkomensplanning_vermogenPeildatum":"\"2026-10-15\"","inkomensplanning_geboortedatumVrouw":"\"\"","inkomensplanning_nieuweMutBedrag":"\"\"","inkomensplanning_ovRenteregime":"\"jaardag\"","inkomensplanning_abp2027PctHandmatig":"0","inkomensplanning_vrijSparenSplitBeleggen":"50","inkomensplanning_basis":"{\"salarisManNetto\":4127,\"salarisManBruto\":6380,\"abpVoorAOWNetto\":2200,\"abpNaAOWNetto\":1365,\"abpNaAOWBruto\":1766,\"abpVoorAOWBruto\":3394,\"abpExtraDekkingsgraadVoorAOWBruto\":296.5,\"abpExtraDekkingsgraadNaAOWBruto\":176.6,\"lincareNetto\":1850,\"lincareBrutoFulltime\":3592.96,\"lincareUren\":20,\"lincareORTUren\":10,\"lincareORTPct\":50,\"lincareTrede\":7,\"lincareVolgendeTredeDatum\":\"2027-01-01\",\"raboVoorAOWNetto\":362,\"raboVoorAOWBruto\":608,\"raboNaAOWNetto\":470,\"raboNaAOWBruto\":608,\"pfzwNettoMaand\":195,\"pfzwBrutoJaar\":3245,\"pfzwVervroegdNetto\":115,\"pfzwKortingPerJaar\":5,\"pfzwExtraVoorAOWBruto\":0,\"pfzwExtraNaAOWBruto\":0,\"kortingInSalarisMan\":1,\"kortingInAbpVoorAOW\":1,\"kortingInAbpNaAOW\":0,\"kortingInAOWMan\":0,\"kortingInAOWVrouw\":1,\"kortingInLincare\":1,\"kortingInRaboVoorAOW\":1,\"kortingInRaboNaAOW\":0,\"kortingInPfzw\":0,\"degiroVrij\":54670.59,\"degiroPensioen\":50967,\"bndPensioen\":27506,\"woningWaarde\":510000,\"hypotheek\":188000,\"hypotheekRenteNu\":1.09,\"hypotheekMaandlastNu\":385.85,\"leningElise\":33129,\"leningKevin\":33129,\"dagelijkseUitgaven\":1800,\"lijfrenteInlegMan\":11900,\"lijfrenteInlegVrouw\":2000,\"box3VrijstellingPP\":57684,\"pensioengevendSalarisMan2026\":84397}","inkomensplanning_obOpnameUit":"{}","inkomensplanning_mutaties":"[{\"id\":\"my0\",\"label\":\"Aflossing kind (1/12)\",\"bedrag\":300,\"datum\":\"2026-12-15\"},{\"id\":\"my1\",\"label\":\"Aflossing kind (2/12)\",\"bedrag\":300,\"datum\":\"2026-12-15\"},{\"id\":\"m10\",\"label\":\"Opname vakantie Tenerife\",\"bedrag\":-2000,\"datum\":\"2026-11-09\"},{\"id\":\"m2\",\"label\":\"Kostwinner jubileum\",\"bedrag\":7000,\"datum\":\"2026-11-22\"},{\"id\":\"m7\",\"label\":\"T Zandt 60 jaar feest\",\"bedrag\":-3000,\"datum\":\"2026-11-20\"},{\"id\":\"my2\",\"label\":\"Aflossing kind (3/12)\",\"bedrag\":300,\"datum\":\"2026-12-15\"},{\"id\":\"m5\",\"label\":\"13e maand Vrouw\",\"bedrag\":1000,\"datum\":\"2026-12-22\"},{\"id\":\"m4c\",\"label\":\"Rente Rabo 2026 (vervalt 24-12-2026, rente 2025 al ontvangen)\",\"bedrag\":242,\"datum\":\"2026-12-24\"},{\"id\":\"m3\",\"label\":\"IKB\",\"bedrag\":2000,\"datum\":\"2026-12-31\"},{\"id\":\"my3\",\"label\":\"Aflossing kind (4/12)\",\"bedrag\":300,\"datum\":\"2026-12-31\"},{\"id\":\"m9\",\"label\":\"Schenkbelasting\",\"bedrag\":-6313,\"datum\":\"2027-01-15\"},{\"id\":\"m_hetty\",\"label\":\"Schenking Hetty\",\"bedrag\":7000,\"datum\":\"2027-01-15\",\"frequentie\":\"eenmalig\",\"einddatum\":\"\",\"index\":0},{\"id\":\"my4\",\"label\":\"Aflossing kind (5/12)\",\"bedrag\":300,\"datum\":\"2027-01-31\"},{\"id\":\"my5\",\"label\":\"Aflossing kind (6/12)\",\"bedrag\":300,\"datum\":\"2027-02-28\"},{\"id\":\"my6\",\"label\":\"Aflossing kind (7/12)\",\"bedrag\":300,\"datum\":\"2027-03-31\"},{\"id\":\"my7\",\"label\":\"Aflossing kind (8/12)\",\"bedrag\":300,\"datum\":\"2027-04-30\"},{\"id\":\"my8\",\"label\":\"Aflossing kind (9/12)\",\"bedrag\":300,\"datum\":\"2027-05-31\"},{\"id\":\"my9\",\"label\":\"Aflossing kind (10/12)\",\"bedrag\":300,\"datum\":\"2027-06-30\"},{\"id\":\"my10\",\"label\":\"Aflossing kind (11/12)\",\"bedrag\":300,\"datum\":\"2027-07-31\"},{\"id\":\"my11\",\"label\":\"Aflossing kind (12/12)\",\"bedrag\":300,\"datum\":\"2027-08-31\"},{\"id\":\"m_1789280965227\",\"label\":\"Vennix Dj feest\",\"bedrag\":-800,\"datum\":\"2026-11-20\",\"frequentie\":\"eenmalig\",\"einddatum\":\"\",\"index\":0}]","inkomensplanning_beleggingsOverzicht":"{\"bijgewerkt\":\"2026-10-13\",\"vrijeBeleggingen\":{\"naam\":\"Hoofkes02 — vrij beleggen\",\"totaal\":54670.59,\"posities\":[{\"naam\":\"Amundi Core MSCI World UCITS ETF Acc\",\"aantal\":62,\"koers\":165.605,\"waarde\":10267.51,\"stortingSindsVorige\":0},{\"naam\":\"Amundi Core Stoxx Europe 600 UCITS ETF A\",\"aantal\":33,\"koers\":313.35,\"waarde\":10340.55,\"stortingSindsVorige\":0},{\"naam\":\"iShares Core MSCI EM IMI UCITS ETF USD Acc\",\"aantal\":105,\"koers\":48.165,\"waarde\":5057.33,\"stortingSindsVorige\":0},{\"naam\":\"iShares Core S&P 500 UCITS ETF USD (Acc)\",\"aantal\":7,\"koers\":751.44,\"waarde\":5260.08,\"stortingSindsVorige\":0},{\"naam\":\"iShares Edge MSCI Europe Minimum Volatility Advanced UCITS ETF\",\"aantal\":581,\"koers\":9.039,\"waarde\":5251.66,\"stortingSindsVorige\":0},{\"naam\":\"iShares Edge MSCI WId Val Fctr UCITS ETF USD A\",\"aantal\":100,\"koers\":70.97,\"waarde\":7097,\"stortingSindsVorige\":0},{\"naam\":\"iShares MSCI World Small Cap UCITS ETF USD (Acc)\",\"aantal\":733,\"koers\":9.057,\"waarde\":6638.78,\"stortingSindsVorige\":552.48},{\"naam\":\"VanEck Semiconductor UCITS ETF USD A\",\"aantal\":49,\"koers\":95.64,\"waarde\":4686.36,\"stortingSindsVorige\":0}]},\"pensioenDegiro\":{\"naam\":\"Hoofkes04 — pensioen\",\"totaal\":50967,\"posities\":[{\"naam\":\"HSBC MSCI World UCITS ETF USD\",\"aantal\":230,\"koers\":44.015,\"waarde\":10123.45,\"stortingSindsVorige\":0},{\"naam\":\"iShares Automation & Robotics UCITS ETF USD A\",\"aantal\":341,\"koers\":20.205,\"waarde\":6889.91,\"stortingSindsVorige\":-6889.9},{\"naam\":\"iShares EURO STOXX Banks 30-15 UCITS (DE) EUR (Dist) ETF\",\"aantal\":171,\"koers\":29.175,\"waarde\":4988.93,\"stortingSindsVorige\":-4988.92},{\"naam\":\"VanEck Semiconductor UCITS ETF USD A\",\"aantal\":65,\"koers\":105.46,\"waarde\":6854.9,\"stortingSindsVorige\":0},{\"naam\":\"Vanguard FTSE All-World UCITS - (USD) Accumulating ETF\",\"aantal\":100,\"koers\":171.28,\"waarde\":17128,\"stortingSindsVorige\":0},{\"naam\":\"Vanguard FTSE Developed Europe UCITS - (EUR) Accumulating ETF\",\"aantal\":84,\"koers\":58.97,\"waarde\":4953.48,\"stortingSindsVorige\":0}]},\"pensioenBnd\":{\"naam\":\"Brand New Day — pensioen Vrouw\",\"totaal\":27506,\"posities\":[{\"naam\":\"BND Wereld Indexfonds Hedged\",\"aantal\":null,\"koers\":null,\"waarde\":0,\"stortingSindsVorige\":0},{\"naam\":\"BND Europa Indexfonds\",\"aantal\":null,\"koers\":null,\"waarde\":0,\"stortingSindsVorige\":0},{\"naam\":\"BND Wereld Indexfonds Unhedged\",\"aantal\":null,\"koers\":null,\"waarde\":0,\"stortingSindsVorige\":0},{\"naam\":\"BND Wereld Indexfonds 3 Totaal Carbon Screened\",\"aantal\":null,\"koers\":null,\"waarde\":0,\"stortingSindsVorige\":0},{\"naam\":\"BND Cashallocatie Vraag en antwoord Wat is het verschil tussen risicoverdeling en fondsen & geld? [1 O <\",\"aantal\":null,\"koers\":null,\"waarde\":0,\"stortingSindsVorige\":0}]},\"afbeeldingen\":[],\"inkomenspot\":{\"naam\":\"Hoofkes03 — inkomenspot\",\"totaal\":0,\"posities\":[]}}","inkomensplanning_obTerugBedrag":"0","inkomensplanning_indexAOW":"3.4","inkomensplanning_lijfrenteLooptijdVrouw":"15","inkomensplanning_nieuwePotSoort":"\"uitgave\"","inkomensplanning_nieuwOverrideBedrag":"\"\"","inkomensplanning_pfzwCorrectie20260913":"1","inkomensplanning_nieuwItemNaam":"\"\"","inkomensplanning_werkkeuzeVrouw":"{\"2027\":\"16\",\"2028\":\"16\",\"2029\":\"16\",\"2030\":\"16\",\"2031\":\"16\",\"2032\":\"16\"}","inkomensplanning_lincareNettoInvoer":"2026-10-13-1850","inkomensplanning_nieuweObBedrag":"\"\"","inkomensplanning_nieuweBronStart":"\"\"","inkomensplanning_basisItemBedragen":"{}","inkomensplanning_proefRendementMan":"\"\"","inkomensplanning_raboNettoCorrectie20260914":"1","inkomensplanning_beleggingsStortingen":"[{\"id\":\"bs_1790176888172\",\"sleutel\":\"vrijeBeleggingen\",\"type\":\"bank\",\"fondsNaam\":\"\",\"bedrag\":\"362\",\"datum\":\"2026-09-23\"},{\"id\":\"bs_1790176904305\",\"sleutel\":\"vrijeBeleggingen\",\"type\":\"bank\",\"fondsNaam\":\"\",\"bedrag\":\"1000\",\"datum\":\"2026-09-28\"},{\"id\":\"bs_1790551117402\",\"sleutel\":\"vrijeBeleggingen\",\"type\":\"bank\",\"fondsNaam\":\"\",\"bedrag\":\"\",\"datum\":\"2026-09-27\"}]","inkomensplanning_nieuweBronBedrag":"\"\"","inkomensplanning_nsJaar":"\"\"","inkomensplanning_nieuweObDatum":"\"\"","inkomensplanning_nieuweLastIndex":"\"\"","inkomensplanning_obBoekingen":"[]","inkomensplanning_beleggingenMigratie":"2026-08-15-v2","inkomensplanning_lijfrenteRendementVrouw":"0","inkomensplanning_ovSoort":"\"deposito\"","inkomensplanning_lijfrenteInlegTot":"2033","inkomensplanning_pensioengevendSalarisCorrectie20260928":"1","inkomensplanning_proefRendementVrouw":"\"\"","inkomensplanning_heffingskorting":"true","inkomensplanning_actualiteit":"{\"ecbDeposito\":2.25,\"ecbBijgewerkt\":\"2026-08-15T14:24:10.216Z\",\"raisinMax\":3.6,\"raisinBijgewerkt\":\"2026-08-15\",\"degiroControle\":\"2026-08-15\",\"status\":\"ECB live gecontroleerd\"}","inkomensplanning_nieuweBronIndex":"\"\"","inkomensplanning_basisItemRenteregimes":"{}","inkomensplanning_groteMutatiesHerstelVersie":"grote-mutaties-herstel-2026-08-17-v1","inkomensplanning_herstelVersie":"2026-08-15-kerngegevens-02","inkomensplanning_indexRaboPostAOW":"3.4","inkomensplanning_vasteLastenPosten":"[{\"id\":\"vl_youfone\",\"naam\":\"Youfone internet en tv\",\"bedrag\":50,\"index\":3.4,\"volgtCpi\":1},{\"id\":\"vl_reisverz\",\"naam\":\"Reisverzekering de Internationale\",\"bedrag\":4,\"index\":3.4,\"volgtCpi\":1},{\"id\":\"vl_nn_ziek\",\"naam\":\"NN premie ziektekosten\",\"bedrag\":311,\"index\":5},{\"id\":\"vl_nn_eigenrisico\",\"naam\":\"NN eigen risico\",\"bedrag\":39,\"index\":3.4,\"volgtCpi\":1},{\"id\":\"vl_dela\",\"naam\":\"Dela\",\"bedrag\":21,\"index\":3},{\"id\":\"vl_postcode\",\"naam\":\"Postcodeloterij\",\"bedrag\":16,\"index\":3.4,\"volgtCpi\":1},{\"id\":\"vl_hypotheek\",\"naam\":\"Hypotheek\",\"bedrag\":385.85,\"index\":0,\"isHypotheek\":true},{\"id\":\"vl_wegenbel\",\"naam\":\"Wegenbelasting\",\"bedrag\":77,\"index\":2},{\"id\":\"vl_gemeente\",\"naam\":\"Gemeente\",\"bedrag\":101,\"index\":8},{\"id\":\"vl_water\",\"naam\":\"Water\",\"bedrag\":25,\"index\":3.4,\"volgtCpi\":1},{\"id\":\"vl_nn_auto\",\"naam\":\"NN Autoverzekering\",\"bedrag\":34,\"index\":3.4,\"volgtCpi\":1},{\"id\":\"vl_nn_inboedel\",\"naam\":\"NN inboedel en aansprakelijkheid\",\"bedrag\":11,\"index\":3.4,\"volgtCpi\":1},{\"id\":\"vl_rabo\",\"naam\":\"Rabo\",\"bedrag\":7,\"index\":3.4,\"volgtCpi\":1},{\"id\":\"vl_netflix\",\"naam\":\"Netflix\",\"bedrag\":10,\"index\":3.4,\"volgtCpi\":1},{\"id\":\"vl_greenchoice\",\"naam\":\"Greenchoice\",\"bedrag\":125,\"index\":2},{\"id\":\"vl_bsob\",\"naam\":\"BSOB\",\"bedrag\":40,\"index\":5},{\"id\":\"vl_mobiel\",\"naam\":\"Mobiel abonnement\",\"bedrag\":28,\"index\":3.4,\"volgtCpi\":1},{\"id\":\"vl_service\",\"naam\":\"Servicekosten\",\"bedrag\":197,\"index\":3.4,\"volgtCpi\":1},{\"id\":\"vl_res_rente\",\"naam\":\"Reservering rente kinderen\",\"bedrag\":250,\"index\":0},{\"id\":\"vl_res_zorg\",\"naam\":\"Reservering gezondheidszorg\",\"bedrag\":75,\"index\":0},{\"id\":\"vl_res_auto\",\"naam\":\"Reservering vervoermiddelen\",\"bedrag\":75,\"index\":0},{\"id\":\"vl_claude\",\"naam\":\"ai abonnement\",\"bedrag\":25,\"index\":3.4,\"volgtCpi\":1}]","inkomensplanning_correctie_hoofkes02_1750_20260822":"1","inkomensplanning_abpDekkingsgraad":"125","inkomensplanning_nieuweBronKorting":"false","inkomensplanning_nieuweLastNaam":"\"\"","inkomensplanning_indexRaboPreAOW":"3.4","inkomensplanning_nieuweMutLabel":"\"\"","inkomensplanning_rabo2027Pct":"10","inkomensplanning_inkomensBronnenExtra":"[]","inkomensplanning_spaarStartsaldo_test60000":"60000","inkomensplanning_dagIjkDatum":"\"2026-10-13\"","inkomensplanning_potOnttrekkingen":"[]","inkomensplanning_importMelding":"\"\"","inkomensplanning_nieuwItemLooptijd":"\"\"","inkomensplanning_obRendement":"3","inkomensplanning_nieuweMutIsOpname":"false","inkomensplanning_nieuweObSoort":"\"storting\"","inkomensplanning_rendementen":"{\"sparen_rabo\":1.4,\"degiro_vrij\":5,\"dep_santander\":2.1,\"dep_rabo_groen\":1.65,\"dep_rabo\":1.65,\"dep_raisin_1\":2.47,\"dep_raisin_2\":2.5,\"dep_raisin_3\":2.65,\"dep_raisin_4\":2.85,\"dep_raisin_5\":2.9,\"dep_raisin_6\":2.9,\"dep_resurs_2027_07\":3.1,\"dep_brocc_2027_01_06\":2.6,\"dep_brocc_2028_04\":3.17,\"dep_brocc_2027_01_02\":2.5,\"dep_coop_2027_07\":2.92,\"dep_inbank_2028_10\":3.36,\"dep_brocc_2027_01_01\":2.5,\"dep_younited_2027_09\":2.5,\"dep_younited_2027_03\":2.47,\"dep_collector_2028_07\":2.65,\"dep_hoist_2029_01\":2.85,\"dep_hoist_2030_01_15\":2.9,\"dep_hoist_2030_01_06\":2.9}","inkomensplanning_nieuweBronEind":"\"\"","inkomensplanning_mutatieHerstelVersie":"2026-08-17-mutaties-01","inkomensplanning_nsDatum":"\"\"","inkomensplanning_obStorting":"0","inkomensplanning_ovDatum":"\"\"","inkomensplanning_indexSalarisMan":"2.5","inkomensplanning_lijfrenteInlegVanaf":"2027","inkomensplanning_indexPFZW":"3.4","inkomensplanning_mutaties_migratie":"2026-08-17-mutaties-herstel-02","inkomensplanning_reserveringenMigratie":"\"2026-08-23-v2\"","inkomensplanning_nieuwePotLabel":"\"\"","inkomensplanning_werkkeuzeMan":"{\"2026\":\"fulltime\",\"2027\":\"gestopt\"}","inkomensplanning_vrouwAOWm":"3","inkomensplanning_lijfrenteLooptijdMan":"20","inkomensplanning_parttime":"false","inkomensplanning_eersteGebruik":"true","inkomensplanning_nsPersoon":"\"man\"","inkomensplanning_rentevisie":"{\"richting\":\"gelijk\",\"verandering\":\"\",\"bron\":\"Thésor\",\"datum\":\"\"}","inkomensplanning_obBedrag":"0","inkomensplanning_blanco_template_v1":"1"};try{Object.keys(d).forEach(function(k){if(window.localStorage.getItem(k)===null){window.localStorage.setItem(k,d[k]);}});}catch(e){}})();/* momentopname 2026-10-15 — zet alleen waarden die nog niet bestaan, overschrijft geen latere wijzigingen */</script>
+<script>(function(){var d={"inkomensplanning_ovNaam":"\"\"","inkomensplanning_vrouwStopJaar":"2032","inkomensplanning_obStart":"\"2027-01-01\"","inkomensplanning_grotePostenVolledigHerstelVersie":"grote-posten-volledig-herstel-2026-08-23-v2","inkomensplanning_spaarStartsaldo":"12750","inkomensplanning_lijfrenteRendementUitkeringVrouw":"0","inkomensplanning_volledigHerstelVersie":"index9-volledig-herstel-2026-08-15-v3","inkomensplanning_spaarRenteOverrides":"{\"2026\":200}","inkomensplanning_stopDatumMan":"\"2027-12-31\"","inkomensplanning_abpBasisjaar":"2026","inkomensplanning_nieuweMutFreq":"\"eenmalig\"","inkomensplanning_nieuweBronNaam":"\"\"","inkomensplanning_indexABPMan":"3.4","inkomensplanning_extraVermogensItems":"[{\"id\":\"dep_resurs_2027_07\",\"label\":\"Deposito Raisin Resurs Bank\",\"bedrag\":10000,\"custom\":true,\"deposito\":true,\"vervaldatum\":\"2027-07-13\",\"stortingUitRabo\":false,\"stortingDatum\":\"2026-10-13\"},{\"id\":\"dep_brocc_2027_01_06\",\"label\":\"Deposito Raisin Brocc Finance\",\"bedrag\":10000,\"custom\":true,\"deposito\":true,\"vervaldatum\":\"2027-01-06\",\"stortingUitRabo\":false,\"stortingDatum\":\"2026-10-06\"},{\"id\":\"dep_brocc_2028_04\",\"label\":\"Deposito Raisin Brocc Finance\",\"bedrag\":10000,\"custom\":true,\"deposito\":true,\"vervaldatum\":\"2028-04-05\",\"stortingUitRabo\":false,\"stortingDatum\":\"2026-10-05\"},{\"id\":\"dep_brocc_2027_01_02\",\"label\":\"Deposito Raisin Brocc Finance\",\"bedrag\":2250,\"custom\":true,\"deposito\":true,\"vervaldatum\":\"2027-01-02\",\"stortingUitRabo\":false,\"stortingDatum\":\"2026-10-02\"},{\"id\":\"dep_coop_2027_07\",\"label\":\"Deposito Raisin Coop Pank\",\"bedrag\":20000,\"custom\":true,\"deposito\":true,\"vervaldatum\":\"2027-07-02\",\"stortingUitRabo\":false,\"stortingDatum\":\"2026-10-02\"},{\"id\":\"dep_inbank_2028_10\",\"label\":\"Deposito Raisin Inbank\",\"bedrag\":20000,\"custom\":true,\"deposito\":true,\"vervaldatum\":\"2028-10-01\",\"stortingUitRabo\":false,\"stortingDatum\":\"2026-10-01\"},{\"id\":\"dep_brocc_2027_01_01\",\"label\":\"Deposito Raisin Brocc Finance\",\"bedrag\":3400,\"custom\":true,\"deposito\":true,\"vervaldatum\":\"2027-01-01\",\"stortingUitRabo\":false,\"stortingDatum\":\"2026-10-01\"},{\"id\":\"dep_younited_2027_09\",\"label\":\"Deposito Raisin Younited\",\"bedrag\":25000,\"custom\":true,\"deposito\":true,\"vervaldatum\":\"2027-09-20\",\"stortingUitRabo\":false,\"stortingDatum\":\"2026-03-20\"},{\"id\":\"dep_younited_2027_03\",\"label\":\"Deposito Raisin Younited\",\"bedrag\":15000,\"custom\":true,\"deposito\":true,\"vervaldatum\":\"2027-03-20\",\"stortingUitRabo\":false,\"stortingDatum\":\"2026-03-20\"},{\"id\":\"dep_collector_2028_07\",\"label\":\"Deposito Raisin Collector Bank\",\"bedrag\":5379.1,\"custom\":true,\"deposito\":true,\"vervaldatum\":\"2028-07-31\",\"stortingUitRabo\":false,\"stortingDatum\":\"2026-01-31\"},{\"id\":\"dep_hoist_2029_01\",\"label\":\"Deposito Raisin HoistSpar\",\"bedrag\":15000,\"custom\":true,\"deposito\":true,\"vervaldatum\":\"2029-01-15\",\"stortingUitRabo\":false,\"stortingDatum\":\"2026-01-15\"},{\"id\":\"dep_hoist_2030_01_15\",\"label\":\"Deposito Raisin HoistSpar\",\"bedrag\":15000,\"custom\":true,\"deposito\":true,\"vervaldatum\":\"2030-01-15\",\"stortingUitRabo\":false,\"stortingDatum\":\"2026-01-15\"},{\"id\":\"dep_hoist_2030_01_06\",\"label\":\"Deposito Raisin HoistSpar\",\"bedrag\":5000,\"custom\":true,\"deposito\":true,\"vervaldatum\":\"2030-01-06\",\"stortingUitRabo\":false,\"stortingDatum\":\"2026-01-06\"},{\"id\":\"dep_rabo\",\"label\":\"Deposito Rabo\",\"bedrag\":15000,\"custom\":true,\"deposito\":true,\"vervaldatum\":\"2026-12-24\",\"stortingUitRabo\":false,\"stortingDatum\":\"2025-12-24\",\"renteAlVerwerkt\":true}]","inkomensplanning_nieuwePost":"{\"soort\":\"last\",\"label\":\"\",\"bedrag\":\"\",\"index\":\"\",\"start\":\"\",\"eind\":\"\",\"frequentie\":\"maandelijks\"}","inkomensplanning_potSaldi":"{\"vl_res_rente\":2250,\"vl_res_zorg\":345,\"vl_res_auto\":285}","inkomensplanning_manStopDatum":"null","inkomensplanning_pensioenIndexMigratie":"\"\"","inkomensplanning_spaarBufferMinimum":"15000","inkomensplanning_nieuwePotId":"\"vl_res_rente\"","inkomensplanning_looptijdOverrideVrouw":"false","inkomensplanning_indexLincare":"\"3.6\"","inkomensplanning_nieuwItemUitRabo":"true","inkomensplanning_nieuweMutIndex":"\"\"","inkomensplanning_raboBasisjaar":"2026","inkomensplanning_vrouwAOWy":"67","inkomensplanning_ovDoelId":"\"degiro_vrij\"","inkomensplanning_ovBedrag":"\"\"","inkomensplanning_depositoSetVersie":"2026-10-13-v1","inkomensplanning_stopDatumVrouw":"\"\"","inkomensplanning_vrijvalNaar":"{}","inkomensplanning_geboortedatumMan":"\"\"","inkomensplanning_nsBedrag":"\"\"","inkomensplanning_manAOWy":"67","inkomensplanning_nieuwItemStorting":"\"\"","inkomensplanning_ovLooptijdEenheid":"\"mnd\"","inkomensplanning_fiscaal":"{\"schijf1_max\":39247,\"schijf2_max\":78426,\"tarief1\":36.23,\"tarief1_aow\":18.33,\"tarief2\":38.16,\"tarief3\":49.5,\"algemene_heffingskorting_max\":3154,\"ahk_afbouwgrens\":30910,\"ahk_afbouwpct\":6.638,\"ouderenkorting_max\":1993,\"ouderenkorting_afbouwgrens\":46577,\"ouderenkorting_afbouwpct\":15,\"ahk_na_aow_max\":1596,\"ahk_na_aow_afbouwpct\":3.359,\"arbeidskorting_max\":5929,\"arbeidskorting_afbouwgrens\":47834,\"arbeidskorting_afbouwpct\":6.51,\"zvw_laag_pct\":4.85,\"zvw_max_bijdrage_inkomen\":79409,\"max_jaaruitkering_tijdelijke_lijfrente_5_20jr\":27192,\"aow_bruto_gehuwd_pm\":1139.39,\"aow_netto_gehuwd_met_hef_pm\":1084.13,\"aow_netto_gehuwd_zonder_hef_pm\":880.96,\"indexatie_schijven\":3.4,\"_stand\":\"2026-09-20\"}","inkomensplanning_schenkingJaarlijks":"7000","inkomensplanning_verwijderdeBasisItems":"[]","inkomensplanning_nieuwOverrideJaar":"\"\"","inkomensplanning_abp2027Pct":"10","inkomensplanning_stortingsdatums":"{\"dep_santander\":\"2025-10-06\",\"dep_rabo_groen\":\"2025-10-06\",\"dep_rabo\":\"2025-12-24\",\"dep_raisin_1\":\"2026-03-20\",\"dep_raisin_2\":\"2026-03-20\",\"dep_raisin_3\":\"2026-01-31\",\"dep_raisin_4\":\"2026-01-15\",\"dep_raisin_5\":\"2026-01-15\",\"dep_raisin_6\":\"2026-01-06\",\"dep_resurs_2027_07\":\"2026-10-13\",\"dep_brocc_2027_01_06\":\"2026-10-06\",\"dep_brocc_2028_04\":\"2026-10-05\",\"dep_brocc_2027_01_02\":\"2026-10-02\",\"dep_coop_2027_07\":\"2026-10-02\",\"dep_inbank_2028_10\":\"2026-10-01\",\"dep_brocc_2027_01_01\":\"2026-10-01\",\"dep_younited_2027_09\":\"2026-03-20\",\"dep_younited_2027_03\":\"2026-03-20\",\"dep_collector_2028_07\":\"2026-01-31\",\"dep_hoist_2029_01\":\"2026-01-15\",\"dep_hoist_2030_01_15\":\"2026-01-15\",\"dep_hoist_2030_01_06\":\"2026-01-06\"}","inkomensplanning_koppelingenHerstelVersie":"koppelingen-herstel-2026-08-15-v3","inkomensplanning_nieuwItemBedrag":"\"\"","inkomensplanning_nieuwePotDatum":"\"\"","inkomensplanning_obvionRente":"\"6\"","inkomensplanning_migratieVersie":"2026-08-14-01","inkomensplanning_aandachtWeggehaald":"[\"post|m_huur|2026-09-18\",\"post|m8|2026-10-14\"]","inkomensplanning_nieuwItemRendement":"\"\"","inkomensplanning_nieuweLastBedrag":"\"\"","inkomensplanning_indexSalarisManNaCao":"3.4","inkomensplanning_lijfrenteStortingen":"[]","inkomensplanning_loonmodelVersie":"2","inkomensplanning_lijfrenteRendementUitkeringMan":"\"3\"","inkomensplanning_spaarRentePercentages":"[{\"id\":\"r1\",\"vanaf\":\"2026-10-01\",\"pct\":2},{\"id\":\"r_1788091898039\",\"vanaf\":\"\",\"pct\":15},{\"id\":\"r_1788091904871\",\"vanaf\":\"\",\"pct\":15},{\"id\":\"r_1790097369516\",\"vanaf\":\"\",\"pct\":15},{\"id\":\"r_1790856972076\",\"vanaf\":\"\",\"pct\":15},{\"id\":\"r_1790856973346\",\"vanaf\":\"\",\"pct\":15},{\"id\":\"r_1790856975114\",\"vanaf\":\"\",\"pct\":15},{\"id\":\"r_1790856975338\",\"vanaf\":\"\",\"pct\":15}]","inkomensplanning_manAOWm":"3","inkomensplanning_vrouwStopDatum":"\"2032-02-09\"","inkomensplanning_obTerugDatum":"\"\"","inkomensplanning_cpiCheck":"{\"status\":\"done\",\"pct\":3.4,\"maand\":\"2026MM09\",\"definitief\":false,\"voorlopig\":null,\"bron\":\"CBS StatLine, tabel 86141NED — kolom \\\"Jaarmutatie CPI\\\" (voorlopig, status volgens het CBS)\",\"error\":null,\"checkedAt\":\"2026-10-15T04:01:23.545Z\"}","inkomensplanning_nieuweMutDatum":"\"\"","inkomensplanning_proefLooptijdVrouw":"\"10\"","inkomensplanning_ovRente":"\"\"","inkomensplanning_lijfrenteRendementMan":"5","inkomensplanning_sparenRaboHandmatig":"null","inkomensplanning_looptijdOverrideMan":"true","inkomensplanning_indexDagelijkseUitgaven":"3.4","inkomensplanning_nieuwItemLooptijdEenheid":"\"mnd\"","inkomensplanning_customPosten":"[{\"id\":\"post_1785908638977\",\"soort\":\"last\",\"label\":\"Claude\",\"bedrag\":23,\"index\":3,\"start\":\"2026-08-20\",\"eind\":null,\"frequentie\":\"maandelijks\"}]","inkomensplanning_beleggingsUploadMutaties":"{\"pensioenBnd\":{\"totaal\":27506,\"datum\":\"2026-10-02\",\"mutatie\":-295.2800000000025,\"mutatiePct\":-1.062109370503813,\"jaar\":2026,\"jaarBasisTotaal\":28051.28,\"jaarBasisDatum\":\"2026-08-17\",\"jaarStortingenTotaal\":0,\"jaarMutatie\":-545.2799999999988,\"jaarMutatiePct\":-1.9438685150909292,\"eersteUploadTotaal\":27257.59,\"eersteUploadDatum\":\"2026-09-13\",\"stortingenTotaalAlleJaren\":0,\"mutatieSindsAanschaf\":248.40999999999985,\"mutatieSindsAanschafPct\":0.9113424921278802,\"fondsen\":{\"BND Wereld Indexfonds Hedged\":{\"totaal\":0,\"datum\":\"2026-10-02\",\"mutatie\":null,\"mutatiePct\":null,\"jaar\":2026,\"jaarBasisTotaal\":0,\"jaarBasisDatum\":\"2026-10-02\",\"jaarStortingenTotaal\":0,\"jaarMutatie\":0,\"jaarMutatiePct\":null,\"eersteUploadTotaal\":0,\"eersteUploadDatum\":\"2026-10-02\",\"stortingenTotaalAlleJaren\":0,\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":null},\"BND Europa Indexfonds\":{\"totaal\":0,\"datum\":\"2026-10-02\",\"mutatie\":null,\"mutatiePct\":null,\"jaar\":2026,\"jaarBasisTotaal\":0,\"jaarBasisDatum\":\"2026-10-02\",\"jaarStortingenTotaal\":0,\"jaarMutatie\":0,\"jaarMutatiePct\":null,\"eersteUploadTotaal\":0,\"eersteUploadDatum\":\"2026-10-02\",\"stortingenTotaalAlleJaren\":0,\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":null},\"BND Wereld Indexfonds Unhedged\":{\"totaal\":0,\"datum\":\"2026-10-02\",\"mutatie\":null,\"mutatiePct\":null,\"jaar\":2026,\"jaarBasisTotaal\":0,\"jaarBasisDatum\":\"2026-10-02\",\"jaarStortingenTotaal\":0,\"jaarMutatie\":0,\"jaarMutatiePct\":null,\"eersteUploadTotaal\":0,\"eersteUploadDatum\":\"2026-10-02\",\"stortingenTotaalAlleJaren\":0,\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":null},\"BND Wereld Indexfonds 3 Totaal Carbon Screened\":{\"totaal\":0,\"datum\":\"2026-10-02\",\"mutatie\":null,\"mutatiePct\":null,\"jaar\":2026,\"jaarBasisTotaal\":0,\"jaarBasisDatum\":\"2026-10-02\",\"jaarStortingenTotaal\":0,\"jaarMutatie\":0,\"jaarMutatiePct\":null,\"eersteUploadTotaal\":0,\"eersteUploadDatum\":\"2026-10-02\",\"stortingenTotaalAlleJaren\":0,\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":null},\"BND Cashallocatie Vraag en antwoord Wat is het verschil tussen risicoverdeling en fondsen & geld? [1 O <\":{\"totaal\":0,\"datum\":\"2026-10-02\",\"mutatie\":null,\"mutatiePct\":null,\"jaar\":2026,\"jaarBasisTotaal\":0,\"jaarBasisDatum\":\"2026-10-02\",\"jaarStortingenTotaal\":0,\"jaarMutatie\":0,\"jaarMutatiePct\":null,\"eersteUploadTotaal\":0,\"eersteUploadDatum\":\"2026-10-02\",\"stortingenTotaalAlleJaren\":0,\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":null}}},\"vrijeBeleggingen\":{\"totaal\":54670.59,\"datum\":\"2026-10-13\",\"mutatie\":213.13999999999942,\"mutatiePct\":0.3913881388129621,\"jaar\":2026,\"jaarBasisTotaal\":46978.31,\"jaarBasisDatum\":\"2026-08-17\",\"jaarStortingenTotaal\":3112,\"jaarMutatie\":4580.279999999999,\"jaarMutatiePct\":9.749776013653959,\"eersteUploadTotaal\":50378.57,\"eersteUploadDatum\":\"2026-09-13\",\"stortingenTotaalAlleJaren\":1362,\"mutatieSindsAanschaf\":2930.019999999997,\"mutatieSindsAanschafPct\":5.816004701999276,\"fondsen\":{\"Amundi Core MSCI World UCITS ETF Acc\":{\"totaal\":10267.51,\"datum\":\"2026-10-13\",\"mutatie\":119.96999999999935,\"mutatiePct\":1.1822569805095555,\"jaar\":2026,\"jaarBasisTotaal\":10050.51,\"jaarBasisDatum\":\"2026-09-25\",\"jaarStortingenTotaal\":0,\"jaarMutatie\":217,\"jaarMutatiePct\":2.1590944141143082,\"eersteUploadTotaal\":10050.51,\"eersteUploadDatum\":\"2026-09-25\",\"stortingenTotaalAlleJaren\":0,\"mutatieSindsAanschaf\":217,\"mutatieSindsAanschafPct\":2.1590944141143082},\"Amundi Core Stoxx Europe 600 UCITS ETF A\":{\"totaal\":10340.55,\"datum\":\"2026-10-13\",\"mutatie\":42.899999999999636,\"mutatiePct\":0.4165999038615571,\"jaar\":2026,\"jaarBasisTotaal\":10456.05,\"jaarBasisDatum\":\"2026-09-27\",\"jaarStortingenTotaal\":0,\"jaarMutatie\":-115.5,\"jaarMutatiePct\":-1.1046236389458735,\"eersteUploadTotaal\":10456.05,\"eersteUploadDatum\":\"2026-09-27\",\"stortingenTotaalAlleJaren\":0,\"mutatieSindsAanschaf\":-115.5,\"mutatieSindsAanschafPct\":-1.1046236389458735},\"iShares Core MSCI EM IMI UCITS ETF USD Acc\":{\"totaal\":5057.33,\"datum\":\"2026-10-13\",\"mutatie\":-115.39000000000033,\"mutatiePct\":-2.230741273449951,\"jaar\":2026,\"jaarBasisTotaal\":10236.24,\"jaarBasisDatum\":\"2026-09-25\",\"jaarStortingenTotaal\":-5175.24,\"jaarMutatie\":-3.6700000000000728,\"jaarMutatiePct\":-0.03585300852656906,\"eersteUploadTotaal\":10236.24,\"eersteUploadDatum\":\"2026-09-25\",\"stortingenTotaalAlleJaren\":-5175.24,\"mutatieSindsAanschaf\":-3.6700000000000728,\"mutatieSindsAanschafPct\":-0.03585300852656906},\"iShares Core S&P 500 UCITS ETF USD (Acc)\":{\"totaal\":5260.08,\"datum\":\"2026-10-13\",\"mutatie\":80.22000000000025,\"mutatiePct\":1.548690505148793,\"jaar\":2026,\"jaarBasisTotaal\":10236.8,\"jaarBasisDatum\":\"2026-09-25\",\"jaarStortingenTotaal\":-5179.86,\"jaarMutatie\":203.14000000000033,\"jaarMutatiePct\":1.9844091903719947,\"eersteUploadTotaal\":10236.8,\"eersteUploadDatum\":\"2026-09-25\",\"stortingenTotaalAlleJaren\":-5179.86,\"mutatieSindsAanschaf\":203.14000000000033,\"mutatieSindsAanschafPct\":1.9844091903719947},\"iShares Edge MSCI Europe Minimum Volatility Advanced UCITS ETF\":{\"totaal\":5251.66,\"datum\":\"2026-10-13\",\"mutatie\":79.59999999999945,\"mutatiePct\":1.539038603573807,\"jaar\":2026,\"jaarBasisTotaal\":10458,\"jaarBasisDatum\":\"2026-09-25\",\"jaarStortingenTotaal\":-5172.06,\"jaarMutatie\":-34.279999999999745,\"jaarMutatiePct\":-0.32778733983553016,\"eersteUploadTotaal\":10458,\"eersteUploadDatum\":\"2026-09-25\",\"stortingenTotaalAlleJaren\":-5172.06,\"mutatieSindsAanschaf\":-34.279999999999745,\"mutatieSindsAanschafPct\":-0.32778733983553016},\"iShares Edge MSCI WId Val Fctr UCITS ETF USD A\":{\"totaal\":7097,\"datum\":\"2026-10-13\",\"mutatie\":-76,\"mutatiePct\":-1.0595287885124773,\"jaar\":2026,\"jaarBasisTotaal\":7173,\"jaarBasisDatum\":\"2026-10-02\",\"jaarStortingenTotaal\":0,\"jaarMutatie\":-76,\"jaarMutatiePct\":-1.0595287885124773,\"eersteUploadTotaal\":7173,\"eersteUploadDatum\":\"2026-10-02\",\"stortingenTotaalAlleJaren\":0,\"mutatieSindsAanschaf\":-76,\"mutatieSindsAanschafPct\":-1.0595287885124773},\"iShares MSCI World Small Cap UCITS ETF USD (Acc)\":{\"totaal\":6638.78,\"datum\":\"2026-10-13\",\"mutatie\":-35.620000000000346,\"mutatiePct\":-0.5818436046207782,\"jaar\":2026,\"jaarBasisTotaal\":6121.92,\"jaarBasisDatum\":\"2026-10-02\",\"jaarStortingenTotaal\":552.48,\"jaarMutatie\":-35.620000000000346,\"jaarMutatiePct\":-0.5818436046207782,\"eersteUploadTotaal\":6121.92,\"eersteUploadDatum\":\"2026-10-02\",\"stortingenTotaalAlleJaren\":552.48,\"mutatieSindsAanschaf\":-35.620000000000346,\"mutatieSindsAanschafPct\":-0.5818436046207782},\"VanEck Semiconductor UCITS ETF USD A\":{\"totaal\":4686.36,\"datum\":\"2026-10-13\",\"mutatie\":null,\"mutatiePct\":null,\"jaar\":2026,\"jaarBasisTotaal\":4686.36,\"jaarBasisDatum\":\"2026-10-13\",\"jaarStortingenTotaal\":0,\"jaarMutatie\":0,\"jaarMutatiePct\":0,\"eersteUploadTotaal\":4686.36,\"eersteUploadDatum\":\"2026-10-13\",\"stortingenTotaalAlleJaren\":0,\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0}}},\"pensioenDegiro\":{\"totaal\":50967,\"datum\":\"2026-10-02\",\"mutatie\":-2.8300000000017462,\"mutatiePct\":-0.005552304176807625,\"jaar\":2026,\"jaarBasisTotaal\":50371.45,\"jaarBasisDatum\":\"2026-08-17\",\"jaarStortingenTotaal\":0,\"jaarMutatie\":595.5500000000029,\"jaarMutatiePct\":1.18231657019999,\"eersteUploadTotaal\":50168.32,\"eersteUploadDatum\":\"2026-09-13\",\"stortingenTotaalAlleJaren\":0,\"mutatieSindsAanschaf\":798.6800000000003,\"mutatieSindsAanschafPct\":1.5920006888809517,\"fondsen\":{\"HSBC MSCI World UCITS ETF USD\":{\"totaal\":10123.45,\"datum\":\"2026-10-02\",\"mutatie\":50.14000000000124,\"mutatiePct\":0.4977509875105724,\"jaar\":2026,\"jaarBasisTotaal\":17100,\"jaarBasisDatum\":\"2026-09-13\",\"jaarStortingenTotaal\":0,\"jaarMutatie\":-6976.549999999999,\"jaarMutatiePct\":-40.7985380116959,\"eersteUploadTotaal\":17100,\"eersteUploadDatum\":\"2026-09-13\",\"stortingenTotaalAlleJaren\":0,\"mutatieSindsAanschaf\":-6976.549999999999,\"mutatieSindsAanschafPct\":-40.7985380116959},\"iShares Automation & Robotics UCITS ETF USD A\":{\"totaal\":6889.91,\"datum\":\"2026-10-02\",\"mutatie\":625.3899999999994,\"mutatiePct\":4.7542194942840466,\"jaar\":2026,\"jaarBasisTotaal\":13199.43,\"jaarBasisDatum\":\"2026-09-25\",\"jaarStortingenTotaal\":-6889.9,\"jaarMutatie\":580.3799999999992,\"jaarMutatiePct\":4.397008052620448,\"eersteUploadTotaal\":13199.43,\"eersteUploadDatum\":\"2026-09-25\",\"stortingenTotaalAlleJaren\":-6889.9,\"mutatieSindsAanschaf\":580.3799999999992,\"mutatieSindsAanschafPct\":4.397008052620448},\"iShares EURO STOXX Banks 30-15 UCITS (DE) EUR (Dist) ETF\":{\"totaal\":4988.93,\"datum\":\"2026-10-02\",\"mutatie\":-699.3899999999994,\"mutatiePct\":-6.550288276745671,\"jaar\":2026,\"jaarBasisTotaal\":10711.44,\"jaarBasisDatum\":\"2026-09-13\",\"jaarStortingenTotaal\":-4988.92,\"jaarMutatie\":-733.5900000000001,\"jaarMutatiePct\":-6.848659003831418,\"eersteUploadTotaal\":10711.44,\"eersteUploadDatum\":\"2026-09-13\",\"stortingenTotaalAlleJaren\":-4988.92,\"mutatieSindsAanschaf\":-733.5900000000001,\"mutatieSindsAanschafPct\":-6.848659003831418},\"VanEck Semiconductor UCITS ETF USD A\":{\"totaal\":6854.9,\"datum\":\"2026-10-02\",\"mutatie\":null,\"mutatiePct\":null,\"jaar\":2026,\"jaarBasisTotaal\":6854.9,\"jaarBasisDatum\":\"2026-10-02\",\"jaarStortingenTotaal\":0,\"jaarMutatie\":0,\"jaarMutatiePct\":0,\"eersteUploadTotaal\":6854.9,\"eersteUploadDatum\":\"2026-10-02\",\"stortingenTotaalAlleJaren\":0,\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},\"Vanguard FTSE All-World UCITS - (USD) Accumulating ETF\":{\"totaal\":17128,\"datum\":\"2026-10-02\",\"mutatie\":80,\"mutatiePct\":0.4692632566870014,\"jaar\":2026,\"jaarBasisTotaal\":22855.04,\"jaarBasisDatum\":\"2026-09-22\",\"jaarStortingenTotaal\":0,\"jaarMutatie\":-5727.040000000001,\"jaarMutatiePct\":-25.058105345691807,\"eersteUploadTotaal\":22855.04,\"eersteUploadDatum\":\"2026-09-22\",\"stortingenTotaalAlleJaren\":0,\"mutatieSindsAanschaf\":-5727.040000000001,\"mutatieSindsAanschafPct\":-25.058105345691807},\"Vanguard FTSE Developed Europe UCITS - (EUR) Accumulating ETF\":{\"totaal\":4953.48,\"datum\":\"2026-10-02\",\"mutatie\":null,\"mutatiePct\":null,\"jaar\":2026,\"jaarBasisTotaal\":4953.48,\"jaarBasisDatum\":\"2026-10-02\",\"jaarStortingenTotaal\":0,\"jaarMutatie\":0,\"jaarMutatiePct\":0,\"eersteUploadTotaal\":4953.48,\"eersteUploadDatum\":\"2026-10-02\",\"stortingenTotaalAlleJaren\":0,\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0}}}}","inkomensplanning_nieuweMutEind":"\"\"","inkomensplanning_tekst":"null","inkomensplanning_nieuwePotBedrag":"\"\"","inkomensplanning_ovLooptijd":"\"\"","inkomensplanning_nieuweObLabel":"\"\"","inkomensplanning_proefLooptijdMan":"\"20\"","inkomensplanning_handmatige_update_202609":"1","inkomensplanning_nieuweBronPersoon":"\"man\"","inkomensplanning_vrouwStoptBijAOW":"true","inkomensplanning_indexLincareNaCao":"3.4","inkomensplanning_verkochtFondsen":"[{\"id\":\"vf_1789710408816_Vngrd FTSE All-WId Hgh Div YId UCITS ETF USD A\",\"sleutel\":\"vrijeBeleggingen\",\"sleutelTitel\":\"Hoofkes02 — vrij beleggen\",\"fondsNaam\":\"Vngrd FTSE All-WId Hgh Div YId UCITS ETF USD A\",\"datum\":\"2026-09-18\",\"verkoopopbrengst\":14584.44,\"vorig\":14584.44,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-13\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},{\"id\":\"vf_1789710481016_Vanguard FTSE All-World UCITS - (USD) Accumulating ETF\",\"sleutel\":\"pensioenDegiro\",\"sleutelTitel\":\"Hoofkes04 — pensioen\",\"fondsNaam\":\"Vanguard FTSE All-World UCITS - (USD) Accumulating ETF\",\"datum\":\"2026-09-18\",\"verkoopopbrengst\":22321.72,\"vorig\":22321.72,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-13\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},{\"id\":\"vf_1790097530081_VanEck Semiconductor UCITS ETF USD A\",\"sleutel\":\"vrijeBeleggingen\",\"sleutelTitel\":\"Hoofkes02 — vrij beleggen\",\"fondsNaam\":\"VanEck Semiconductor UCITS ETF USD A\",\"datum\":\"2026-09-22\",\"verkoopopbrengst\":13593.8,\"vorig\":13593.8,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-13\",\"mutatieSindsAanschaf\":-19.2400000000016,\"mutatieSindsAanschafPct\":-0.1413350728419339},{\"id\":\"vf_1790097530081_Vanguard FTSE All-WId Hgh Div YId UCITS ETF USD A\",\"sleutel\":\"vrijeBeleggingen\",\"sleutelTitel\":\"Hoofkes02 — vrij beleggen\",\"fondsNaam\":\"Vanguard FTSE All-WId Hgh Div YId UCITS ETF USD A\",\"datum\":\"2026-09-22\",\"verkoopopbrengst\":14681.16,\"vorig\":14681.16,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-18\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},{\"id\":\"vf_1790097593334_Vanguard FTSE All-World UCITS - (USD) €22.47716 Accumulating ETF\",\"sleutel\":\"pensioenDegiro\",\"sleutelTitel\":\"Hoofkes04 — pensioen\",\"fondsNaam\":\"Vanguard FTSE All-World UCITS - (USD) €22.47716 Accumulating ETF\",\"datum\":\"2026-09-22\",\"verkoopopbrengst\":22.477,\"vorig\":22.477,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-18\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},{\"id\":\"vf_1790097684858_Wereld Indexfonds Hedged\",\"sleutel\":\"pensioenBnd\",\"sleutelTitel\":\"Brand New Day — pensioen Vrouw\",\"fondsNaam\":\"Wereld Indexfonds Hedged\",\"datum\":\"2026-09-22\",\"verkoopopbrengst\":6850.98,\"vorig\":6850.98,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-13\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},{\"id\":\"vf_1790097684858_Europa Indexfonds\",\"sleutel\":\"pensioenBnd\",\"sleutelTitel\":\"Brand New Day — pensioen Vrouw\",\"fondsNaam\":\"Europa Indexfonds\",\"datum\":\"2026-09-22\",\"verkoopopbrengst\":9467.84,\"vorig\":9467.84,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-13\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},{\"id\":\"vf_1790097684858_Wereld Indexfonds Unhedged\",\"sleutel\":\"pensioenBnd\",\"sleutelTitel\":\"Brand New Day — pensioen Vrouw\",\"fondsNaam\":\"Wereld Indexfonds Unhedged\",\"datum\":\"2026-09-22\",\"verkoopopbrengst\":2809.41,\"vorig\":2809.41,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-13\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},{\"id\":\"vf_1790097684858_Wereld Index- Carbon\",\"sleutel\":\"pensioenBnd\",\"sleutelTitel\":\"Brand New Day — pensioen Vrouw\",\"fondsNaam\":\"Wereld Index- Carbon\",\"datum\":\"2026-09-22\",\"verkoopopbrengst\":8129.36,\"vorig\":8129.36,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-13\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},{\"id\":\"vf_1790338998610_VanEck Ms Developed Markets Div Lead UCITS ETF\",\"sleutel\":\"vrijeBeleggingen\",\"sleutelTitel\":\"Hoofkes02 — vrij beleggen\",\"fondsNaam\":\"VanEck Ms Developed Markets Div Lead UCITS ETF\",\"datum\":\"2026-09-25\",\"verkoopopbrengst\":37091.25,\"vorig\":37091.25,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-13\",\"mutatieSindsAanschaf\":14936,\"mutatieSindsAanschafPct\":67.41517247604969},{\"id\":\"vf_1790338998610_Vanguard FTSE All-WId Hgh Div YId UCITS ETF UsD A\",\"sleutel\":\"vrijeBeleggingen\",\"sleutelTitel\":\"Hoofkes02 — vrij beleggen\",\"fondsNaam\":\"Vanguard FTSE All-WId Hgh Div YId UCITS ETF UsD A\",\"datum\":\"2026-09-25\",\"verkoopopbrengst\":14648.4,\"vorig\":14648.4,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-22\",\"mutatieSindsAanschaf\":-4.680000000000291,\"mutatieSindsAanschafPct\":-0.0319386777387436},{\"id\":\"vf_1790380448014_Amundi Core Stoxx Europe 600 UCITS ETF A\",\"sleutel\":\"vrijeBeleggingen\",\"sleutelTitel\":\"Hoofkes02 — vrij beleggen\",\"fondsNaam\":\"Amundi Core Stoxx Europe 600 UCITS ETF A\",\"datum\":\"2026-09-25\",\"verkoopopbrengst\":10416.45,\"vorig\":10416.45,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-25\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},{\"id\":\"vf_1790380448014_VanEck Crypto and Blckchn Innvtrs UCITS ETF €628/13 USD A £2.53\",\"sleutel\":\"vrijeBeleggingen\",\"sleutelTitel\":\"Hoofkes02 — vrij beleggen\",\"fondsNaam\":\"VanEck Crypto and Blckchn Innvtrs UCITS ETF €628/13 USD A £2.53\",\"datum\":\"2026-09-25\",\"verkoopopbrengst\":628,\"vorig\":628,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-25\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},{\"id\":\"vf_1790551171287_Amundi Core Stoxx Europe 600 UCITS ETF A €10.447.80\",\"sleutel\":\"vrijeBeleggingen\",\"sleutelTitel\":\"Hoofkes02 — vrij beleggen\",\"fondsNaam\":\"Amundi Core Stoxx Europe 600 UCITS ETF A €10.447.80\",\"datum\":\"2026-09-27\",\"verkoopopbrengst\":10.447,\"vorig\":10.447,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-25\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},{\"id\":\"vf_1790857161581_VanEck Crypto and Blckchn Innvtrs UCITS ETF usD A\",\"sleutel\":\"vrijeBeleggingen\",\"sleutelTitel\":\"Hoofkes02 — vrij beleggen\",\"fondsNaam\":\"VanEck Crypto and Blckchn Innvtrs UCITS ETF usD A\",\"datum\":\"2026-10-01\",\"verkoopopbrengst\":598.94,\"vorig\":598.94,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-27\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},{\"id\":\"vf_1790857161581_Cash\",\"sleutel\":\"vrijeBeleggingen\",\"sleutelTitel\":\"Hoofkes02 — vrij beleggen\",\"fondsNaam\":\"Cash\",\"datum\":\"2026-10-01\",\"verkoopopbrengst\":1002,\"vorig\":1002,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-27\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},{\"id\":\"vf_1790957065968_VanEck Crypto and Blckchn Innvtrs UCITS ETF USD A (+0,05%)\",\"sleutel\":\"vrijeBeleggingen\",\"sleutelTitel\":\"Hoofkes02 — vrij beleggen\",\"fondsNaam\":\"VanEck Crypto and Blckchn Innvtrs UCITS ETF USD A (+0,05%)\",\"datum\":\"2026-10-02\",\"verkoopopbrengst\":574.66,\"vorig\":574.66,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-10-01\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},{\"id\":\"vf_1790957139893_iShares Automation & Robotics UCITS ETF USD A\",\"sleutel\":\"vrijeBeleggingen\",\"sleutelTitel\":\"Hoofkes02 — vrij beleggen\",\"fondsNaam\":\"iShares Automation & Robotics UCITS ETF USD A\",\"datum\":\"2026-10-02\",\"verkoopopbrengst\":2333.34,\"vorig\":2333.34,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-10-01\",\"mutatieSindsAanschaf\":61.82999999999993,\"mutatieSindsAanschafPct\":2.721977891358608},{\"id\":\"vf_1790957318787_BND Wereld Indexfonds\",\"sleutel\":\"pensioenBnd\",\"sleutelTitel\":\"Brand New Day — pensioen Vrouw\",\"fondsNaam\":\"BND Wereld Indexfonds\",\"datum\":\"2026-10-02\",\"verkoopopbrengst\":2885.54,\"vorig\":2885.54,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-22\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},{\"id\":\"vf_1790957318787_Hedged BND Europa Indexfonds\",\"sleutel\":\"pensioenBnd\",\"sleutelTitel\":\"Brand New Day — pensioen Vrouw\",\"fondsNaam\":\"Hedged BND Europa Indexfonds\",\"datum\":\"2026-10-02\",\"verkoopopbrengst\":9563.04,\"vorig\":9563.04,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-22\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},{\"id\":\"vf_1790957318787_Unhedged BND Wereld Indexfonds\",\"sleutel\":\"pensioenBnd\",\"sleutelTitel\":\"Brand New Day — pensioen Vrouw\",\"fondsNaam\":\"Unhedged BND Wereld Indexfonds\",\"datum\":\"2026-10-02\",\"verkoopopbrengst\":8376.04,\"vorig\":8376.04,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-09-22\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0},{\"id\":\"vf_1791905195385_iShares MSCI WId HIth Care Sec Adv UCITS ETF USD A\",\"sleutel\":\"vrijeBeleggingen\",\"sleutelTitel\":\"Hoofkes02 — vrij beleggen\",\"fondsNaam\":\"iShares MSCI WId HIth Care Sec Adv UCITS ETF USD A\",\"datum\":\"2026-10-13\",\"verkoopopbrengst\":5179,\"vorig\":5179,\"mutatieSindsVorige\":0,\"mutatiePctSindsVorige\":0,\"eersteUploadDatum\":\"2026-10-02\",\"mutatieSindsAanschaf\":0,\"mutatieSindsAanschafPct\":0}]","inkomensplanning_vermogenPeildatum":"\"2026-10-15\"","inkomensplanning_geboortedatumVrouw":"\"\"","inkomensplanning_nieuweMutBedrag":"\"\"","inkomensplanning_ovRenteregime":"\"jaardag\"","inkomensplanning_abp2027PctHandmatig":"0","inkomensplanning_vrijSparenSplitBeleggen":"50","inkomensplanning_basis":"{\"salarisManNetto\":4127,\"salarisManBruto\":6380,\"abpVoorAOWNetto\":2200,\"abpNaAOWNetto\":1365,\"abpNaAOWBruto\":1766,\"abpVoorAOWBruto\":3394,\"abpExtraDekkingsgraadVoorAOWBruto\":296.5,\"abpExtraDekkingsgraadNaAOWBruto\":176.6,\"lincareNetto\":1850,\"lincareBrutoFulltime\":3592.96,\"lincareUren\":20,\"lincareORTUren\":10,\"lincareORTPct\":50,\"lincareTrede\":7,\"lincareVolgendeTredeDatum\":\"2027-01-01\",\"raboVoorAOWNetto\":362,\"raboVoorAOWBruto\":608,\"raboNaAOWNetto\":470,\"raboNaAOWBruto\":608,\"pfzwNettoMaand\":195,\"pfzwBrutoJaar\":3245,\"pfzwVervroegdNetto\":115,\"pfzwKortingPerJaar\":5,\"pfzwExtraVoorAOWBruto\":0,\"pfzwExtraNaAOWBruto\":0,\"kortingInSalarisMan\":1,\"kortingInAbpVoorAOW\":1,\"kortingInAbpNaAOW\":0,\"kortingInAOWMan\":0,\"kortingInAOWVrouw\":1,\"kortingInLincare\":1,\"kortingInRaboVoorAOW\":1,\"kortingInRaboNaAOW\":0,\"kortingInPfzw\":0,\"degiroVrij\":54670.59,\"degiroPensioen\":50967,\"bndPensioen\":27506,\"woningWaarde\":510000,\"hypotheek\":188000,\"hypotheekRenteNu\":1.09,\"hypotheekMaandlastNu\":385.85,\"leningElise\":33129,\"leningKevin\":33129,\"dagelijkseUitgaven\":1800,\"lijfrenteInlegMan\":11900,\"lijfrenteInlegVrouw\":2000,\"box3VrijstellingPP\":57684,\"pensioengevendSalarisMan2026\":84397}","inkomensplanning_obOpnameUit":"{}","inkomensplanning_mutaties":"[{\"id\":\"my0\",\"label\":\"Aflossing kind (1/12)\",\"bedrag\":300,\"datum\":\"2026-12-15\"},{\"id\":\"my1\",\"label\":\"Aflossing kind (2/12)\",\"bedrag\":300,\"datum\":\"2026-12-15\"},{\"id\":\"m10\",\"label\":\"Opname vakantie Tenerife\",\"bedrag\":-2000,\"datum\":\"2026-11-09\"},{\"id\":\"m2\",\"label\":\"Man jubileum\",\"bedrag\":7000,\"datum\":\"2026-11-22\"},{\"id\":\"m7\",\"label\":\"T Zandt 60 jaar feest\",\"bedrag\":-3000,\"datum\":\"2026-11-20\"},{\"id\":\"my2\",\"label\":\"Aflossing kind (3/12)\",\"bedrag\":300,\"datum\":\"2026-12-15\"},{\"id\":\"m5\",\"label\":\"13e maand Vrouw\",\"bedrag\":1000,\"datum\":\"2026-12-22\"},{\"id\":\"m4c\",\"label\":\"Rente Rabo 2026 (vervalt 24-12-2026, rente 2025 al ontvangen)\",\"bedrag\":242,\"datum\":\"2026-12-24\"},{\"id\":\"m3\",\"label\":\"IKB\",\"bedrag\":2000,\"datum\":\"2026-12-31\"},{\"id\":\"my3\",\"label\":\"Aflossing kind (4/12)\",\"bedrag\":300,\"datum\":\"2026-12-31\"},{\"id\":\"m9\",\"label\":\"Schenkbelasting\",\"bedrag\":-6313,\"datum\":\"2027-01-15\"},{\"id\":\"m_hetty\",\"label\":\"Schenking Hetty\",\"bedrag\":7000,\"datum\":\"2027-01-15\",\"frequentie\":\"eenmalig\",\"einddatum\":\"\",\"index\":0},{\"id\":\"my4\",\"label\":\"Aflossing kind (5/12)\",\"bedrag\":300,\"datum\":\"2027-01-31\"},{\"id\":\"my5\",\"label\":\"Aflossing kind (6/12)\",\"bedrag\":300,\"datum\":\"2027-02-28\"},{\"id\":\"my6\",\"label\":\"Aflossing kind (7/12)\",\"bedrag\":300,\"datum\":\"2027-03-31\"},{\"id\":\"my7\",\"label\":\"Aflossing kind (8/12)\",\"bedrag\":300,\"datum\":\"2027-04-30\"},{\"id\":\"my8\",\"label\":\"Aflossing kind (9/12)\",\"bedrag\":300,\"datum\":\"2027-05-31\"},{\"id\":\"my9\",\"label\":\"Aflossing kind (10/12)\",\"bedrag\":300,\"datum\":\"2027-06-30\"},{\"id\":\"my10\",\"label\":\"Aflossing kind (11/12)\",\"bedrag\":300,\"datum\":\"2027-07-31\"},{\"id\":\"my11\",\"label\":\"Aflossing kind (12/12)\",\"bedrag\":300,\"datum\":\"2027-08-31\"},{\"id\":\"m_1789280965227\",\"label\":\"Vennix Dj feest\",\"bedrag\":-800,\"datum\":\"2026-11-20\",\"frequentie\":\"eenmalig\",\"einddatum\":\"\",\"index\":0}]","inkomensplanning_beleggingsOverzicht":"{\"bijgewerkt\":\"2026-10-13\",\"vrijeBeleggingen\":{\"naam\":\"Hoofkes02 — vrij beleggen\",\"totaal\":54670.59,\"posities\":[{\"naam\":\"Amundi Core MSCI World UCITS ETF Acc\",\"aantal\":62,\"koers\":165.605,\"waarde\":10267.51,\"stortingSindsVorige\":0},{\"naam\":\"Amundi Core Stoxx Europe 600 UCITS ETF A\",\"aantal\":33,\"koers\":313.35,\"waarde\":10340.55,\"stortingSindsVorige\":0},{\"naam\":\"iShares Core MSCI EM IMI UCITS ETF USD Acc\",\"aantal\":105,\"koers\":48.165,\"waarde\":5057.33,\"stortingSindsVorige\":0},{\"naam\":\"iShares Core S&P 500 UCITS ETF USD (Acc)\",\"aantal\":7,\"koers\":751.44,\"waarde\":5260.08,\"stortingSindsVorige\":0},{\"naam\":\"iShares Edge MSCI Europe Minimum Volatility Advanced UCITS ETF\",\"aantal\":581,\"koers\":9.039,\"waarde\":5251.66,\"stortingSindsVorige\":0},{\"naam\":\"iShares Edge MSCI WId Val Fctr UCITS ETF USD A\",\"aantal\":100,\"koers\":70.97,\"waarde\":7097,\"stortingSindsVorige\":0},{\"naam\":\"iShares MSCI World Small Cap UCITS ETF USD (Acc)\",\"aantal\":733,\"koers\":9.057,\"waarde\":6638.78,\"stortingSindsVorige\":552.48},{\"naam\":\"VanEck Semiconductor UCITS ETF USD A\",\"aantal\":49,\"koers\":95.64,\"waarde\":4686.36,\"stortingSindsVorige\":0}]},\"pensioenDegiro\":{\"naam\":\"Hoofkes04 — pensioen\",\"totaal\":50967,\"posities\":[{\"naam\":\"HSBC MSCI World UCITS ETF USD\",\"aantal\":230,\"koers\":44.015,\"waarde\":10123.45,\"stortingSindsVorige\":0},{\"naam\":\"iShares Automation & Robotics UCITS ETF USD A\",\"aantal\":341,\"koers\":20.205,\"waarde\":6889.91,\"stortingSindsVorige\":-6889.9},{\"naam\":\"iShares EURO STOXX Banks 30-15 UCITS (DE) EUR (Dist) ETF\",\"aantal\":171,\"koers\":29.175,\"waarde\":4988.93,\"stortingSindsVorige\":-4988.92},{\"naam\":\"VanEck Semiconductor UCITS ETF USD A\",\"aantal\":65,\"koers\":105.46,\"waarde\":6854.9,\"stortingSindsVorige\":0},{\"naam\":\"Vanguard FTSE All-World UCITS - (USD) Accumulating ETF\",\"aantal\":100,\"koers\":171.28,\"waarde\":17128,\"stortingSindsVorige\":0},{\"naam\":\"Vanguard FTSE Developed Europe UCITS - (EUR) Accumulating ETF\",\"aantal\":84,\"koers\":58.97,\"waarde\":4953.48,\"stortingSindsVorige\":0}]},\"pensioenBnd\":{\"naam\":\"Brand New Day — pensioen Vrouw\",\"totaal\":27506,\"posities\":[{\"naam\":\"BND Wereld Indexfonds Hedged\",\"aantal\":null,\"koers\":null,\"waarde\":0,\"stortingSindsVorige\":0},{\"naam\":\"BND Europa Indexfonds\",\"aantal\":null,\"koers\":null,\"waarde\":0,\"stortingSindsVorige\":0},{\"naam\":\"BND Wereld Indexfonds Unhedged\",\"aantal\":null,\"koers\":null,\"waarde\":0,\"stortingSindsVorige\":0},{\"naam\":\"BND Wereld Indexfonds 3 Totaal Carbon Screened\",\"aantal\":null,\"koers\":null,\"waarde\":0,\"stortingSindsVorige\":0},{\"naam\":\"BND Cashallocatie Vraag en antwoord Wat is het verschil tussen risicoverdeling en fondsen & geld? [1 O <\",\"aantal\":null,\"koers\":null,\"waarde\":0,\"stortingSindsVorige\":0}]},\"afbeeldingen\":[],\"inkomenspot\":{\"naam\":\"Hoofkes03 — inkomenspot\",\"totaal\":0,\"posities\":[]}}","inkomensplanning_obTerugBedrag":"0","inkomensplanning_indexAOW":"3.4","inkomensplanning_lijfrenteLooptijdVrouw":"15","inkomensplanning_nieuwePotSoort":"\"uitgave\"","inkomensplanning_nieuwOverrideBedrag":"\"\"","inkomensplanning_pfzwCorrectie20260913":"1","inkomensplanning_nieuwItemNaam":"\"\"","inkomensplanning_werkkeuzeVrouw":"{\"2027\":\"16\",\"2028\":\"16\",\"2029\":\"16\",\"2030\":\"16\",\"2031\":\"16\",\"2032\":\"16\"}","inkomensplanning_lincareNettoInvoer":"2026-10-13-1850","inkomensplanning_nieuweObBedrag":"\"\"","inkomensplanning_nieuweBronStart":"\"\"","inkomensplanning_basisItemBedragen":"{}","inkomensplanning_proefRendementMan":"\"\"","inkomensplanning_raboNettoCorrectie20260914":"1","inkomensplanning_beleggingsStortingen":"[{\"id\":\"bs_1790176888172\",\"sleutel\":\"vrijeBeleggingen\",\"type\":\"bank\",\"fondsNaam\":\"\",\"bedrag\":\"362\",\"datum\":\"2026-09-23\"},{\"id\":\"bs_1790176904305\",\"sleutel\":\"vrijeBeleggingen\",\"type\":\"bank\",\"fondsNaam\":\"\",\"bedrag\":\"1000\",\"datum\":\"2026-09-28\"},{\"id\":\"bs_1790551117402\",\"sleutel\":\"vrijeBeleggingen\",\"type\":\"bank\",\"fondsNaam\":\"\",\"bedrag\":\"\",\"datum\":\"2026-09-27\"}]","inkomensplanning_nieuweBronBedrag":"\"\"","inkomensplanning_nsJaar":"\"\"","inkomensplanning_nieuweObDatum":"\"\"","inkomensplanning_nieuweLastIndex":"\"\"","inkomensplanning_obBoekingen":"[]","inkomensplanning_beleggingenMigratie":"2026-08-15-v2","inkomensplanning_lijfrenteRendementVrouw":"0","inkomensplanning_ovSoort":"\"deposito\"","inkomensplanning_lijfrenteInlegTot":"2033","inkomensplanning_pensioengevendSalarisCorrectie20260928":"1","inkomensplanning_proefRendementVrouw":"\"\"","inkomensplanning_heffingskorting":"true","inkomensplanning_actualiteit":"{\"ecbDeposito\":2.25,\"ecbBijgewerkt\":\"2026-08-15T14:24:10.216Z\",\"raisinMax\":3.6,\"raisinBijgewerkt\":\"2026-08-15\",\"degiroControle\":\"2026-08-15\",\"status\":\"ECB live gecontroleerd\"}","inkomensplanning_nieuweBronIndex":"\"\"","inkomensplanning_basisItemRenteregimes":"{}","inkomensplanning_groteMutatiesHerstelVersie":"grote-mutaties-herstel-2026-08-17-v1","inkomensplanning_herstelVersie":"2026-08-15-kerngegevens-02","inkomensplanning_indexRaboPostAOW":"3.4","inkomensplanning_vasteLastenPosten":"[{\"id\":\"vl_youfone\",\"naam\":\"Youfone internet en tv\",\"bedrag\":50,\"index\":3.4,\"volgtCpi\":1},{\"id\":\"vl_reisverz\",\"naam\":\"Reisverzekering de Internationale\",\"bedrag\":4,\"index\":3.4,\"volgtCpi\":1},{\"id\":\"vl_nn_ziek\",\"naam\":\"NN premie ziektekosten\",\"bedrag\":311,\"index\":5},{\"id\":\"vl_nn_eigenrisico\",\"naam\":\"NN eigen risico\",\"bedrag\":39,\"index\":3.4,\"volgtCpi\":1},{\"id\":\"vl_dela\",\"naam\":\"Dela\",\"bedrag\":21,\"index\":3},{\"id\":\"vl_postcode\",\"naam\":\"Postcodeloterij\",\"bedrag\":16,\"index\":3.4,\"volgtCpi\":1},{\"id\":\"vl_hypotheek\",\"naam\":\"Hypotheek\",\"bedrag\":385.85,\"index\":0,\"isHypotheek\":true},{\"id\":\"vl_wegenbel\",\"naam\":\"Wegenbelasting\",\"bedrag\":77,\"index\":2},{\"id\":\"vl_gemeente\",\"naam\":\"Gemeente\",\"bedrag\":101,\"index\":8},{\"id\":\"vl_water\",\"naam\":\"Water\",\"bedrag\":25,\"index\":3.4,\"volgtCpi\":1},{\"id\":\"vl_nn_auto\",\"naam\":\"NN Autoverzekering\",\"bedrag\":34,\"index\":3.4,\"volgtCpi\":1},{\"id\":\"vl_nn_inboedel\",\"naam\":\"NN inboedel en aansprakelijkheid\",\"bedrag\":11,\"index\":3.4,\"volgtCpi\":1},{\"id\":\"vl_rabo\",\"naam\":\"Rabo\",\"bedrag\":7,\"index\":3.4,\"volgtCpi\":1},{\"id\":\"vl_netflix\",\"naam\":\"Netflix\",\"bedrag\":10,\"index\":3.4,\"volgtCpi\":1},{\"id\":\"vl_greenchoice\",\"naam\":\"Greenchoice\",\"bedrag\":125,\"index\":2},{\"id\":\"vl_bsob\",\"naam\":\"BSOB\",\"bedrag\":40,\"index\":5},{\"id\":\"vl_mobiel\",\"naam\":\"Mobiel abonnement\",\"bedrag\":28,\"index\":3.4,\"volgtCpi\":1},{\"id\":\"vl_service\",\"naam\":\"Servicekosten\",\"bedrag\":197,\"index\":3.4,\"volgtCpi\":1},{\"id\":\"vl_res_rente\",\"naam\":\"Reservering rente kinderen\",\"bedrag\":250,\"index\":0},{\"id\":\"vl_res_zorg\",\"naam\":\"Reservering gezondheidszorg\",\"bedrag\":75,\"index\":0},{\"id\":\"vl_res_auto\",\"naam\":\"Reservering vervoermiddelen\",\"bedrag\":75,\"index\":0},{\"id\":\"vl_claude\",\"naam\":\"ai abonnement\",\"bedrag\":25,\"index\":3.4,\"volgtCpi\":1}]","inkomensplanning_correctie_hoofkes02_1750_20260822":"1","inkomensplanning_abpDekkingsgraad":"125","inkomensplanning_nieuweBronKorting":"false","inkomensplanning_nieuweLastNaam":"\"\"","inkomensplanning_indexRaboPreAOW":"3.4","inkomensplanning_nieuweMutLabel":"\"\"","inkomensplanning_rabo2027Pct":"10","inkomensplanning_inkomensBronnenExtra":"[]","inkomensplanning_spaarStartsaldo_test60000":"60000","inkomensplanning_dagIjkDatum":"\"2026-10-13\"","inkomensplanning_potOnttrekkingen":"[]","inkomensplanning_importMelding":"\"\"","inkomensplanning_nieuwItemLooptijd":"\"\"","inkomensplanning_obRendement":"3","inkomensplanning_nieuweMutIsOpname":"false","inkomensplanning_nieuweObSoort":"\"storting\"","inkomensplanning_rendementen":"{\"sparen_rabo\":1.4,\"degiro_vrij\":5,\"dep_santander\":2.1,\"dep_rabo_groen\":1.65,\"dep_rabo\":1.65,\"dep_raisin_1\":2.47,\"dep_raisin_2\":2.5,\"dep_raisin_3\":2.65,\"dep_raisin_4\":2.85,\"dep_raisin_5\":2.9,\"dep_raisin_6\":2.9,\"dep_resurs_2027_07\":3.1,\"dep_brocc_2027_01_06\":2.6,\"dep_brocc_2028_04\":3.17,\"dep_brocc_2027_01_02\":2.5,\"dep_coop_2027_07\":2.92,\"dep_inbank_2028_10\":3.36,\"dep_brocc_2027_01_01\":2.5,\"dep_younited_2027_09\":2.5,\"dep_younited_2027_03\":2.47,\"dep_collector_2028_07\":2.65,\"dep_hoist_2029_01\":2.85,\"dep_hoist_2030_01_15\":2.9,\"dep_hoist_2030_01_06\":2.9}","inkomensplanning_nieuweBronEind":"\"\"","inkomensplanning_mutatieHerstelVersie":"2026-08-17-mutaties-01","inkomensplanning_nsDatum":"\"\"","inkomensplanning_obStorting":"0","inkomensplanning_ovDatum":"\"\"","inkomensplanning_indexSalarisMan":"2.5","inkomensplanning_lijfrenteInlegVanaf":"2027","inkomensplanning_indexPFZW":"3.4","inkomensplanning_mutaties_migratie":"2026-08-17-mutaties-herstel-02","inkomensplanning_reserveringenMigratie":"\"2026-08-23-v2\"","inkomensplanning_nieuwePotLabel":"\"\"","inkomensplanning_werkkeuzeMan":"{\"2026\":\"fulltime\",\"2027\":\"gestopt\"}","inkomensplanning_vrouwAOWm":"3","inkomensplanning_lijfrenteLooptijdMan":"20","inkomensplanning_parttime":"false","inkomensplanning_eersteGebruik":"true","inkomensplanning_nsPersoon":"\"man\"","inkomensplanning_rentevisie":"{\"richting\":\"gelijk\",\"verandering\":\"\",\"bron\":\"Thésor\",\"datum\":\"\"}","inkomensplanning_obBedrag":"0","inkomensplanning_blanco_template_v1":"1"};try{Object.keys(d).forEach(function(k){if(window.localStorage.getItem(k)===null){window.localStorage.setItem(k,d[k]);}});}catch(e){}})();/* momentopname 2026-10-15 — zet alleen waarden die nog niet bestaan, overschrijft geen latere wijzigingen */</script>
 
 
 
@@ -415,7 +423,7 @@ function postCaoFactorCentraal(type, vanDatum, totDatum, pct){
     var versie='grote-posten-volledig-herstel-2026-08-23-v2';
     var sleutel='inkomensplanning_grotePostenVolledigHerstelVersie';
     if(localStorage.getItem(sleutel)===versie) return;
-    var canon=[{"id":"m1","label":"Extra salaris augustus","bedrag":1300,"datum":"2026-08-22"},{"id":"m6","label":"Opname vakantie Mallorca","bedrag":-2000,"datum":"2026-08-31"},{"id":"m_huur","label":"Kind voorgeschoten huur","bedrag":950,"datum":"2026-08-31","frequentie":"eenmalig","einddatum":"","index":0},{"id":"m8","label":"Opname zonnescherm","bedrag":-1250,"datum":"2026-09-30"},{"id":"my0","label":"Aflossing kind (1/12)","bedrag":300,"datum":"2026-09-30"},{"id":"m4a","label":"Rente Santander (vervalt 1-10-2026)","bedrag":1036,"datum":"2026-10-01"},{"id":"m4b","label":"Rente Rabo groen (vervalt 6-10-2026)","bedrag":495,"datum":"2026-10-06"},{"id":"my1","label":"Aflossing kind (2/12)","bedrag":300,"datum":"2026-10-31"},{"id":"m9","label":"Schenkbelasting","bedrag":-6313,"datum":"2027-01-15"},{"id":"m10","label":"Opname vakantie Tenerife","bedrag":-2000,"datum":"2026-11-09"},{"id":"m2","label":"Kostwinner jubileum","bedrag":7000,"datum":"2026-11-22"},{"id":"m7","label":"60 jaar feest","bedrag":-4000,"datum":"2026-11-25"},{"id":"my2","label":"Aflossing kind (3/12)","bedrag":300,"datum":"2026-11-30"},{"id":"m5","label":"13e maand Vrouw","bedrag":1000,"datum":"2026-12-22"},{"id":"m4c","label":"Rente Rabo 2026 (vervalt 24-12-2026, rente 2025 al ontvangen)","bedrag":242,"datum":"2026-12-24"},{"id":"m3","label":"IKB","bedrag":2000,"datum":"2026-12-31"},{"id":"my3","label":"Aflossing kind (4/12)","bedrag":300,"datum":"2026-12-31"},{"id":"m_hetty","label":"Schenking Hetty","bedrag":7000,"datum":"2027-01-15","frequentie":"eenmalig","einddatum":"","index":0},{"id":"my4","label":"Aflossing kind (5/12)","bedrag":300,"datum":"2027-01-31"},{"id":"my5","label":"Aflossing kind (6/12)","bedrag":300,"datum":"2027-02-28"},{"id":"my6","label":"Aflossing kind (7/12)","bedrag":300,"datum":"2027-03-31"},{"id":"my7","label":"Aflossing kind (8/12)","bedrag":300,"datum":"2027-04-30"},{"id":"my8","label":"Aflossing kind (9/12)","bedrag":300,"datum":"2027-05-31"},{"id":"my9","label":"Aflossing kind (10/12)","bedrag":300,"datum":"2027-06-30"},{"id":"my10","label":"Aflossing kind (11/12)","bedrag":300,"datum":"2027-07-31"},{"id":"my11","label":"Aflossing kind (12/12)","bedrag":300,"datum":"2027-08-31"}];
+    var canon=[{"id":"m1","label":"Extra salaris augustus","bedrag":1300,"datum":"2026-08-22"},{"id":"m6","label":"Opname vakantie Mallorca","bedrag":-2000,"datum":"2026-08-31"},{"id":"m_huur","label":"Kind voorgeschoten huur","bedrag":950,"datum":"2026-08-31","frequentie":"eenmalig","einddatum":"","index":0},{"id":"m8","label":"Opname zonnescherm","bedrag":-1250,"datum":"2026-09-30"},{"id":"my0","label":"Aflossing kind (1/12)","bedrag":300,"datum":"2026-09-30"},{"id":"m4a","label":"Rente Santander (vervalt 1-10-2026)","bedrag":1036,"datum":"2026-10-01"},{"id":"m4b","label":"Rente Rabo groen (vervalt 6-10-2026)","bedrag":495,"datum":"2026-10-06"},{"id":"my1","label":"Aflossing kind (2/12)","bedrag":300,"datum":"2026-10-31"},{"id":"m9","label":"Schenkbelasting","bedrag":-6313,"datum":"2027-01-15"},{"id":"m10","label":"Opname vakantie Tenerife","bedrag":-2000,"datum":"2026-11-09"},{"id":"m2","label":"Man jubileum","bedrag":7000,"datum":"2026-11-22"},{"id":"m7","label":"60 jaar feest","bedrag":-4000,"datum":"2026-11-25"},{"id":"my2","label":"Aflossing kind (3/12)","bedrag":300,"datum":"2026-11-30"},{"id":"m5","label":"13e maand Vrouw","bedrag":1000,"datum":"2026-12-22"},{"id":"m4c","label":"Rente Rabo 2026 (vervalt 24-12-2026, rente 2025 al ontvangen)","bedrag":242,"datum":"2026-12-24"},{"id":"m3","label":"IKB","bedrag":2000,"datum":"2026-12-31"},{"id":"my3","label":"Aflossing kind (4/12)","bedrag":300,"datum":"2026-12-31"},{"id":"m_hetty","label":"Schenking Hetty","bedrag":7000,"datum":"2027-01-15","frequentie":"eenmalig","einddatum":"","index":0},{"id":"my4","label":"Aflossing kind (5/12)","bedrag":300,"datum":"2027-01-31"},{"id":"my5","label":"Aflossing kind (6/12)","bedrag":300,"datum":"2027-02-28"},{"id":"my6","label":"Aflossing kind (7/12)","bedrag":300,"datum":"2027-03-31"},{"id":"my7","label":"Aflossing kind (8/12)","bedrag":300,"datum":"2027-04-30"},{"id":"my8","label":"Aflossing kind (9/12)","bedrag":300,"datum":"2027-05-31"},{"id":"my9","label":"Aflossing kind (10/12)","bedrag":300,"datum":"2027-06-30"},{"id":"my10","label":"Aflossing kind (11/12)","bedrag":300,"datum":"2027-07-31"},{"id":"my11","label":"Aflossing kind (12/12)","bedrag":300,"datum":"2027-08-31"}];
     var key='inkomensplanning_mutaties';
     var bestaand=[];
     try { bestaand=JSON.parse(localStorage.getItem(key)||'[]'); } catch(e) { bestaand=[]; }
@@ -2676,8 +2684,9 @@ function IncomePlanner() {
   // Tabblad Vermogen: horizon voor "over X maanden", prognose voor (verlengde) deposito's,
   // beleggingsregister (start, stortingen/opnames, waarde per 1 januari) en tijdelijke formulieren.
   const [vermogenHorizon, setVermogenHorizon] = useOpslag("vermogenHorizon", 12);
-  const [depoPrognose, setDepoPrognose] = useOpslag("depoPrognose", { kort: 3, lang: 3.3, standaard: "verleng" });
+  const [depoPrognose, setDepoPrognose] = useOpslag("depoPrognose", { kort: 3, lang: 3.3, standaard: "sparen" });
   const [beleggingsRegister, setBeleggingsRegister] = useOpslag("beleggingsRegister", {});
+  const [depositoRenteUitkering, setDepositoRenteUitkering] = useOpslag("depositoRenteUitkering", {});
   const [vermogenDetails, setVermogenDetails] = React.useState(false);
   const [vmDepForm, setVmDepForm] = React.useState({ open: false, naam: "", bedrag: "", rente: "", looptijd: "", start: "", uitSparen: true });
   const [vmOpenDep, setVmOpenDep] = React.useState(null);
@@ -3030,7 +3039,7 @@ function IncomePlanner() {
   }
   const obStartDatum = geldigeDatum(obStart) || PEILDATUM;
   // Overbrugging tot AOW-datum: dit is de periode tot Vrouw's AOW-datum (9-2-2032), niet tot
-  // Kostwinners eigen AOW-datum. Was hier per ongeluk gekoppeld aan manAOWDate, waardoor de
+  // Man eigen AOW-datum. Was hier per ongeluk gekoppeld aan manAOWDate, waardoor de
   // overbrugging tot 15-12-2034 doorliep (ruim 84 maanden) in plaats van tot 9-2-2032
   // (ruim 73 maanden vanaf 1-1-2027).
   const obEindDatum = vrouwAOWDate;
@@ -3139,16 +3148,16 @@ function IncomePlanner() {
   const lijfrenteStartMan = manAOWDate;
   const lijfrenteStartVrouw = vrouwAOWDate;
   // Actuele pensioenpotten komen rechtstreeks uit het tabblad Beleggingen.
-  // Hoofkes04 hoort bij Kostwinner; Brand New Day hoort bij Vrouw.
+  // Hoofkes04 hoort bij Man; Brand New Day hoort bij Vrouw.
   // Als een upload deze potten bijwerkt, gebruikt Lijfrente automatisch de nieuwe totaalwaarde.
-  const DEGIRO_KAPITAAL_NU = Number(beleggingsOverzicht?.pensioenDegiro?.totaal) || Number(basis.degiroPensioen) || 0; // Hoofkes04 — Kostwinner
+  const DEGIRO_KAPITAAL_NU = Number(beleggingsOverzicht?.pensioenDegiro?.totaal) || Number(basis.degiroPensioen) || 0; // Hoofkes04 — Man
   const BND_KAPITAAL_NU = Number(beleggingsOverzicht?.pensioenBnd?.totaal) || Number(basis.bndPensioen) || 0; // Brand New Day — Vrouw
   const MIN_UITKERINGSTERMIJN = 5; // minimum voor de gebruikte tijdelijke planning
-  const MAX_LIJFRENTE_LOOPTijd_MAN = 20; // planningsmaximum Kostwinner
+  const MAX_LIJFRENTE_LOOPTijd_MAN = 20; // planningsmaximum Man
   const MAX_LIJFRENTE_LOOPTijd_VROUW = 25; // planningsmaximum Vrouw
   // Tijdens de uitkeringsfase blijft de bruto maanduitkering nominaal constant.
   // Het rendement van de resterende pot wordt verwerkt in de annuïtaire uitkering en is géén jaarlijkse verhoging.
-  // 3% is de standaardprognose voor Kostwinner; voor Vrouw blijft de bestaande invoer leidend.
+  // 3% is de standaardprognose voor Man; voor Vrouw blijft de bestaande invoer leidend.
   const MAX_JAARUITKERING_5_20_JAAR = Number(fiscaal.max_jaaruitkering_tijdelijke_lijfrente_5_20jr) || 27192;
   const jarenTotStartMan = yearsSince(lijfrenteStartMan);
   const jarenTotStartVrouw = yearsSince(lijfrenteStartVrouw);
@@ -3913,7 +3922,7 @@ function nettoMarginaal(bestaandBrutoJaar, extraBrutoJaar, naAOW, datum, metExtr
     datum: "2026-08-01"
   }, {
     id: "m2",
-    label: "Kostwinner",
+    label: "Man",
     bedrag: 7000,
     datum: "2026-01-01"
   }, {
@@ -4047,24 +4056,83 @@ function nettoMarginaal(bestaandBrutoJaar, extraBrutoJaar, naAOW, datum, metExtr
   function verwijderBron(id) {
     setInkomensBronnenExtra(prev => prev.filter(b => b.id !== id));
   }
+  const [cpiPrognose, setCpiPrognose] = useOpslag("cpiPrognose", 3);
+  const [nieuweBron, setNieuweBron] = useOpslag("nieuweBronFormulier", { naam: "", persoon: "man", soort: "werk", bedrag: "", indexType: "vast", index: "", caoTot: "", start: "", eind: "" });
   function voegBronToe() {
-    if (!nieuweBronNaam.trim() || !nieuweBronBedrag || !nieuweBronStart) return;
+    const nb = nieuweBron || {};
+    if (!String(nb.naam || "").trim() || !nb.bedrag || !nb.start) return;
     setInkomensBronnenExtra(prev => [...prev, {
       id: `ib_${Date.now()}`,
-      naam: nieuweBronNaam.trim(),
-      persoon: nieuweBronPersoon,
-      bedrag: Number(nieuweBronBedrag) || 0,
-      index: Number(nieuweBronIndex) || 0,
-      start: nieuweBronStart,
-      eind: nieuweBronEind || "",
+      naam: String(nb.naam).trim(),
+      persoon: nb.persoon || "man",
+      soort: nb.soort || "werk",
+      bedrag: Number(nb.bedrag) || 0,
+      indexType: nb.indexType || "vast",
+      index: Number(nb.index) || 0,
+      caoTot: nb.caoTot || "",
+      start: nb.start,
+      eind: nb.eind || "",
       heeftKorting: false
     }]);
-    setNieuweBronNaam("");
-    setNieuweBronBedrag("");
-    setNieuweBronIndex("");
-    setNieuweBronStart("");
-    setNieuweBronEind("");
-    setNieuweBronKorting(false);
+    setNieuweBron({ naam: "", persoon: nb.persoon || "man", soort: nb.soort || "werk", bedrag: "", indexType: nb.indexType || "vast", index: "", caoTot: "", start: "", eind: "" });
+  }
+  // Waarde van een bron op een datum. Vast: eigen % per jaar. CPI: volgt de CPI-aanname.
+  // CAO + CPI: eigen CAO-% tot en met het jaar van de CAO-einddatum, daarna de CPI-aanname.
+  function bronWaardeOpDatum(b, atDate) {
+    const basis0 = Number(b.bedrag) || 0, cpi = Number(cpiPrognose) || 0, eigen = Number(b.index) || 0;
+    const jaren = yearsSince(atDate);
+    const type = b.indexType || "vast";
+    if (type === "cpi") return basis0 * Math.pow(1 + cpi / 100, jaren);
+    if (type === "cao_cpi") {
+      const cao = geldigeDatum(b.caoTot);
+      const j1 = cao ? Math.min(jaren, yearsSince(cao)) : 0;
+      return basis0 * Math.pow(1 + eigen / 100, j1) * Math.pow(1 + cpi / 100, jaren - j1);
+    }
+    return basis0 * Math.pow(1 + eigen / 100, jaren);
+  }
+  function renderInkomensBronnen() {
+    const H = React.createElement;
+    const soortLabel = { werk: "Inkomen uit werk", uitkering: "Uitkering of pensioen" };
+    const typeLabel = { vast: "Vast % per jaar", cpi: "Volgt CPI", cao_cpi: "CAO, daarna CPI" };
+    const inp = "w-full border border-slate-300 rounded px-2 py-1.5 text-sm";
+    const veld = (label, el) => H("label", { className: "block text-xs text-slate-500" }, label, H("div", { className: "mt-0.5" }, el));
+    const sel = (waarde, opties, onChange) => H("select", { value: waarde, onChange: e => onChange(e.target.value), className: inp }, Object.keys(opties).map(k => H("option", { key: k, value: k }, opties[k])));
+    const personen = { man: "Man", vrouw: "Vrouw" };
+    const formVelden = (b, zet) => [
+      veld("Omschrijving", H("input", { type: "text", value: b.naam || "", onChange: e => zet("naam", e.target.value), className: inp })),
+      veld("Wie", sel(b.persoon || "man", personen, v => zet("persoon", v))),
+      veld("Soort", sel(b.soort || "werk", soortLabel, v => zet("soort", v))),
+      veld("Netto per maand (€)", H(NumInput, { value: b.bedrag, onChange: e => zet("bedrag", e.target.value), className: inp + " font-mono text-right" })),
+      veld("Indexatie", sel(b.indexType || "vast", typeLabel, v => zet("indexType", v))),
+      (b.indexType || "vast") !== "cpi" && veld((b.indexType === "cao_cpi" ? "CAO-stijging per jaar (%)" : "Stijging per jaar (%)"), H(NumInput, { step: "0.1", value: b.index, onChange: e => zet("index", e.target.value), className: inp + " font-mono text-right" })),
+      b.indexType === "cao_cpi" && veld("CAO loopt t/m", H("input", { type: "date", value: b.caoTot || "", onChange: e => zet("caoTot", e.target.value), className: inp })),
+      veld("Start", H("input", { type: "date", value: b.start || "", onChange: e => zet("start", e.target.value), className: inp })),
+      veld("Einde (leeg = loopt door)", H("input", { type: "date", value: b.eind || "", onChange: e => zet("eind", e.target.value), className: inp }))
+    ];
+    const gesorteerd = inkomensBronnenExtra.slice().sort((a, b) => String(a.start || "").localeCompare(String(b.start || "")) || String(a.naam).localeCompare(String(b.naam)));
+    const vandaag = APP_VANDAAG;
+    return H("div", { className: "space-y-3" },
+      H("div", { className: "bg-white rounded-lg border border-slate-200 p-4" },
+        H("div", { className: "flex items-center justify-between gap-3" },
+          H("div", { className: "text-sm text-slate-700" }, "CPI-aanname voor bronnen die de CPI volgen"),
+          H("div", { className: "flex items-center gap-1" }, H(NumInput, { step: "0.1", value: cpiPrognose, onChange: e => setCpiPrognose(e.target.value), className: "w-20 border border-slate-300 rounded px-2 py-1.5 font-mono text-sm text-right" }), H("span", { className: "text-sm text-slate-500" }, "%"))),
+        H("p", { className: "text-xs text-slate-500 mt-2" }, "De vaste bronnen hierboven (salaris, ABP, AOW, Linc, Rabo, PFZW) pas je in de blokken hierboven aan. Hier beheer je alle bronnen die je zelf toevoegt, op volgorde van startdatum.")),
+      gesorteerd.length === 0 && H("p", { className: "text-sm text-slate-500" }, "Nog geen eigen bronnen. Voeg hieronder een baan, bijbaan, uitkering of ander inkomen toe."),
+      gesorteerd.map(b => {
+        const s = geldigeDatum(b.start), e = geldigeDatum(b.eind);
+        const status = e && e < vandaag ? "afgelopen" : s && s > vandaag ? "nog niet gestart" : "loopt";
+        return H("div", { key: b.id, className: "bg-white rounded-lg border border-slate-200 p-4" },
+          H("div", { className: "flex items-start justify-between gap-2 mb-2" },
+            H("div", null, H("div", { className: "font-semibold text-sm" }, b.naam || "Zonder naam"),
+              H("div", { className: "text-xs text-slate-500" }, (personen[b.persoon] || "") + " · " + (soortLabel[b.soort || "werk"]) + " · " + status)),
+            H("button", { type: "button", onClick: () => { if (window.confirm("Bron '" + (b.naam || "") + "' verwijderen?")) verwijderBron(b.id); }, className: "text-sm text-rose-700 border border-rose-200 rounded px-2 py-1 shrink-0" }, "Verwijderen")),
+          H("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-2" }, formVelden(b, (k, v) => wijzigBron(b.id, k, v))));
+      }),
+      H("div", { className: "bg-slate-50 rounded-lg border border-slate-300 p-4" },
+        H("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-2" }, "Nieuwe bron toevoegen"),
+        H("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-2" }, formVelden(nieuweBron || {}, (k, v) => setNieuweBron(prev => ({ ...(prev || {}), [k]: v })))),
+        H("button", { type: "button", onClick: voegBronToe, className: "mt-3 text-sm px-4 py-2 rounded-full bg-slate-900 text-white" }, "Toevoegen"),
+        H("p", { className: "text-xs text-slate-500 mt-2" }, "Vul omschrijving, bedrag en startdatum in. De heffingskorting wordt automatisch aan de hoogste inkomensbron van die persoon toegerekend.")));
   }
   // Actieve extra bronnen van één persoon op een gegeven datum, al geïndexeerd. Wordt in
   // manInkomen/vrouwInkomen toegevoegd aan de vaste bronnen van die persoon, en loopt zo overal
@@ -4078,7 +4146,7 @@ function nettoMarginaal(bestaandBrutoJaar, extraBrutoJaar, naAOW, datum, metExtr
       return true;
     }).map(b => ({
       naam: b.naam,
-      netto: indexedValue(Number(b.bedrag) || 0, Number(b.index) || 0, atDate),
+      netto: bronWaardeOpDatum(b, atDate),
       brutoJaar: (Number(b.bedrag) || 0) * 12,
       heeftKorting: !!b.heeftKorting
     }));
@@ -5109,7 +5177,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
       const fasePeil = new Date(p.start.getFullYear(), p.start.getMonth(), 22);
       const aanvulling = obLooptOp(fasePeil) ? Number(obBedrag) || 0 : 0;
       if (aanvulling > 0 && manVal != null) {
-        // De aanvulling hoort bij het inkomen van Kostwinner, dus ook bij zijn bedrag optellen.
+        // De aanvulling hoort bij het inkomen van Man, dus ook bij zijn bedrag optellen.
         manVal = manVal + aanvulling;
         manLabel = `${manLabel} + aanvulling uit DEGIRO03 (${euro(aanvulling)})`;
       }
@@ -5266,7 +5334,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     return startSaldo + voeding + mutaties;
   }
 
-  // Groen/rood-controle voor Kostwinners toekomstige lijfrente-inleg.
+  // Groen/rood-controle voor Man toekomstige lijfrente-inleg.
   const toekomstigeLijfrenteInlegMan = lijfrenteStortingen
     .filter(x => x && x.persoon === "man" && (Number(x.bedrag) || 0) > 0 && geldigeDatum(x.datum) && new Date(x.datum) < lijfrenteStartMan)
     .reduce((s, x) => s + (Number(x.bedrag) || 0), 0);
@@ -5455,12 +5523,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
 
     // Bij "naar nieuw deposito / beleggen" (vrijvalNaar = "nieuw") is er geen mutatie op het
     // spaargeld: de gebruiker voert de vervolgpost zelf in, met eigen rente% en bedrag.
-    VERMOGENS_ITEMS.filter(i => i.deposito && geldigeDatum(i.vervaldatum) && vrijvalKeuze(i) === "sparen").forEach(i => {
-      voegEventToe(i.vervaldatum,
-        i.renteAlVerwerkt ? (Number(i.bedrag)||0) : berekenDepositoMetRente(i, rendementen[i.id] || 0).waarde,
-        `Vrijval ${i.label || 'deposito'}`
-      );
-    });
+    VERMOGENS_ITEMS.filter(i => i.deposito).forEach(i => vmDepositoBetalingen(i, eindDag).forEach(b => voegEventToe(b.datum, b.bedrag, b.omschrijving)));
     VERMOGENS_ITEMS.filter(i => i.stortingUitRabo && geldigeDatum(i.stortingDatum)).forEach(i => {
       voegEventToe(i.stortingDatum, -(Number(i.overboekingBedrag != null ? i.overboekingBedrag : i.bedrag)||0),
         `Storting ${i.label || 'vermogenspost'}`,
@@ -5499,8 +5562,8 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
       const o=g.omschrijving||"";
       if (g.eigen) jaarSoorten.eigen += g.delta;
       else if (/^Saldo inkomsten/.test(o)) jaarSoorten.maandsaldo += g.delta;
-      else if (/^Vrijval/.test(o)) { jaarSoorten.vrijval += g.delta; jaarVrijgevallen += g.delta; }
-      else if (/^Storting/.test(o)) { jaarSoorten.stortingen += g.delta; jaarGestort += Math.abs(g.delta); }
+      else if (/^(Vrijval|Rente deposito|Rente Deposito)/.test(o)) { jaarSoorten.vrijval += g.delta; jaarVrijgevallen += g.delta; }
+      else if (/^(Storting|Opname beleggen)/.test(o)) { jaarSoorten.stortingen += g.delta; jaarGestort += Math.abs(g.delta); }
       else if (/^Lijfrentestorting/.test(o)) jaarSoorten.lijfrenteStorting += g.delta;
       else if (/^Teruggave IB/.test(o)) jaarSoorten.teruggave += g.delta;
       else if (/vakantiegeld/i.test(o)) jaarSoorten.vakantiegeld += g.delta;
@@ -5610,14 +5673,8 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
       events.get(key).push({ delta: Number(delta) || 0, omschrijving });
     };
 
-    // Deposito's: de volledige waarde verhuist op de exacte vervaldatum naar Rabo sparen.
-    VERMOGENS_ITEMS.filter(i => i.deposito && geldigeDatum(i.vervaldatum) && vrijvalKeuze(i) === "sparen").forEach(i => {
-      const verval = geldigeDatum(i.vervaldatum);
-      const bedrag = i.renteAlVerwerkt
-        ? Number(i.bedrag) || 0
-        : berekenDepositoMetRente(i, rendementen[i.id] || 0).waarde;
-      voegEventToe(verval, bedrag, `Vrijval ${i.label || 'deposito'}`);
-    });
+    // Deposito's: rente en hoofdsom gaan op hun uitkeringsdatum naar Rabo sparen.
+    VERMOGENS_ITEMS.filter(i => i.deposito).forEach(i => vmDepositoBetalingen(i, doel).forEach(b => voegEventToe(b.datum, b.bedrag, b.omschrijving)));
 
     // Stortingen vanuit Rabo naar een vermogenspost worden op de opgegeven datum verwerkt.
     VERMOGENS_ITEMS.filter(i => i.stortingUitRabo && geldigeDatum(i.stortingDatum)).forEach(i => {
@@ -5690,20 +5747,14 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
       return d && d > APP_VANDAAG && d <= doelDatum ? s + (Number(m.bedrag) || 0) * gBel(d) : s;
     }, 0);
     const depositosNaarBeleggen = VERMOGENS_ITEMS.filter(i => i.deposito && geldigeDatum(i.vervaldatum) && geldigeDatum(i.vervaldatum) <= doelDatum && vrijvalKeuze(i) === "belegging").reduce((s, i) => {
-      const bij = i.renteAlVerwerkt ? Number(i.bedrag) || 0 : berekenDepositoMetRente(i, rendementen[i.id] || 0).waarde;
-      return s + bij * gBel(geldigeDatum(i.vervaldatum));
+      return s + (Number(i.bedrag) || 0) * gBel(geldigeDatum(i.vervaldatum));
     }, 0);
     const degiroVrij = basis.degiroVrij * Math.pow(1 + rBel, jarenTot) + geplandBeleggen + depositosNaarBeleggen;
     // Alleen deposito's die op de doeldatum nog lópen; vrijgevallen deposito's zitten al in
     // het rekening-courantsaldo en zouden anders dubbel tellen.
-    const depositosLopend = VERMOGENS_ITEMS.filter(i => i.deposito && (!i.vervaldatum || new Date(i.vervaldatum) > doelDatum)).reduce((s, i) => s + depositoWaardeOpDatum(i, rendementen[i.id] || 0, doelDatum), 0);
-    // Deposito's die zijn vervallen maar verlengd worden: hoofdsom plus rente op de einddatum, daarna
-    // groeiend met het prognosepercentage voor verlengde deposito's (tot/langer dan 1 jaar).
-    const depositosVerlengd = VERMOGENS_ITEMS.filter(i => i.deposito && geldigeDatum(i.vervaldatum) && geldigeDatum(i.vervaldatum) <= doelDatum && vrijvalKeuze(i) === "verleng").reduce((s, i) => {
-      const verval = geldigeDatum(i.vervaldatum);
-      const bijVerval = i.renteAlVerwerkt ? Number(i.bedrag) || 0 : berekenDepositoMetRente(i, rendementen[i.id] || 0).waarde;
-      return s + bijVerval * Math.pow(1 + depoPrognosePct(i) / 100, Math.max(0, (doelDatum - verval) / MS_PER_JAAR));
-    }, 0);
+    const depositosLopend = VERMOGENS_ITEMS.filter(i => i.deposito && vmDepositoGestart(i, doelDatum) && (!i.vervaldatum || new Date(i.vervaldatum) > doelDatum)).reduce((s, i) => s + depositoWaardeOpDatum(i, rendementen[i.id] || 0, doelDatum), 0);
+    // Verlengde deposito's blijven hun hoofdsom waard; de rente gaat steeds naar Vrij sparen.
+    const depositosVerlengd = VERMOGENS_ITEMS.filter(i => i.deposito && geldigeDatum(i.vervaldatum) && geldigeDatum(i.vervaldatum) <= doelDatum && vrijvalKeuze(i) === "verleng").reduce((s, i) => s + (Number(i.bedrag) || 0), 0);
     const depositos = depositosLopend + depositosVerlengd;
     // Overige eigen vermogensbestanddelen (geen deposito, geen sparen/degiro/leningen)
     const overigeItems = VERMOGENS_ITEMS.filter(i => !i.deposito && i.custom).reduce((s, i) => {
@@ -6117,13 +6168,13 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     );
   }
 
-  // Wat gebeurt er met een deposito op de einddatum: verlengen als nieuw deposito (prognose, standaard),
-  // naar beleggen, naar Vrij sparen, of niets (je voert het vervolg zelf in). Het geld gaat dus niet
-  // meer vanzelf naar het spaarsaldo; dat kies je zelf bij Vermogen.
+  // Wat gebeurt er met een deposito op de einddatum: standaard gaan hoofdsom en rente naar Vrij sparen.
+  // Alternatief: verlengen (de hoofdsom blijft staan, de rente gaat naar sparen), naar beleggen
+  // (de hoofdsom gaat naar vrij beleggen, de rente naar sparen) of niets (je voert het vervolg zelf in).
   function vrijvalKeuze(item) {
     const k = (vrijvalNaar || {})[item.id];
     if (k === "nieuw" || k === "sparen" || k === "verleng" || k === "belegging") return k;
-    return depoPrognose.standaard === "sparen" || depoPrognose.standaard === "belegging" ? depoPrognose.standaard : "verleng";
+    return depoPrognose.standaard === "verleng" || depoPrognose.standaard === "belegging" ? depoPrognose.standaard : "sparen";
   }
   // Prognosepercentage voor een verlengd deposito: looptijd tot en met 1 jaar of langer dan 1 jaar.
   function depoPrognosePct(item) {
@@ -6149,24 +6200,138 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
   const vmInvoer = "border border-slate-300 rounded px-2 py-1 font-mono text-sm";
 
   // Rente van een deposito vanaf de stortingsdatum tot een bepaalde datum (maximaal de vervaldatum).
-  function vmDepositoRente(item, tot) {
+  // ===== Deposito's: hoofdsom en rente gaan naar Vrij sparen =====
+  // Het deposito blijft de hoofdsom waard. Rente gaat pas naar Vrij sparen als zij wordt uitgekeerd:
+  // bij de einddatum (rente op rente per jaardag), of jaarlijks op de jaardag als de rente zo wordt uitgekeerd.
+  // Op de einddatum gaat de hoofdsom naar Vrij sparen, tenzij je het deposito verlengt of naar beleggen zet.
+  function vmRenteJaarlijks(item) {
+    return (depositoRenteUitkering || {})[item.id] === "jaarlijks";
+  }
+  function vmPlusMaanden(d, n) {
+    const dag = d.getDate();
+    const r = new Date(d.getFullYear(), d.getMonth() + n, 1);
+    r.setDate(Math.min(dag, new Date(r.getFullYear(), r.getMonth() + 1, 0).getDate()));
+    return r;
+  }
+  // 366 dagen als er een 29 februari in de periode valt, anders 365.
+  function vmDagenJaar(van, tot) {
+    for (let y = van.getFullYear(); y <= tot.getFullYear(); y++) {
+      const f = new Date(y, 1, 29);
+      if (f.getMonth() === 1 && f >= van && f < tot) return 366;
+    }
+    return 365;
+  }
+  // Rente over een periode met rente op rente per jaardag; de laatste periode naar rato.
+  function vmRenteSamengesteld(bedrag, pct, start, eind) {
+    if (!start || !eind || !(pct > 0) || eind <= start) return 0;
+    let waarde = bedrag, cursor = new Date(start), jaar = 1;
+    while (jaar <= 30) {
+      const boek = new Date(start);
+      boek.setFullYear(boek.getFullYear() + jaar);
+      if (boek > eind) break;
+      waarde += Math.round(waarde * (pct / 100));
+      cursor = boek;
+      jaar += 1;
+    }
+    const restDagen = (eind - cursor) / 86400000;
+    if (restDagen > 1) {
+      const rr = Math.round(waarde * (pct / 100) * (restDagen / vmDagenJaar(cursor, eind)));
+      if (rr > 0) waarde += rr;
+    }
+    return waarde - bedrag;
+  }
+  // Looptijden van een deposito: de huidige, en bij "verlengen" de vervolgperioden met dezelfde looptijd.
+  function vmCycli(item, tot) {
+    const start = geldigeDatum(stortingsdatums[item.id] || item.stortingDatum);
     const verval = geldigeDatum(item.vervaldatum);
-    const eind = verval && tot > verval ? verval : tot;
-    const r = berekenDepositoMetRente({ ...item, vervaldatum: vmIso(eind) }, rendementen[item.id] || 0);
-    return Math.max(0, r.waarde - (Number(item.bedrag) || 0));
+    if (!start || !verval || verval <= start) return [];
+    const cycli = [{ start, eind: verval, pct: Number(rendementen[item.id]) || 0 }];
+    if (vrijvalKeuze(item) === "verleng") {
+      const mnd = Math.max(1, Math.round((verval - start) / (MS_PER_JAAR / 12)));
+      const p = depoPrognosePct(item);
+      let cs = verval;
+      for (let k = 0; k < 120; k++) {
+        const ce = vmPlusMaanden(cs, mnd);
+        if (ce > tot) break;
+        cycli.push({ start: cs, eind: ce, pct: p });
+        cs = ce;
+      }
+    }
+    return cycli;
+  }
+  // Rentebetalingen van één looptijd: eenmaal bij de einddatum, of jaarlijks op de jaardag.
+  function vmCyclusRente(hoofdsom, c, jaarlijks) {
+    if (!(c.pct > 0)) return [];
+    if (!jaarlijks) {
+      const r = vmRenteSamengesteld(hoofdsom, c.pct, c.start, c.eind);
+      return r > 0 ? [{ datum: c.eind, bedrag: r }] : [];
+    }
+    const uit = [];
+    let laatste = c.start;
+    for (let j = 1; j <= 30; j++) {
+      const a = new Date(c.start);
+      a.setFullYear(a.getFullYear() + j);
+      if (a > c.eind) break;
+      uit.push({ datum: a, bedrag: Math.round(hoofdsom * c.pct / 100) });
+      laatste = a;
+    }
+    const rest = (c.eind - laatste) / 86400000;
+    if (rest > 1) uit.push({ datum: c.eind, bedrag: Math.round(hoofdsom * c.pct / 100 * rest / vmDagenJaar(laatste, c.eind)) });
+    return uit.filter(x => x.bedrag > 0);
+  }
+  // Rente die op een datum is opgebouwd maar nog niet is uitgekeerd.
+  function vmCyclusOpgebouwd(hoofdsom, c, d, jaarlijks) {
+    if (!(c.pct > 0) || d <= c.start || d >= c.eind) return 0;
+    if (!jaarlijks) return vmRenteSamengesteld(hoofdsom, c.pct, c.start, d);
+    let laatste = c.start;
+    for (let j = 1; j <= 30; j++) {
+      const a = new Date(c.start);
+      a.setFullYear(a.getFullYear() + j);
+      if (a > d) break;
+      laatste = a;
+    }
+    return Math.round(hoofdsom * c.pct / 100 * ((d - laatste) / 86400000) / vmDagenJaar(laatste, d));
+  }
+  function vmDepositoOpgebouwd(item, d) {
+    const h = Number(item.bedrag) || 0;
+    const c = vmCycli(item, new Date(2100, 0, 1)).find(x => x.start <= d && d < x.eind);
+    return c ? vmCyclusOpgebouwd(h, c, d, vmRenteJaarlijks(item)) : 0;
+  }
+  // Alle betalingen van een deposito naar Vrij sparen tot en met een datum (rente en hoofdsom).
+  function vmDepositoBetalingen(item, tot) {
+    const uit = [];
+    const keuze = vrijvalKeuze(item);
+    const verval = geldigeDatum(item.vervaldatum);
+    if (!verval || keuze === "nieuw") return uit;
+    const h = Number(item.bedrag) || 0;
+    const jl = vmRenteJaarlijks(item);
+    vmCycli(item, tot).forEach((c, k) => {
+      if (k === 0 && item.renteAlVerwerkt) return;
+      vmCyclusRente(h, c, jl).forEach(b => { if (b.datum <= tot) uit.push({ datum: b.datum, bedrag: b.bedrag, omschrijving: "Rente " + (item.label || "deposito") }); });
+    });
+    if (keuze === "sparen" && verval <= tot) uit.push({ datum: verval, bedrag: h, omschrijving: "Vrijval hoofdsom " + (item.label || "deposito") });
+    return uit;
+  }
+  // Is het deposito al gestart? Een gepland deposito telt pas mee vanaf de startdatum.
+  function vmDepositoGestart(item, d) {
+    const s = geldigeDatum(stortingsdatums[item.id] || item.stortingDatum);
+    return !s || s <= d;
   }
   function vmDepositoLijst() {
     return depositosActief.map(i => {
       const verval = geldigeDatum(i.vervaldatum);
+      const c1 = vmCycli(i, new Date(2100, 0, 1))[0];
+      const nogUit = c1 ? vmCyclusRente(Number(i.bedrag) || 0, c1, vmRenteJaarlijks(i)).filter(b => b.datum > APP_VANDAAG).reduce((s, b) => s + b.bedrag, 0) : 0;
       return {
         item: i,
         bank: String(i.label || "").replace(/^Deposito\s+/i, "").replace(/^Raisin\s+/i, ""),
         bedrag: Number(i.bedrag) || 0,
         pct: Number(rendementen[i.id]) || 0,
         verval,
+        gestart: vmDepositoGestart(i, APP_VANDAAG),
         dagen: verval ? Math.round((verval - APP_VANDAAG) / 86400000) : null,
-        opgebouwd: vmDepositoRente(i, APP_VANDAAG),
-        totaalRente: vmDepositoRente(i, verval || APP_VANDAAG)
+        opgebouwd: vmDepositoOpgebouwd(i, APP_VANDAAG),
+        totaalRente: nogUit
       };
     }).sort((a, b) => (a.verval ? a.verval.getTime() : 0) - (b.verval ? b.verval.getTime() : 0));
   }
@@ -6330,39 +6495,31 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
   // Keuze bij de einddatum van een deposito.
   function vmKeuzeSelect(item) {
     return vmH("select", { value: vrijvalKeuze(item), onChange: e => zetVrijvalNaar(item.id, e.target.value), className: "border border-slate-300 rounded px-1 py-1 text-xs" },
-      vmH("option", { value: "verleng" }, "verlengen (prognose " + vmPct(depoPrognosePct(item), 1) + ")"),
-      vmH("option", { value: "belegging" }, "naar beleggen"),
-      vmH("option", { value: "sparen" }, "naar Vrij sparen"),
+      vmH("option", { value: "sparen" }, "hoofdsom en rente naar Vrij sparen"),
+      vmH("option", { value: "verleng" }, "verlengen (rente " + vmPct(depoPrognosePct(item), 1) + " naar sparen)"),
+      vmH("option", { value: "belegging" }, "hoofdsom naar beleggen"),
       vmH("option", { value: "nieuw" }, "niets, ik voer het vervolg zelf in"));
   }
   function vmZetVervaldatum(id, datum) {
     setExtraVermogensItems(prev => prev.map(i => i.id === id ? { ...i, vervaldatum: datum } : i));
   }
 
-  // Rente-opbouw van deposito's per jaar: verdiend in het jaar, opgebouwd per 31-12 en uitbetaald bij einddatum.
+  // Rente van deposito's per jaar: verdiend, uitgekeerd naar Vrij sparen en nog niet uitgekeerd per 31-12.
   function vmDepositoJaartabel(lijst) {
     const jaar0 = APP_VANDAAG.getFullYear();
     let laatste = jaar0;
     lijst.forEach(d => { if (d.verval && d.verval.getFullYear() > laatste) laatste = d.verval.getFullYear(); });
     laatste = Math.min(laatste, jaar0 + 8);
+    const tot = new Date(laatste, 11, 31);
+    const betalingen = lijst.flatMap(d => vmDepositoBetalingen(d.item, tot));
+    const opgebouwdOp = dat => lijst.reduce((s, d) => s + vmDepositoOpgebouwd(d.item, dat), 0);
     const rijen = [];
     for (let y = jaar0; y <= laatste; y++) {
-      const eindY = new Date(y, 11, 31), eindVorig = new Date(y - 1, 11, 31);
-      let verdiend = 0, opgebouwd = 0, uitbetaald = 0;
-      lijst.forEach(d => {
-        const i = d.item, verval = d.verval;
-        verdiend += vmDepositoRente(i, eindY) - vmDepositoRente(i, eindVorig);
-        if (!verval || verval > eindY) opgebouwd += vmDepositoRente(i, eindY);
-        else if (verval.getFullYear() === y) uitbetaald += vmDepositoRente(i, verval);
-        // Verlengd deposito: na de einddatum groeit het bedrag met het prognosepercentage.
-        if (verval && vrijvalKeuze(i) === "verleng" && verval <= eindY) {
-          const bijVerval = i.renteAlVerwerkt ? Number(i.bedrag) || 0 : berekenDepositoMetRente(i, rendementen[i.id] || 0).waarde;
-          const r = depoPrognosePct(i) / 100;
-          const v = dat => bijVerval * Math.pow(1 + r, Math.max(0, (dat - verval) / MS_PER_JAAR));
-          verdiend += v(eindY) - v(eindVorig > verval ? eindVorig : verval);
-        }
-      });
-      rijen.push({ y, verdiend, opgebouwd, uitbetaald });
+      const rente = betalingen.filter(b => b.datum.getFullYear() === y && /^Rente/.test(b.omschrijving)).reduce((s, b) => s + b.bedrag, 0);
+      const hoofdsom = betalingen.filter(b => b.datum.getFullYear() === y && /^Vrijval/.test(b.omschrijving)).reduce((s, b) => s + b.bedrag, 0);
+      const opgebouwd = opgebouwdOp(new Date(y, 11, 31));
+      const verdiend = rente + opgebouwd - opgebouwdOp(new Date(y - 1, 11, 31));
+      rijen.push({ y, verdiend, uitgekeerd: rente, opgebouwd, hoofdsom });
     }
     return rijen;
   }
@@ -6382,7 +6539,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     const n = x => Number(x) || 0;
     const som = n(nu.sparen) + n(nu.depositos) + n(nu.degiroVrij) + n(nu.geoormerkt) + n(nu.overigeItems) + n(nu.overbrugging);
     c.push({ ok: Math.abs(som - n(nu.vrijBesteedbaar)) < 1, fout: "De delen tellen niet op tot het totaal (" + vmEuro(som) + " tegen " + vmEuro(nu.vrijBesteedbaar) + ")." });
-    const somLijst = lijst.reduce((s, d) => s + d.bedrag, 0);
+    const somLijst = lijst.filter(d => d.gestart).reduce((s, d) => s + d.bedrag, 0);
     c.push({ ok: Math.abs(somLijst - n(nu.depositos)) < 1, fout: "De lijst met deposito's (" + vmEuro(somLijst) + ") wijkt af van het totaal bij deposito's (" + vmEuro(nu.depositos) + ")." });
     c.push({ ok: Math.abs(n(nu.sparen) - n(spaarStartsaldo)) < 1, fout: "Vrij sparen (" + vmEuro(nu.sparen) + ") wijkt af van het ingevoerde saldo (" + vmEuro(spaarStartsaldo) + "). Er is een grote post van vandaag of eerder die nog meetelt." });
     const verleden = (mutaties || []).filter(m => { const d = geldigeDatum(m.datum); return d && d <= PEILDATUM && !(m && m.type === "override"); }).length;
@@ -6401,6 +6558,8 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     const intern = /(deposito|belegging|degiro|hoofkes0[234]|brand new day|\bbnd\b|storting.*beleg|beleg.*storting|naar.*beleg|van.*beleg|naar.*spaar|van.*spaar)/i;
     const dubbel = (mutaties || []).filter(m => m && m.type !== "override" && intern.test(String(m.label || "")));
     c.push({ ok: dubbel.length === 0, fout: "Grote post(en) die op een overboeking lijken: " + dubbel.map(m => m.label).join(", ") + ". Boek overboekingen naar deposito's of beleggen bij Vermogen, anders telt het geld dubbel." });
+    const renteGrotePost = (mutaties || []).filter(m => m && m.type !== "override" && /rente/i.test(String(m.label || "")) && /(deposito|rabo|raisin|spaar)/i.test(String(m.label || "")));
+    c.push({ ok: renteGrotePost.length === 0, fout: "Grote post(en) die op rente van een deposito of spaarrekening lijken: " + renteGrotePost.map(m => m.label).join(", ") + ". De app boekt rente zelf op je spaarsaldo; haal deze post weg om dubbeltelling te voorkomen." });
     c.push({ ok: !(Number(obBedrag) > 0 && obTekort > 0), fout: "Inkomensaanvulling: de pot is te klein voor de hele periode (tekort " + vmEuro(obTekort) + "). Zie tabblad Toevoeging inkomen." });
     lijst.forEach(d => {
       const i = d.item;
@@ -6464,10 +6623,10 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
           vmH("td", { className: "py-1 font-sans text-left" }, naamMaand(x.y, x.m)),
           vmH("td", { className: "py-1 text-right" }, vmGetal(x.eind)),
           vmH("td", { className: "py-1 text-right " + (x.min < minimum ? "text-rose-700 font-semibold" : "") }, vmGetal(x.min)))))),
-      vmH("p", { className: "text-xs text-slate-500 mt-2" }, "Bedragen in euro. Alleen spaargeld telt mee: je spaarsaldo, maandelijkse inkomsten en uitgaven, grote posten, de inkomensaanvulling en stortingen die je via Vermogen van of naar sparen boekt. Deposito's tellen pas mee als je ze bij Vermogen op 'naar Vrij sparen' zet."),
+      vmH("p", { className: "text-xs text-slate-500 mt-2" }, "Bedragen in euro. Alleen spaargeld telt mee: je spaarsaldo, maandelijkse inkomsten en uitgaven, grote posten, de inkomensaanvulling en stortingen die je via Vermogen van of naar sparen boekt. Deposito's tellen mee zodra ze vervallen (hoofdsom en rente naar sparen), tenzij je ze verlengt of naar beleggen zet."),
       !genoeg && vmH("div", { className: "mt-2 p-3 bg-slate-50 rounded border border-slate-200 text-sm" },
         vmH("div", { className: "font-semibold mb-1" }, "Hier los je het mee op (bij Vermogen)"),
-        vmH("div", { className: "text-xs text-slate-600 mb-1" }, "Eerstvolgende einddatums. Zet een deposito op 'naar Vrij sparen' zodat het geld op de einddatum in je spaarsaldo komt."),
+        vmH("div", { className: "text-xs text-slate-600 mb-1" }, "Eerstvolgende einddatums van deposito's. Staat een deposito op verlengen of beleggen, zet het dan op 'naar sparen' zodat het geld op de einddatum in je spaarsaldo komt."),
         vmDepositoLijst().slice(0, 4).map(d => vmH("div", { key: d.item.id, className: "flex justify-between items-center gap-2 py-1 border-t border-slate-200" },
           vmH("span", null, d.bank + " · " + (d.verval ? fmtDate(d.verval) : "onbekend")),
           vmH("span", { className: "flex items-center gap-2 shrink-0" }, vmH("span", { className: "font-mono" }, vmEuro(d.bedrag + d.totaalRente)),
@@ -6493,7 +6652,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     if (Math.abs(overig(nu)) >= 0.5 || Math.abs(overig(later)) >= 0.5) regels.push(["Overig", overig(nu), overig(later), VM_KLEUR.overig]);
     const totNu = Number(nu.vrijBesteedbaar) || 0, totLater = Number(later.vrijBesteedbaar) || 0;
     const lijst = vmDepositoLijst();
-    const somBedrag = lijst.reduce((s, d) => s + d.bedrag, 0);
+    const somBedrag = lijst.filter(d => d.gestart).reduce((s, d) => s + d.bedrag, 0);
     const somOpgebouwd = lijst.reduce((s, d) => s + d.opgebouwd, 0);
     const somTotaal = lijst.reduce((s, d) => s + d.totaalRente, 0);
     const rentePct = SPAARRENTE_PCT;
@@ -6513,7 +6672,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     const binnenkort = lijst.filter(d => d.dagen != null && d.dagen >= 0 && d.dagen <= 90);
     const beslis = binnenkort.length === 0 ? null : vmH("div", { className: vmKaart },
       vmH("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-1" }, "Deposito's die binnen 90 dagen vervallen"),
-      vmH("p", { className: "text-xs text-slate-500 mb-1" }, "Kies wat er met het geld gebeurt. Standaard wordt het verlengd en komt het niet in je spaarsaldo. Wil je het geld ergens anders voor gebruiken, kies dan 'naar Vrij sparen' of voeg onderaan een nieuw deposito toe."),
+      vmH("p", { className: "text-xs text-slate-500 mb-1" }, "Standaard gaan hoofdsom en rente op de einddatum naar je spaarsaldo. Wil je het geld in een nieuw deposito of in beleggen zetten, kies dan hieronder verlengen of beleggen, of leg onderaan een nieuw deposito vast (dat wordt van sparen afgeboekt)."),
       binnenkort.map(d => vmH("div", { key: d.item.id, className: "py-2 border-t border-slate-100 text-sm" },
         vmH("div", { className: "flex justify-between" }, vmH("span", { className: "font-semibold" }, d.bank + " · " + fmtDate(d.verval) + " (" + d.dagen + " dagen)"), vmH("span", { className: "font-mono" }, vmEuro(d.bedrag + d.totaalRente))),
         vmH("div", { className: "mt-1" }, vmKeuzeSelect(d.item)))));
@@ -6534,11 +6693,11 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
       vmH("div", { className: vmRij },
         vmH("span", null, "Bij einddatum van een deposito (standaard)"),
         vmH("select", {
-          value: depoPrognose.standaard === "sparen" || depoPrognose.standaard === "belegging" ? depoPrognose.standaard : "verleng",
+          value: depoPrognose.standaard === "verleng" || depoPrognose.standaard === "belegging" ? depoPrognose.standaard : "sparen",
           onChange: e => setDepoPrognose(p => ({ ...p, standaard: e.target.value })),
           className: "border border-slate-300 rounded px-1 py-1 text-xs"
-        }, vmH("option", { value: "verleng" }, "verlengen met zelfde looptijd"), vmH("option", { value: "belegging" }, "naar beleggen"), vmH("option", { value: "sparen" }, "naar Vrij sparen"))),
-      vmH("p", { className: "text-xs text-slate-400 mt-1" }, "Het geld van een vervallend deposito gaat dus niet meer vanzelf naar je spaarsaldo; dat kies je per deposito. Per deposito kun je dit afwijkend instellen. Verlengde deposito's en beleggen tellen niet mee als beschikbaar spaargeld. De prognose voor pensioenpotten stel je in bij Lijfrente en pensioen.")
+        }, vmH("option", { value: "sparen" }, "hoofdsom en rente naar Vrij sparen"), vmH("option", { value: "verleng" }, "verlengen (rente naar sparen)"), vmH("option", { value: "belegging" }, "hoofdsom naar beleggen"))),
+      vmH("p", { className: "text-xs text-slate-400 mt-1" }, "Standaard gaan hoofdsom en rente van een deposito op de einddatum naar je spaarsaldo: de deposito's nemen geleidelijk af en het spaargeld neemt toe. Kies je voor een nieuw deposito, dan leg je dat hieronder vast: het spaargeld daalt en de deposito's stijgen. De percentages gelden voor verlengde deposito's. Per deposito kun je het anders instellen. De prognose voor pensioenpotten stel je in bij Lijfrente en pensioen.")
     );
 
     // --- overzicht nu en later ---
@@ -6612,27 +6771,28 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     const deposito = vmH("div", { className: vmKaart + " vm-breekbaar" },
       vmH("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-1" }, "2. Deposito's"),
       vmH("div", { className: vmRij }, vmH("span", null, "Totaal hoofdsom"), vmH("b", null, vmEuro(somBedrag))),
-      vmH("div", { className: vmRij }, vmH("span", null, "Opgebouwde rente tot vandaag"), vmH("b", null, vmEuro(somOpgebouwd))),
-      vmH("div", { className: vmRij }, vmH("span", null, "Verwacht aan rente tot de einddatum"), vmH("b", null, vmEuro(somTotaal))),
-      vmH("p", { className: "text-xs text-slate-500 my-1" }, "Gesorteerd op einddatum. Op elke jaardag van de startdatum wordt de rente bijgeschreven en gaat zij mee rentedragen (rente op rente). Op de einddatum valt de hoofdsom plus alle rente vrij. De opgebouwde rente zit nog niet in het vrij vermogen hierboven. Tik op een deposito voor het renteverloop en om het aan te passen."),
+      vmH("div", { className: vmRij }, vmH("span", null, "Opgebouwde rente, nog niet uitgekeerd"), vmH("b", null, vmEuro(somOpgebouwd))),
+      vmH("div", { className: vmRij }, vmH("span", null, "Nog uit te keren rente (huidige looptijd)"), vmH("b", null, vmEuro(somTotaal))),
+      vmH("p", { className: "text-xs text-slate-500 my-1" }, "Gesorteerd op einddatum. Het deposito blijft zijn hoofdsom waard. Op de einddatum gaan hoofdsom en rente naar Vrij sparen (rente op rente per jaardag), tenzij je kiest voor verlengen of naar beleggen. Wordt de rente jaarlijks uitgekeerd, dan gaat zij elke jaardag naar Vrij sparen. De opgebouwde rente zit nog niet in het vrij vermogen. Tik op een deposito voor de uitkeringen en om het aan te passen."),
       lijst.map(d => {
         const open = vmOpenDep === d.item.id;
         const bijna = d.dagen != null && d.dagen <= 90;
-        const boekingen = open ? berekenDepositoMetRente(d.item, d.pct).boekingen : [];
+        const c1 = open ? vmCycli(d.item, new Date(2100, 0, 1))[0] : null;
+        const uitkeringen = c1 ? vmCyclusRente(d.bedrag, c1, vmRenteJaarlijks(d.item)) : [];
         return vmH("div", { key: d.item.id, className: "border-t border-slate-100 py-2" },
           vmH("button", { type: "button", onClick: () => setVmOpenDep(open ? null : d.item.id), className: "w-full text-left vm-rij-knop" },
             vmH("div", { className: "flex justify-between font-semibold text-sm" }, vmH("span", null, d.bank), vmH("span", { className: "font-mono" }, vmEuro(d.bedrag))),
             vmH("div", { className: "text-xs text-slate-600 mt-0.5", style: { display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: "12px" } },
-              vmH("span", null, "Einddatum: ", vmH("b", null, d.verval ? fmtDate(d.verval) : "onbekend"), bijna && vmH("span", { className: "ml-1 text-amber-800 bg-amber-100 rounded-full px-2" }, d.dagen + " dagen")),
+              vmH("span", null, "Einddatum: ", vmH("b", null, d.verval ? fmtDate(d.verval) : "onbekend"), bijna && vmH("span", { className: "ml-1 text-amber-800 bg-amber-100 rounded-full px-2" }, d.dagen + " dagen"), !d.gestart && vmH("span", { className: "ml-1 text-sky-800 bg-sky-100 rounded-full px-2" }, "start " + vmDatumKort(geldigeDatum(stortingsdatums[d.item.id] || d.item.stortingDatum)))),
               vmH("span", null, "Rente: ", vmH("b", null, vmPct(d.pct, 2))),
               vmH("span", null, "Opgebouwd: ", vmH("b", null, vmEuro(d.opgebouwd))),
-              vmH("span", null, "Tot einde: ", vmH("b", null, vmEuro(d.totaalRente))))),
+              vmH("span", null, "Nog uit te keren: ", vmH("b", null, vmEuro(d.totaalRente))))),
           open && vmH("div", { className: "mt-2 p-3 bg-slate-50 rounded border border-slate-200 space-y-2 text-sm" },
-            boekingen.length > 0 && vmH("div", { className: "text-xs text-slate-600 pb-2 border-b border-slate-200" },
-              vmH("div", { className: "font-semibold mb-1" }, "Renteverloop (rente op rente)"),
-              boekingen.map((b, i) => vmH("div", { key: i, className: "flex justify-between gap-2" },
-                vmH("span", null, fmtDate(b.datum) + (b.prorata ? " (laatste periode, naar rato)" : "")),
-                vmH("span", { className: "font-mono" }, "+" + vmEuro(b.rente) + " → " + vmEuro(b.saldoNa))))),
+            vmH("div", { className: "text-xs text-slate-600 pb-2 border-b border-slate-200" },
+              vmH("div", { className: "font-semibold mb-1" }, "Uitkeringen naar Vrij sparen"),
+              uitkeringen.map((b, k) => vmH("div", { key: k, className: "flex justify-between gap-2" }, vmH("span", null, fmtDate(b.datum) + " · rente"), vmH("span", { className: "font-mono" }, "+" + vmEuro(b.bedrag)))),
+              vrijvalKeuze(d.item) === "sparen" && d.verval && vmH("div", { className: "flex justify-between gap-2" }, vmH("span", null, fmtDate(d.verval) + " · hoofdsom"), vmH("span", { className: "font-mono" }, "+" + vmEuro(d.bedrag))),
+              d.item.renteAlVerwerkt && vmH("div", { className: "text-amber-800 mt-1" }, "De rente is hier apart als grote post ingevoerd; de app keert hem dan niet zelf uit.")),
             vmH("div", { className: "flex items-center justify-between gap-2" }, vmH("span", null, "Hoofdsom"),
               vmH(NumInput, { value: d.bedrag, onChange: e => setItemBedrag(d.item.id, e.target.value), className: "w-28 " + vmInvoer })),
             vmH("div", { className: "flex items-center justify-between gap-2" }, vmH("span", null, "Rente (% per jaar)"),
@@ -6641,23 +6801,28 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
               vmH("input", { type: "date", value: stortingsdatums[d.item.id] || "", onChange: e => setStortingsdatum(d.item.id, e.target.value), className: "border border-slate-300 rounded px-2 py-1 font-mono text-xs" })),
             vmH("div", { className: "flex items-center justify-between gap-2" }, vmH("span", null, "Einddatum"),
               vmH("input", { type: "date", value: d.item.vervaldatum || "", onChange: e => vmZetVervaldatum(d.item.id, e.target.value), className: "border border-slate-300 rounded px-2 py-1 font-mono text-xs" })),
+            vmH("div", { className: "flex items-center justify-between gap-2" }, vmH("span", null, "Rente wordt uitgekeerd"),
+              vmH("select", { value: vmRenteJaarlijks(d.item) ? "jaarlijks" : "einde", onChange: e => setDepositoRenteUitkering(p => ({ ...(p || {}), [d.item.id]: e.target.value })), className: "border border-slate-300 rounded px-1 py-1 text-xs" },
+                vmH("option", { value: "einde" }, "bij de einddatum"), vmH("option", { value: "jaarlijks" }, "jaarlijks op de jaardag"))),
             vmH("div", { className: "flex items-center justify-between gap-2" }, vmH("span", null, "Bij einddatum"),
               vmKeuzeSelect(d.item)),
             vmH("button", { type: "button", onClick: () => { if (window.confirm("Dit deposito verwijderen?")) verwijderVermogensitem(d.item.id); }, className: "text-xs text-rose-700 underline" }, "Deposito verwijderen")));
       }),
-      vmH("div", { className: "text-xs uppercase tracking-wide text-slate-500 mt-3 mb-1" }, "Verwachte rente per jaar"),
+      vmH("div", { className: "text-xs uppercase tracking-wide text-slate-500 mt-3 mb-1" }, "Rente van deposito's per jaar"),
       vmH("table", { className: "w-full font-mono", style: { fontSize: "12px" } },
         vmH("thead", null, vmH("tr", { className: "text-xs text-slate-500 font-sans" },
           vmH("th", { className: "text-left font-normal py-1" }, "Jaar"),
           vmH("th", { className: "text-right font-normal py-1" }, "Verdiend"),
-          vmH("th", { className: "text-right font-normal py-1" }, "Opgebouwd 31-12"),
-          vmH("th", { className: "text-right font-normal py-1" }, "Uitbetaald"))),
+          vmH("th", { className: "text-right font-normal py-1" }, "Naar sparen"),
+          vmH("th", { className: "text-right font-normal py-1" }, "Nog open 31-12"),
+          vmH("th", { className: "text-right font-normal py-1" }, "Hoofdsom"))),
         vmH("tbody", null, depoJaren.map(x => vmH("tr", { key: x.y, className: "border-t border-slate-100" },
           vmH("td", { className: "py-1 font-sans text-left" }, x.y),
           vmH("td", { className: "py-1 text-right" }, vmGetal(x.verdiend)),
+          vmH("td", { className: "py-1 text-right" }, vmGetal(x.uitgekeerd)),
           vmH("td", { className: "py-1 text-right" }, vmGetal(x.opgebouwd)),
-          vmH("td", { className: "py-1 text-right" }, vmGetal(x.uitbetaald)))))),
-      vmH("p", { className: "text-xs text-slate-500 mt-1" }, "Bedragen in euro. Verdiend: rente die in dat jaar bijkomt. Opgebouwd 31-12: rente die dan nog op de deposito's staat. Uitbetaald: rente die in dat jaar bij de einddatum vrijvalt. Verlengde deposito's groeien na de einddatum met je prognosepercentage."),
+          vmH("td", { className: "py-1 text-right" }, vmGetal(x.hoofdsom)))))),
+      vmH("p", { className: "text-xs text-slate-500 mt-1" }, "Bedragen in euro. Verdiend: rente die in dat jaar bijkomt. Naar sparen: rente die in dat jaar op je spaarrekening komt. Nog open 31-12: opgebouwde rente die dan nog niet is uitgekeerd. Hoofdsom: wat in dat jaar van deposito's naar sparen gaat."),
       !dForm.open
         ? vmH("button", { type: "button", onClick: () => zetDF("open", true), className: vmKnopDonker + " w-full mt-3" }, "+ Deposito toevoegen")
         : vmH("div", { className: "mt-3 p-3 bg-slate-50 rounded border border-slate-200 space-y-2 text-sm" },
@@ -6864,7 +7029,35 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
       delen.map(([naam, kleur]) => vmH("span", { key: naam }, vmPunt(kleur), naam)));
   }
 
-  React.useEffect(() => { document.body.classList.toggle("print-rapport", actieveTab === "rapport"); }, [actieveTab]);
+  React.useEffect(() => {
+    document.body.classList.toggle("print-rapport", actieveTab === "rapport");
+    // De paginavoet hoort alleen bij het rapport, niet bij de andere tabbladen.
+    let voet = document.getElementById("rapport-voet");
+    if (actieveTab === "rapport" && !voet) {
+      voet = document.createElement("style");
+      voet.id = "rapport-voet";
+      voet.textContent = '@page { @bottom-center { content: "Financieel overzicht · pagina " counter(page) " van " counter(pages); font-size: 9pt; color: #64748b; } }';
+      document.head.appendChild(voet);
+    }
+    if (actieveTab !== "rapport" && voet) voet.remove();
+  }, [actieveTab]);
+  // Eenmalig: de rente van het Rabo-deposito werd als grote post ingevoerd. De app keert die rente nu zelf uit
+  // (jaarlijks op de jaardag), dus de losse grote post en de oude markering vervallen.
+  React.useEffect(() => {
+    const sleutel = "inkomensplanning_migratieDepositoRente_2026_10_17";
+    try { if (window.localStorage.getItem(sleutel)) return; } catch (e) { return; }
+    setMutaties(prev => (prev || []).filter(m => !(m && m.id === "m4c" && /^Rente Rabo 2026/i.test(String(m.label || "")))));
+    setExtraVermogensItems(prev => (prev || []).map(i => (i.id === "dep_rabo" && i.renteAlVerwerkt ? (({ renteAlVerwerkt, ...rest }) => rest)(i) : i)));
+    setDepositoRenteUitkering(prev => ({ ...(prev || {}), dep_rabo: (prev || {}).dep_rabo || "jaarlijks" }));
+    try { window.localStorage.setItem(sleutel, "1"); } catch (e) {}
+  }, []);
+  // Eenmalig: "Kostwinner" heet nu overal "Man", ook in eerder opgeslagen omschrijvingen.
+  React.useEffect(() => {
+    const sleutel = "inkomensplanning_migratieKostwinnerMan_2026_10_17";
+    try { if (window.localStorage.getItem(sleutel)) return; } catch (e) { return; }
+    setMutaties(prev => (prev || []).map(m => (m && /Kostwinner/.test(String(m.label || "")) ? { ...m, label: String(m.label).replace(/Kostwinners?/g, "Man") } : m)));
+    try { window.localStorage.setItem(sleutel, "1"); } catch (e) {}
+  }, []);
   // Rapport: actuele en toekomstige situatie, bedoeld om als PDF af te drukken.
   function printRapport() {
     document.title = "Financieel overzicht " + vmIso(APP_VANDAAG);
@@ -6876,116 +7069,206 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     const nu = punten[0], j1 = punten[4], j2 = punten[8];
     const lijst = vmDepositoLijst();
     const depoJaren = vmDepositoJaartabel(lijst);
-    const controles = vmControles(totaalVermogenOpDatum(APP_VANDAAG), lijst);
+    const nuTotaal = totaalVermogenOpDatum(APP_VANDAAG);
+    const controles = vmControles(nuTotaal, lijst);
     const fouten = controles.filter(x => !x.ok);
     const minimum = Number(spaarBufferMinimum) || 0;
     const reeks = [];
     sparenRaboOpDatum(new Date(jaar + 1, 11, 31), reeks);
     const laagste = reeks.length ? reeks.reduce((m, p) => (p.balans < m.balans ? p : m), reeks[0]) : null;
     const genoeg = laagste ? !reeks.some(p => p.balans < minimum) : true;
-    const kpi = (titel, waarde, sub, kleur) => vmH("div", { className: "rp-kaart", style: { background: kleur } },
-      vmH("div", { style: { fontSize: "11px", opacity: 0.85, textTransform: "uppercase", letterSpacing: "0.04em" } }, titel),
-      vmH("div", { style: { fontSize: "21px", fontWeight: 700, fontFamily: "ui-monospace,Menlo,monospace", marginTop: "2px" } }, waarde),
-      sub && vmH("div", { style: { fontSize: "11.5px", opacity: 0.9, marginTop: "2px" } }, sub));
+    const maanden = [];
+    for (let y = jaar, m = APP_VANDAAG.getMonth(); y <= jaar + 1; ) {
+      const inMaand = reeks.filter(p => p.datum.getFullYear() === y && p.datum.getMonth() === m);
+      if (inMaand.length) maanden.push({ y, m, eind: inMaand[inMaand.length - 1].balans, min: Math.min(...inMaand.map(p => p.balans)) });
+      m += 1;
+      if (m > 11) { m = 0; y += 1; }
+    }
+    const einde12 = vmAddMaanden(APP_VANDAAG, 12), einde24 = vmAddMaanden(APP_VANDAAG, 24);
     const delta = (a, b) => (b - a >= 0 ? "+" : "−") + vmEuro(Math.abs(b - a));
-    const tabelDelen = vmH("table", null,
-      vmH("thead", null, vmH("tr", null, vmH("th", null, ""), vmH("th", null, "Nu"), vmH("th", null, "Over 12 mnd"), vmH("th", null, "Over 24 mnd"))),
-      vmH("tbody", null,
-        nu.delen.map((d, i) => vmH("tr", { key: d.naam },
-          vmH("td", null, vmPunt(d.kleur), d.naam),
-          vmH("td", null, vmGetal(d.waarde)),
-          vmH("td", null, vmGetal((j1.delen.find(x => x.naam === d.naam) || { waarde: 0 }).waarde)),
-          vmH("td", null, vmGetal((j2.delen.find(x => x.naam === d.naam) || { waarde: 0 }).waarde)))),
-        vmH("tr", { style: { fontWeight: 700 } }, vmH("td", null, "Totaal vrij vermogen"), vmH("td", null, vmGetal(nu.totaal)), vmH("td", null, vmGetal(j1.totaal)), vmH("td", null, vmGetal(j2.totaal)))));
-    const phasesRij = phases.filter(p => p.start.getFullYear() <= jaar + 9).map((p, i) => {
-      const s = STATUS[p.status] || { label: p.status };
-      return vmH("tr", { key: i },
-        vmH("td", null, vmDatumKort(p.start) + " — " + (p.end ? vmDatumKort(p.end) : "einde")),
-        vmH("td", null, s.label),
-        vmH("td", null, euro(p.man.value)),
-        vmH("td", null, euro(p.vrouw.value)),
-        vmH("td", { style: { fontWeight: 700 } }, euro(p.totaal)));
-    });
-    const einde12 = vmAddMaanden(APP_VANDAAG, 12);
-    const groteRijen = [
-      ...alleMutatieBoekingen.map(b => ({ datum: b.datum, label: b.label, bedrag: Number(b.bedrag) || 0 })),
-      ...overbruggingBoekingen.map(b => ({ datum: new Date(b.jaar, b.maand, b.dag), label: b.omschrijving, bedrag: b.delta })),
-      ...lijfrenteBoekingen.map(b => ({ datum: new Date(b.jaar, b.maand, b.dag), label: b.omschrijving, bedrag: b.delta })),
-      ...vmSparenBeleggenEvents().map(b => ({ datum: b.datum, label: b.omschrijving, bedrag: b.delta }))
-    ].filter(b => b.datum && b.datum > APP_VANDAAG && b.datum <= einde12 && Math.abs(b.bedrag) >= 1).sort((a, b) => a.datum - b.datum);
-    const pakketten = [["vrijeBeleggingen", "Vrij beleggen"], ["pensioenDegiro", "Lijfrente (Hoofkes04)"], ["pensioenBnd", "Pensioen Brand New Day"]];
+    const deltaPct = (a, b) => (a ? (b - a >= 0 ? "+" : "−") + vmPct(Math.abs((b - a) / a * 100), 1) : "");
+    const kpi = (titel, waarde, sub, kleur) => vmH("div", { className: "rp-kaart", style: { background: kleur } },
+      vmH("div", { style: { fontSize: "11px", opacity: 0.85, textTransform: "uppercase", letterSpacing: "0.05em" } }, titel),
+      vmH("div", { style: { fontSize: "23px", fontWeight: 700, fontFamily: "ui-monospace,Menlo,monospace", marginTop: "3px" } }, waarde),
+      sub && vmH("div", { style: { fontSize: "12px", opacity: 0.92, marginTop: "3px", lineHeight: 1.35 } }, sub));
+    const kop = (titel, sub) => vmH("div", { className: "rp-pagekop" }, vmH("h2", null, titel), sub && vmH("div", { className: "rp-sub" }, sub));
+    const noot = tekst => vmH("p", { className: "rp-noot" }, tekst);
+    const banner = (tekst, kleuren) => vmH("div", { className: "rp-banner", style: kleuren }, tekst);
+    const groen = { background: "#ecfdf5", color: "#065f46", borderColor: "#a7f3d0" }, rood = { background: "#fff1f2", color: "#9f1239", borderColor: "#fda4af" }, geel = { background: "#fffbeb", color: "#92400e", borderColor: "#fcd34d" }, blauw = { background: "#eff6ff", color: "#1e3a8a", borderColor: "#bfdbfe" };
+    const kleurBedrag = b => ({ color: b < 0 ? VM_KLEUR.slecht : VM_KLEUR.goed, fontWeight: 600 });
+    const keuzeTekst = i => ({ sparen: "naar sparen", verleng: "verlengen", belegging: "hoofdsom naar beleggen", nieuw: "zelf invullen" })[vrijvalKeuze(i)];
+
+    // Gegevens voor de tekst op de eerste pagina.
+    const vrijkomend = lijst.filter(d => d.verval && d.verval <= einde12 && vrijvalKeuze(d.item) === "sparen").reduce((s, d) => s + d.bedrag, 0);
+    const renteDepo12 = lijst.flatMap(d => vmDepositoBetalingen(d.item, einde12)).filter(b => /^Rente/.test(b.omschrijving) && b.datum > APP_VANDAAG).reduce((s, b) => s + b.bedrag, 0);
+    const spaarRente = vmSpaarRenteTabel();
+    const pakketten = [["vrijeBeleggingen", "Vrij beleggen (Hoofkes02)"], ["pensioenDegiro", "Lijfrente (Hoofkes04)"], ["pensioenBnd", "Pensioen Brand New Day (Vrouw)"]];
     const pct = x => (x ? (x.pct > 0 ? "+" : "") + vmPct(x.pct, 1) : "—");
-    const kopje = t => vmH("h2", null, t);
+    const eur = x => (x == null ? "—" : vmEuro(x));
+
+    // Boekingen op het spaarsaldo: eigen grote posten en automatische boekingen (zonder het maandsaldo).
+    const detail = (spaarSimulatie && spaarSimulatie.detail) || [];
+    const inPeriode = b => { const d = new Date(b.datum); return d > APP_VANDAAG && d <= einde24; };
+    const eigen = detail.filter(b => b.eigen && inPeriode(b)).sort((a, b) => new Date(a.datum) - new Date(b.datum));
+    const auto = detail.filter(b => !b.eigen && inPeriode(b) && !/^Saldo inkomsten/.test(b.omschrijving || "")).sort((a, b) => new Date(a.datum) - new Date(b.datum));
+    // Rapport: van nu tot 5 jaar na de latere AOW-datum van de twee partners.
+    const aowVrouw = vrouwAOWDate, aowMan = manAOWDate;
+    const fasenEind = new Date(Math.max(aowVrouw.getTime(), aowMan.getTime()));
+    fasenEind.setFullYear(fasenEind.getFullYear() + 5);
+    const fasen = phases.filter(p => p.start <= fasenEind);
+
     return vmH("div", { className: "rp", id: "rapport-doc" },
       vmH("div", { className: "no-print", style: { background: "#fffbeb", border: "1px solid #f59e0b", borderRadius: "10px", padding: "12px", marginBottom: "12px", fontSize: "14px" } },
         vmH("div", { style: { fontWeight: 600, marginBottom: "4px" } }, "Rapport afdrukken of als PDF bewaren"),
         "Tik op de knop. Kies in het afdrukvenster van je telefoon bij 'Printer' de optie 'Opslaan als PDF' en tik op de PDF-knop.",
         vmH("div", { style: { marginTop: "8px" } }, vmH("button", { type: "button", onClick: printRapport, className: vmKnopDonker }, "Print / bewaar als PDF"))),
 
+      // 1. Samenvatting
       vmH("section", { className: "rp-pagina" },
         vmH("div", { className: "rp-kop" },
-          vmH("div", { style: { fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", opacity: 0.8 } }, "Financieel overzicht"),
-          vmH("div", { style: { fontSize: "24px", fontFamily: "Georgia,serif", fontWeight: 600, marginTop: "2px" } }, "Vermogen en inkomen nu en straks"),
-          vmH("div", { style: { fontSize: "13px", opacity: 0.85, marginTop: "4px" } }, "Stand per " + fmtDate(APP_VANDAAG) + " · prognose t/m " + fmtDate(vmAddMaanden(APP_VANDAAG, 24)))),
+          vmH("div", { style: { fontSize: "12px", letterSpacing: "0.14em", textTransform: "uppercase", opacity: 0.8 } }, "Financieel overzicht"),
+          vmH("div", { style: { fontSize: "27px", fontFamily: "Georgia,serif", fontWeight: 600, marginTop: "3px", lineHeight: 1.2 } }, "Vermogen en inkomen, nu en de komende twee jaar"),
+          vmH("div", { style: { fontSize: "14px", opacity: 0.88, marginTop: "6px" } }, "Stand per " + fmtDate(APP_VANDAAG) + " · prognose t/m " + fmtDate(einde24))),
         vmH("div", { className: "rp-kpi" },
-          kpi("Vrij vermogen nu", vmEuro(nu.totaal), "sparen, deposito's, beleggen, reserveringen", "#0f172a"),
-          kpi("Over 12 maanden", vmEuro(j1.totaal), delta(nu.totaal, j1.totaal) + " t.o.v. nu", "#1d4ed8"),
-          kpi("Over 24 maanden", vmEuro(j2.totaal), delta(nu.totaal, j2.totaal) + " t.o.v. nu", "#6d28d9"),
+          kpi("Vrij vermogen nu", vmEuro(nu.totaal), "sparen, deposito's, beleggen en reserveringen", "#0f172a"),
+          kpi("Over 12 maanden", vmEuro(j1.totaal), delta(nu.totaal, j1.totaal) + " (" + deltaPct(nu.totaal, j1.totaal) + ")", "#1d4ed8"),
+          kpi("Over 24 maanden", vmEuro(j2.totaal), delta(nu.totaal, j2.totaal) + " (" + deltaPct(nu.totaal, j2.totaal) + ")", "#6d28d9"),
           kpi("Genoeg spaargeld?", genoeg ? "Ja" : "Nee", laagste ? "laagste punt " + vmEuro(laagste.balans) + " op " + fmtDate(laagste.datum) : "", genoeg ? "#047857" : "#be123c")),
-        kopje("Vrij vermogen in de komende 24 maanden"),
-        vmGrafiekStapel(punten, 250),
-        vmLegenda(vmDelenNamen),
-        vmH("div", { style: { marginTop: "10px" } }, tabelDelen),
-        vmH("p", { className: "rp-noot" }, "Rente, vrijval van deposito's, grote inkomsten en uitgaven en de prognose-aannames zijn meegerekend. Pensioenpotten en de woning staan er niet in.")),
+        kop("Wat valt op"),
+        vmH("ul", { className: "rp-lijst" },
+          vmH("li", null, "Het vrij vermogen groeit in 12 maanden van " + vmEuro(nu.totaal) + " naar " + vmEuro(j1.totaal) + " (" + delta(nu.totaal, j1.totaal) + ") en in 24 maanden naar " + vmEuro(j2.totaal) + "."),
+          vmH("li", null, genoeg ? "Het spaargeld blijft tot en met december " + (jaar + 1) + " boven je minimum van " + vmEuro(minimum) + "." : "Het spaargeld komt onder je minimum van " + vmEuro(minimum) + "; het laagste punt is " + vmEuro(laagste.balans) + " op " + fmtDate(laagste.datum) + "."),
+          vmH("li", null, "Binnen 12 maanden vervallen deposito's met een hoofdsom van " + vmEuro(vrijkomend) + ", die naar je spaarsaldo gaan. Daarbovenop komt ongeveer " + vmEuro(renteDepo12) + " aan depositorente."),
+          vmH("li", null, "Verwachte spaarrente: " + spaarRente.map(x => vmEuro(x.bedrag) + " op 31-12-" + x.jaar).join(", ") + "."),
+          vmH("li", null, fouten.length === 0 ? "Alle " + controles.length + " controles van de app zijn in orde." : fouten.length + " van " + controles.length + " controles vragen aandacht (zie de laatste pagina).")),
+        noot("Dit overzicht gebruikt je eigen invoer en prognose-aannames. Pensioenpotten en de woning staan niet in het vrij vermogen.")),
 
+      // 2. Vermogen nu en straks
       vmH("section", { className: "rp-pagina" },
-        kopje("Heb ik genoeg spaargeld? " + jaar + " en " + (jaar + 1)),
-        vmH("div", { className: "rp-banner", style: { background: genoeg ? "#ecfdf5" : "#fff1f2", color: genoeg ? "#065f46" : "#9f1239", borderColor: genoeg ? "#a7f3d0" : "#fda4af" } },
-          genoeg ? "Ja. Het spaargeld blijft boven je minimum van " + vmEuro(minimum) + "." : "Nee. Het spaargeld komt onder je minimum van " + vmEuro(minimum) + ". Het laagste punt is " + vmEuro(laagste.balans) + " op " + fmtDate(laagste.datum) + "."),
-        vmGrafiekLijn(reeks, minimum, "r", 105),
-        vmH("p", { className: "rp-noot" }, "Alleen spaargeld telt mee. Beleggingen (ongeveer " + vmEuro(nu.delen.find(d => d.naam === "Beleggen").waarde) + ") zijn een noodreserve."),
-        vmH("p", { className: "rp-noot", style: { marginTop: 0 } }, "Rente nu " + vmPct(SPAARRENTE_PCT, 2) + " per jaar, bijgeschreven op 31 december. Verwacht: " + vmSpaarRenteTabel().map(x => "31-12-" + x.jaar + " " + vmEuro(x.bedrag)).join(" · ") + "."),
-        kopje("Deposito's"),
-        vmH("table", null,
-          vmH("thead", null, vmH("tr", null, vmH("th", null, "Bank"), vmH("th", null, "Hoofdsom"), vmH("th", null, "Rente"), vmH("th", null, "Einddatum"), vmH("th", null, "Opgebouwd"), vmH("th", null, "Tot einde"))),
+        kop("Vermogensprognose", "Vrij vermogen per bestanddeel, nu en over 24 maanden"),
+        vmGrafiekStapel(punten, 290),
+        vmLegenda(vmDelenNamen.concat(punten.some(p => p.delen.some(d => d.naam === "Overig")) ? [["Overig", VM_KLEUR.overig]] : [])),
+        vmH("p", { className: "rp-noot" }, "Bedragen boven de kolommen zijn het totaal in duizenden euro."),
+        vmH("table", { className: "rp-tabel" },
+          vmH("thead", null, vmH("tr", null, vmH("th", null, "Moment"), vmH("th", null, "Sparen"), vmH("th", null, "Deposito's"), vmH("th", null, "Beleggen"), vmH("th", null, "Reserv."), vmH("th", null, "Totaal"))),
+          vmH("tbody", null, punten.map(p => {
+            const w = nm => (p.delen.find(d => d.naam === nm) || { waarde: 0 }).waarde;
+            return vmH("tr", { key: p.label, style: p.label === "Nu" ? { fontWeight: 700 } : null },
+              vmH("td", null, p.label), vmH("td", null, vmGetal(w("Vrij sparen"))), vmH("td", null, vmGetal(w("Deposito's"))), vmH("td", null, vmGetal(w("Beleggen"))), vmH("td", null, vmGetal(w("Reserveringen"))), vmH("td", { style: { fontWeight: 700 } }, vmGetal(p.totaal)));
+          }))),
+        noot("Bedragen in euro. Deposito's tellen mee voor hun hoofdsom. Op de einddatum gaan hoofdsom en rente naar het spaargeld, tenzij je een deposito verlengt of naar beleggen zet; daarom nemen de deposito's af en groeit het spaargeld. Opgebouwde rente telt pas mee zodra zij wordt uitgekeerd. Beleggen groeit met je prognosepercentage (" + vmPct(rendementen.degiro_vrij || 0, 1) + " per jaar).")),
+
+      // 3. Spaargeld
+      vmH("section", { className: "rp-pagina" },
+        kop("Heb ik genoeg spaargeld?", "Spaargeld per dag, " + jaar + " en " + (jaar + 1)),
+        banner(genoeg ? "Ja. Het spaargeld blijft boven je minimum van " + vmEuro(minimum) + "." : "Nee. Het spaargeld komt onder je minimum van " + vmEuro(minimum) + ". Het laagste punt is " + vmEuro(laagste.balans) + " op " + fmtDate(laagste.datum) + ".", genoeg ? groen : rood),
+        vmGrafiekLijn(reeks, minimum, "r", 200),
+        vmH("p", { className: "rp-noot" }, "De lijn is rood als het spaargeld onder je minimum komt. Alleen spaargeld telt mee; beleggingen (" + vmEuro(nu.delen.find(d => d.naam === "Beleggen").waarde) + ") zijn een noodreserve."),
+        vmH("table", { className: "rp-tabel" },
+          vmH("thead", null, vmH("tr", null, vmH("th", null, "Maand"), vmH("th", null, "Einde maand"), vmH("th", null, "Laagste punt"), vmH("th", null, "Ten opzichte van minimum"))),
+          vmH("tbody", null, maanden.map(x => vmH("tr", { key: x.y + "-" + x.m },
+            vmH("td", null, new Date(x.y, x.m, 1).toLocaleDateString("nl-NL", { month: "long", year: "numeric" })),
+            vmH("td", null, vmGetal(x.eind)), vmH("td", { style: x.min < minimum ? { color: VM_KLEUR.slecht, fontWeight: 700 } : null }, vmGetal(x.min)),
+            vmH("td", { style: kleurBedrag(x.min - minimum) }, (x.min - minimum >= 0 ? "+" : "−") + vmGetal(Math.abs(x.min - minimum))))))),
+        noot("Bedragen in euro. Het maandsaldo (inkomen min lasten) wordt op de 22e verrekend; grote posten, rente en uitkeringen op hun eigen datum."),
+        vmH("p", { className: "rp-noot" }, "Spaarrente nu " + vmPct(SPAARRENTE_PCT, 2) + " per jaar, bijgeschreven op 31 december. Verwacht: " + spaarRente.map(x => "31-12-" + x.jaar + " " + vmEuro(x.bedrag)).join(" · ") + ".")),
+
+      // 4. Deposito's
+      vmH("section", { className: "rp-pagina" },
+        kop("Deposito's", "Hoofdsom, rente en wat er op de einddatum gebeurt"),
+        vmH("table", { className: "rp-tabel" },
+          vmH("thead", null, vmH("tr", null, vmH("th", null, "Bank"), vmH("th", null, "Hoofdsom"), vmH("th", null, "Rente"), vmH("th", null, "Einddatum"), vmH("th", null, "Opgebouwd"), vmH("th", null, "Nog uit te keren"), vmH("th", null, "Op einddatum"))),
           vmH("tbody", null,
-            lijst.map(d => vmH("tr", { key: d.item.id }, vmH("td", null, d.bank), vmH("td", null, vmGetal(d.bedrag)), vmH("td", null, vmPct(d.pct, 2)), vmH("td", null, d.verval ? vmDatumKort(d.verval) : "?"), vmH("td", null, vmGetal(d.opgebouwd)), vmH("td", null, vmGetal(d.totaalRente)))),
-            vmH("tr", { style: { fontWeight: 700 } }, vmH("td", null, "Totaal"), vmH("td", null, vmGetal(lijst.reduce((s, d) => s + d.bedrag, 0))), vmH("td", null, ""), vmH("td", null, ""), vmH("td", null, vmGetal(lijst.reduce((s, d) => s + d.opgebouwd, 0))), vmH("td", null, vmGetal(lijst.reduce((s, d) => s + d.totaalRente, 0)))))),
-        vmH("p", { className: "rp-noot" }, "Bedragen in euro. Rente wordt jaarlijks bijgeschreven (rente op rente). Bij de einddatum wordt standaard verlengd: " + vmPct(depoPrognose.kort, 1) + " (tot en met 1 jaar) of " + vmPct(depoPrognose.lang, 1) + " (langer)."),
-        vmH("table", null,
-          vmH("thead", null, vmH("tr", null, vmH("th", null, "Jaar"), vmH("th", null, "Rente verdiend"), vmH("th", null, "Opgebouwd 31-12"), vmH("th", null, "Uitbetaald"))),
-          vmH("tbody", null, depoJaren.slice(0, 5).map(x => vmH("tr", { key: x.y }, vmH("td", null, x.y), vmH("td", null, vmGetal(x.verdiend)), vmH("td", null, vmGetal(x.opgebouwd)), vmH("td", null, vmGetal(x.uitbetaald))))))),
+            lijst.map(d => vmH("tr", { key: d.item.id },
+              vmH("td", null, d.bank + (vmRenteJaarlijks(d.item) ? " *" : "") + (!d.gestart ? " (gepland)" : "")), vmH("td", null, vmGetal(d.bedrag)), vmH("td", null, vmPct(d.pct, 2)), vmH("td", null, d.verval ? vmDatumKort(d.verval) : "?"), vmH("td", null, vmGetal(d.opgebouwd)), vmH("td", null, vmGetal(d.totaalRente)), vmH("td", null, keuzeTekst(d.item)))),
+            vmH("tr", { style: { fontWeight: 700 } }, vmH("td", null, "Totaal"), vmH("td", null, vmGetal(lijst.filter(d => d.gestart).reduce((s, d) => s + d.bedrag, 0))), vmH("td", null, ""), vmH("td", null, ""), vmH("td", null, vmGetal(lijst.reduce((s, d) => s + d.opgebouwd, 0))), vmH("td", null, vmGetal(lijst.reduce((s, d) => s + d.totaalRente, 0))), vmH("td", null, "")))),
+        noot("Bedragen in euro. * Rente wordt jaarlijks op de jaardag uitgekeerd; anders bij de einddatum, met rente op rente per jaardag. De rente gaat steeds naar het spaargeld; het deposito zelf blijft zijn hoofdsom waard."),
+        kop("Rente van deposito's per jaar"),
+        vmH("table", { className: "rp-tabel" },
+          vmH("thead", null, vmH("tr", null, vmH("th", null, "Jaar"), vmH("th", null, "Rente verdiend"), vmH("th", null, "Rente naar sparen"), vmH("th", null, "Nog open per 31-12"), vmH("th", null, "Hoofdsom naar sparen"))),
+          vmH("tbody", null, depoJaren.map(x => vmH("tr", { key: x.y }, vmH("td", null, x.y), vmH("td", null, vmGetal(x.verdiend)), vmH("td", null, vmGetal(x.uitgekeerd)), vmH("td", null, vmGetal(x.opgebouwd)), vmH("td", null, vmGetal(x.hoofdsom)))))),
+        noot("Verdiend: rente die in dat jaar bijkomt. Naar sparen: rente die in dat jaar op je spaarrekening komt. Nog open: opgebouwde rente die op 31 december nog niet is uitgekeerd.")),
 
+      // 5. Beleggen en pensioen
       vmH("section", { className: "rp-pagina" },
-        kopje("Beleggen en pensioen"),
-        vmH("table", null,
-          vmH("thead", null, vmH("tr", null, vmH("th", null, ""), vmH("th", null, "Waarde"), vmH("th", null, "Gestort"), vmH("th", null, "Opgenomen"), vmH("th", null, "Sinds start"), vmH("th", null, "Dit jaar"), vmH("th", null, "Vorig jaar"))),
+        kop("Beleggen en pensioen", "Waarde, stortingen en rendement"),
+        vmH("table", { className: "rp-tabel" },
+          vmH("thead", null, vmH("tr", null, vmH("th", null, ""), vmH("th", null, "Waarde"), vmH("th", null, "Startwaarde"), vmH("th", null, "Gestort"), vmH("th", null, "Opgenomen"), vmH("th", null, "Winst sinds start"))),
+          vmH("tbody", null, pakketten.map(([k, naam]) => {
+            const r = vmRendement(k), reg = vmReg(k);
+            return vmH("tr", { key: k }, vmH("td", null, naam + (r.geschat ? " *" : "")), vmH("td", null, vmGetal(r.waarde)), vmH("td", null, reg.start ? vmGetal(reg.start.waarde) : "—"), vmH("td", null, r.inleg == null ? "—" : vmGetal(r.gestort)), vmH("td", null, r.inleg == null ? "—" : vmGetal(r.opgenomen)), vmH("td", { style: r.sinds ? kleurBedrag(r.sinds.winst) : null }, r.sinds ? vmTeken(r.sinds.winst) + vmGetal(r.sinds.winst) : "—"));
+          }))),
+        vmH("table", { className: "rp-tabel", style: { marginTop: "12px" } },
+          vmH("thead", null, vmH("tr", null, vmH("th", null, ""), vmH("th", null, "Sinds start"), vmH("th", null, "Dit jaar"), vmH("th", null, "Vorig jaar"), vmH("th", null, "Prognose per jaar"))),
           vmH("tbody", null, pakketten.map(([k, naam]) => {
             const r = vmRendement(k);
-            return vmH("tr", { key: k }, vmH("td", null, naam + (r.geschat ? " *" : "")), vmH("td", null, vmGetal(r.waarde)), vmH("td", null, r.inleg == null ? "—" : vmGetal(r.gestort)), vmH("td", null, r.inleg == null ? "—" : vmGetal(r.opgenomen)), vmH("td", null, pct(r.sinds)), vmH("td", null, pct(r.ditJaar)), vmH("td", null, pct(r.vorigJaar)));
+            return vmH("tr", { key: k }, vmH("td", null, naam), vmH("td", null, pct(r.sinds)), vmH("td", null, pct(r.ditJaar)), vmH("td", null, pct(r.vorigJaar)), vmH("td", null, vmPct(vmRate(k), 1)));
           }))),
-        vmH("p", { className: "rp-noot" }, "Bedragen in euro. * Waarde geschat vanaf de laatst ingevulde waarde met het prognosepercentage. Rendement is de totale waardeontwikkeling (rente, koerswinst, dividend), rekening houdend met het moment van storten en opnemen."),
-        kopje("Inkomen per fase (netto per maand)"),
-        vmH("table", null,
-          vmH("thead", null, vmH("tr", null, vmH("th", null, "Periode"), vmH("th", null, "Status"), vmH("th", null, "Kostwinner"), vmH("th", null, "Vrouw"), vmH("th", null, "Totaal"))),
-          vmH("tbody", null, phasesRij)),
-        vmH("p", { className: "rp-noot" }, "Fasen t/m " + (jaar + 9) + "; het volledige fasenoverzicht staat op het Dashboard. Vaste lasten en dagelijkse uitgaven nu: " + euro(Math.round(VASTE_LASTEN_BASIS + DAGELIJKSE_UITGAVEN_BASIS)) + " per maand."),
-        (Number(obBedrag) > 0) && vmH("div", { className: "rp-banner", style: { background: "#eff6ff", color: "#1e3a8a", borderColor: "#bfdbfe" } },
-          "Inkomensaanvulling: " + euro(Number(obBedrag)) + " per maand van " + fmtDate(obStartDatum) + " tot " + fmtDate(obEindDatum) + ". Gestort vanuit spaargeld: " + euro(Number(obStorting) || 0) + ". " + (obTekort > 0 ? "Let op: de pot is " + euro(Math.round(obTekort)) + " te klein." : "De pot houdt het vol.")),
-      ),
+        noot("Bedragen in euro. * Waarde geschat vanaf de laatst ingevulde waarde, met het prognosepercentage. Rendement is de totale waardeontwikkeling (rente, koerswinst, dividend) en houdt rekening met het moment van storten en opnemen. Het rendement over vorig jaar verschijnt vanaf 2028."),
+        pakketten.some(([k]) => vmReg(k).mutaties.length > 0) && kop("Stortingen en opnames"),
+        pakketten.some(([k]) => vmReg(k).mutaties.length > 0) && vmH("table", { className: "rp-tabel" },
+          vmH("thead", null, vmH("tr", null, vmH("th", null, "Datum"), vmH("th", null, "Pakket"), vmH("th", null, "Soort"), vmH("th", null, "Bedrag"))),
+          vmH("tbody", null, pakketten.flatMap(([k, naam]) => vmReg(k).mutaties.map(m => ({ k, naam, m }))).sort((a, b) => String(a.m.datum).localeCompare(String(b.m.datum))).map((x, i) => vmH("tr", { key: i },
+            vmH("td", null, vmDatumKort(geldigeDatum(x.m.datum) || APP_VANDAAG)), vmH("td", null, x.naam), vmH("td", null, Number(x.m.bedrag) >= 0 ? "storting" + (x.m.sparen ? " (van sparen)" : "") : "opname" + (x.m.sparen ? " (naar sparen)" : "")), vmH("td", { style: kleurBedrag(Number(x.m.bedrag)) }, (Number(x.m.bedrag) >= 0 ? "+" : "−") + vmGetal(Math.abs(Number(x.m.bedrag))))))))),
 
+      // 6. Inkomen en lasten
       vmH("section", { className: "rp-pagina" },
-        kopje("Grote inkomsten en uitgaven, komende 12 maanden"),
-        groteRijen.length === 0 ? vmH("p", { className: "rp-noot" }, "Geen geplande grote posten.") : vmH("table", null,
+        kop("Inkomen per fase", "Netto per maand, tot 5 jaar na de AOW · AOW vrouw " + fmtDate(aowVrouw) + " · AOW man " + fmtDate(aowMan)),
+        vmH("table", { className: "rp-tabel rp-fasen" },
+          vmH("thead", null, vmH("tr", null, vmH("th", null, "Periode"), vmH("th", null, "Status"), vmH("th", null, "Man"), vmH("th", null, "Vrouw"), vmH("th", null, "Totaal"))),
+          vmH("tbody", null, fasen.map((p, i) => {
+            const s = STATUS[p.status] || { label: p.status };
+            return vmH("tr", { key: i },
+              vmH("td", null, vmDatumKort(p.start) + " — " + (p.end ? vmDatumKort(p.end) : "einde"), (p.start <= aowVrouw && (!p.end || p.end > aowVrouw) ? vmH("div", { className: "rp-sub" }, "AOW vrouw " + fmtDate(aowVrouw)) : null), (p.start <= aowMan && (!p.end || p.end > aowMan) ? vmH("div", { className: "rp-sub" }, "AOW man " + fmtDate(aowMan)) : null)), vmH("td", null, s.label),
+              vmH("td", null, euro(p.man.value), (String(p.man.label||"").length <= 40 && vmH("div", { className: "rp-sub" }, p.man.label))), vmH("td", null, euro(p.vrouw.value), (String(p.vrouw.label||"").length <= 40 && vmH("div", { className: "rp-sub" }, p.vrouw.label))), vmH("td", { style: { fontWeight: 700 } }, euro(p.totaal)));
+          }))),
+        noot("Voorlopige fasen rekenen met je aannames over indexatie en pensioen. Vaste lasten en dagelijkse uitgaven nu: " + euro(Math.round(VASTE_LASTEN_BASIS + DAGELIJKSE_UITGAVEN_BASIS)) + " per maand."),
+        (Number(obBedrag) > 0) && banner("Inkomensaanvulling: " + euro(Number(obBedrag)) + " per maand van " + fmtDate(obStartDatum) + " tot " + fmtDate(obEindDatum) + ". Gestort vanuit spaargeld: " + euro(Number(obStorting) || 0) + ". " + (obTekort > 0 ? "Let op: de pot is " + euro(Math.round(obTekort)) + " te klein voor de hele periode." : "De pot houdt het vol."), obTekort > 0 ? rood : blauw)),
+      vmH("section", { className: "rp-pagina" },
+        kop("Vaste lasten en dagelijkse uitgaven", "Per maand, met indexatie per jaar"),
+        vmH("table", { className: "rp-tabel" },
+          vmH("thead", null, vmH("tr", null, vmH("th", null, "Post"), vmH("th", null, "Per maand"), vmH("th", null, "Indexatie"))),
+          vmH("tbody", null,
+            vasteLastenPosten.map(pst => vmH("tr", { key: pst.id }, vmH("td", null, pst.naam), vmH("td", null, euro(Number(pst.bedrag) || 0)), vmH("td", null, vmPct(pst.index || 0, 1)))),
+            vmH("tr", null, vmH("td", null, "Dagelijkse uitgaven"), vmH("td", null, euro(Math.round(DAGELIJKSE_UITGAVEN_BASIS))), vmH("td", null, vmPct(indexDagelijkseUitgaven || 0, 1))),
+            vmH("tr", { style: { fontWeight: 700 } }, vmH("td", null, "Totaal per maand"), vmH("td", null, euro(Math.round(VASTE_LASTEN_BASIS + DAGELIJKSE_UITGAVEN_BASIS))), vmH("td", null, "")))),
+        noot("Posten die 'Reservering' heten worden niet uitgegeven maar komen in een eigen pot; die staan bij het vrij vermogen onder Reserveringen.")),
+
+      // 7. Grote inkomsten en uitgaven
+      vmH("section", { className: "rp-pagina" },
+        kop("Grote inkomsten en uitgaven", "Eigen invoer, komende 24 maanden"),
+        eigen.length === 0 ? noot("Geen geplande grote posten.") : vmH("table", { className: "rp-tabel" },
           vmH("thead", null, vmH("tr", null, vmH("th", null, "Datum"), vmH("th", null, "Omschrijving"), vmH("th", null, "Bedrag"))),
-          vmH("tbody", null, groteRijen.slice(0, 18).map((b, i) => vmH("tr", { key: i }, vmH("td", null, vmDatumKort(b.datum)), vmH("td", null, b.label), vmH("td", { style: { color: b.bedrag < 0 ? VM_KLEUR.slecht : VM_KLEUR.goed, fontWeight: 600 } }, (b.bedrag < 0 ? "−" : "+") + vmEuro(Math.abs(b.bedrag))))))),
-        kopje("Aannames en controles"),
-        vmH("table", null, vmH("tbody", null,
-          [["Beleggen (prognose)", vmPct(rendementen.degiro_vrij || 0, 1) + " per jaar"], ["Nieuw of verlengd deposito, tot en met 1 jaar", vmPct(depoPrognose.kort, 1)], ["Nieuw of verlengd deposito, langer dan 1 jaar", vmPct(depoPrognose.lang, 1)], ["Spaarrente nu", vmPct(SPAARRENTE_PCT, 2)], ["Minimumsaldo spaargeld", vmEuro(minimum)]].map(([a, b]) => vmH("tr", { key: a }, vmH("td", null, a), vmH("td", null, b))))),
+          vmH("tbody", null, eigen.map((b, i) => vmH("tr", { key: i }, vmH("td", null, vmDatumKort(new Date(b.datum))), vmH("td", null, b.omschrijving || b.label), vmH("td", { style: kleurBedrag(b.bedrag) }, (b.bedrag < 0 ? "−" : "+") + vmEuro(Math.abs(b.bedrag))))))),
+        noot("Het saldo tussen je actuele inkomen en lasten wordt elke 22e automatisch verrekend met het spaargeld en staat hier niet apart in.")),
+      vmH("section", { className: "rp-pagina" },
+        kop("Automatische boekingen op het spaargeld", "Rente, deposito's, lijfrente, vakantiegeld en aanvulling, komende 24 maanden"),
+        auto.length === 0 ? noot("Geen automatische boekingen.") : vmH("table", { className: "rp-tabel" },
+          vmH("thead", null, vmH("tr", null, vmH("th", null, "Datum"), vmH("th", null, "Omschrijving"), vmH("th", null, "Bedrag"))),
+          vmH("tbody", null, auto.map((b, i) => vmH("tr", { key: i }, vmH("td", null, vmDatumKort(new Date(b.datum))), vmH("td", null, b.omschrijving), vmH("td", { style: kleurBedrag(b.bedrag) }, (b.bedrag < 0 ? "−" : "+") + vmEuro(Math.abs(b.bedrag))))))),
+        noot("Deze boekingen berekent de app zelf uit je invoer bij Vermogen, Inkomen en Lijfrente. Rente en hoofdsom van deposito's komen op hun uitkeringsdatum op het spaargeld.")),
+
+      // 8. Aannames, controles en toelichting
+      vmH("section", { className: "rp-pagina" },
+        kop("Aannames en controles"),
+        vmH("table", { className: "rp-tabel" }, vmH("tbody", null,
+          [["Beleggen (prognose)", vmPct(rendementen.degiro_vrij || 0, 1) + " per jaar"],
+            ["Verlengd deposito, tot en met 1 jaar", vmPct(depoPrognose.kort, 1) + " per jaar"],
+            ["Verlengd deposito, langer dan 1 jaar", vmPct(depoPrognose.lang, 1) + " per jaar"],
+            ["Spaarrente nu", vmPct(SPAARRENTE_PCT, 2) + " per jaar"],
+            ["Minimumsaldo spaargeld", vmEuro(minimum)],
+            ["Standaard bij einddatum deposito", "hoofdsom en rente naar sparen"],
+            ["Pensioenpotten, prognose", vmPct(Number(lijfrenteRendementMan) || 0, 1) + " (Man), " + vmPct(Number(lijfrenteRendementVrouw) || 0, 1) + " (Vrouw)"]].map(([a, b]) => vmH("tr", { key: a }, vmH("td", null, a), vmH("td", null, b))))),
         fouten.length === 0
-          ? vmH("div", { className: "rp-banner", style: { background: "#ecfdf5", color: "#065f46", borderColor: "#a7f3d0" } }, "✓ Alle " + controles.length + " controles zijn in orde.")
-          : vmH("div", { className: "rp-banner", style: { background: "#fffbeb", color: "#92400e", borderColor: "#fcd34d" } }, vmH("b", null, fouten.length + " van " + controles.length + " controles vragen aandacht:"), vmH("ul", { style: { margin: "4px 0 0", paddingLeft: "18px" } }, fouten.map((x, i) => vmH("li", { key: i }, x.fout)))),
-        vmH("p", { className: "rp-noot" }, "Dit rapport is een prognose op basis van je eigen invoer en aannames. Werkelijke rentes, rendementen, belastingen en uitgaven kunnen afwijken. Het is geen financieel advies en geen garantie. Gemaakt op " + fmtDate(APP_VANDAAG) + ".")));
+          ? banner("✓ Alle " + controles.length + " controles zijn in orde.", groen)
+          : banner(vmH("div", null, vmH("b", null, fouten.length + " van " + controles.length + " controles vragen aandacht:"), vmH("ul", { style: { margin: "4px 0 0", paddingLeft: "18px" } }, fouten.map((x, i) => vmH("li", { key: i }, x.fout)))), geel),
+        kop("Toelichting"),
+        vmH("ul", { className: "rp-lijst" },
+          vmH("li", null, "Vrij vermogen is het spaargeld, de deposito's (hoofdsom), het vrij beleggen en de reserveringen. Pensioenpotten en de woning tellen niet mee."),
+          vmH("li", null, "Het spaargeld verandert door het maandsaldo (inkomen min lasten, elke 22e), je grote posten, de rente (bijgeschreven op 31 december), uitkeringen van deposito's, de lijfrente-stortingen en de inkomensaanvulling."),
+          vmH("li", null, "Een deposito blijft zijn hoofdsom waard. De rente gaat naar het spaargeld bij de einddatum, of jaarlijks als de rente zo wordt uitgekeerd."),
+          vmH("li", null, "De waarde van beleggen wordt tussen twee jaarinvoeren geschat met het prognosepercentage, rekening houdend met stortingen en opnames.")),
+        noot("Dit rapport is een prognose op basis van je eigen invoer en aannames. Werkelijke rentes, rendementen, belastingen en uitgaven kunnen afwijken. Het is geen financieel advies en geen garantie. Gemaakt op " + fmtDate(APP_VANDAAG) + ".")));
   }
 
   function renderBeleggingen() {
@@ -7769,7 +8052,7 @@ menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-sl
     className: "block mt-1 text-amber-700"
   }, "Let op: automatische sluitpost-logica staat uit. Er geldt nu de zelf overgenomen looptijd van ", effectieveLooptijdMan, " jaar (zie proefberekening hieronder).")), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-400 mt-2"
-  }, "Controle uitkeringsduur Kostwinner (max. 20 jaar) — toets jaaruitkering (2026): ", euro(MAX_JAARUITKERING_5_20_JAAR), " bruto/jaar — huidige uitkering (", euro(Math.round(degiroMaandBruto * 12)), "/jaar) zit daar ruim onder.", looptijdOverrideMan && /*#__PURE__*/React.createElement("button", {
+  }, "Controle uitkeringsduur Man (max. 20 jaar) — toets jaaruitkering (2026): ", euro(MAX_JAARUITKERING_5_20_JAAR), " bruto/jaar — huidige uitkering (", euro(Math.round(degiroMaandBruto * 12)), "/jaar) zit daar ruim onder.", looptijdOverrideMan && /*#__PURE__*/React.createElement("button", {
     onClick: herstelAutomatischMan,
     className: "ml-2 text-xs px-2 py-0.5 rounded-full border border-slate-300 bg-white hover:bg-slate-50 text-slate-600"
   }, "Terug naar automatische looptijd")), /*#__PURE__*/React.createElement("div", {
@@ -7981,7 +8264,7 @@ menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-sl
     className: "pt-4 border-t border-slate-100"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-xs uppercase tracking-wide text-slate-500 mb-2"
-  }, "Kostwinner na zijn AOW — opbouw van het netto maandinkomen"), /*#__PURE__*/React.createElement("div", {
+  }, "Man na zijn AOW — opbouw van het netto maandinkomen"), /*#__PURE__*/React.createElement("div", {
     className: "bg-slate-50 rounded p-3 text-sm font-mono space-y-1"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex justify-between"
@@ -8674,7 +8957,7 @@ menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-sl
   }, "Basisgegevens — alle bedragen aanpasbaar"), /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-lg border border-slate-200 p-5 space-y-5"
   }, [{
-    titel: "Inkomensbestanddelen Kostwinner",
+    titel: "Inkomensbestanddelen Man",
     velden: [["salarisManNetto", "Salaris gemeente netto/mnd (huidige referentie)"], ["salarisManBruto", "Salaris gemeente bruto/mnd (maximum)"], ["abpVoorAOWNetto", "ABP vóór AOW netto/mnd"], ["abpVoorAOWBruto", "ABP vóór AOW bruto/mnd"], ["abpNaAOWNetto", "ABP na AOW netto/mnd"], ["abpNaAOWBruto", "ABP na AOW bruto/mnd"]]
   }, {
     titel: "Inkomensbestanddelen Vrouw",
@@ -8767,7 +9050,7 @@ menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-sl
     className: "sm:col-span-2"
   }, /*#__PURE__*/React.createElement("label", {
     className: "text-xs uppercase tracking-wide text-slate-500"
-  }, "Werken Kostwinner — keuze per jaar tot de AOW"), /*#__PURE__*/React.createElement("div", {
+  }, "Werken Man — keuze per jaar tot de AOW"), /*#__PURE__*/React.createElement("div", {
     className: "mt-2 space-y-1"
   }, Array.from({
     length: Math.max(0, manAOWDate.getFullYear() - PEILDATUM.getFullYear() + 1)
@@ -8968,107 +9251,7 @@ menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-sl
     className: "text-xs text-slate-400 mt-2"
   }, "Elk inkomensbestanddeel rekent zelfstandig door. Voor Gemeente en Linc geldt: de bekende CAO-stappen tijdens de looptijd van de CAO, daarna de afzonderlijke index na cao. Die staat standaard op 2,0% en is aanpasbaar.")), React.createElement("section", null, /*#__PURE__*/React.createElement("h2", {
     className: "font-serif text-xl mb-4"
-  }, "Extra inkomensbronnen"), /*#__PURE__*/React.createElement("div", {
-    className: "bg-white rounded-lg border border-slate-200 p-5 space-y-3"
-  }, inkomensBronnenExtra.length === 0 && /*#__PURE__*/React.createElement("p", {
-    className: "text-sm text-slate-500"
-  }, "Nog geen extra bronnen. Voeg hieronder een nieuwe baan, bijbaan of ander inkomen toe."), /*#__PURE__*/React.createElement("div", {
-    className: "divide-y divide-slate-100"
-  }, inkomensBronnenExtra.map(b => /*#__PURE__*/React.createElement("div", {
-    key: b.id,
-    className: "py-2 flex flex-wrap items-center gap-2"
-  }, /*#__PURE__*/React.createElement("input", {
-    type: "text",
-    value: b.naam,
-    onChange: e => wijzigBron(b.id, "naam", e.target.value),
-    className: "flex-1 min-w-[140px] border border-slate-200 rounded px-2 py-1 text-sm"
-  }), /*#__PURE__*/React.createElement("select", {
-    value: b.persoon,
-    onChange: e => wijzigBron(b.id, "persoon", e.target.value),
-    className: "border border-slate-300 rounded px-2 py-1 text-sm"
-  }, /*#__PURE__*/React.createElement("option", {
-    value: "man"
-  }, "Kostwinner"), /*#__PURE__*/React.createElement("option", {
-    value: "vrouw"
-  }, "Vrouw")), /*#__PURE__*/React.createElement("span", {
-    className: "text-xs text-slate-400"
-  }, "€"), /*#__PURE__*/React.createElement(NumInput, {
-    value: b.bedrag,
-    onChange: e => wijzigBron(b.id, "bedrag", e.target.value),
-    title: "Netto per maand, waarde op de peildatum",
-    className: "w-24 border border-slate-300 rounded px-2 py-1 font-mono text-sm text-right"
-  }), /*#__PURE__*/React.createElement(NumInput, {
-    step: "0.1",
-    value: b.index,
-    onChange: e => wijzigBron(b.id, "index", e.target.value),
-    title: "Indexatie per jaar",
-    className: "w-16 border border-slate-300 rounded px-2 py-1 font-mono text-sm text-right"
-  }), /*#__PURE__*/React.createElement("span", {
-    className: "text-xs text-slate-500"
-  }, "%/jr"), /*#__PURE__*/React.createElement("input", {
-    type: "date",
-    value: b.start,
-    onChange: e => wijzigBron(b.id, "start", e.target.value),
-    title: "Startdatum",
-    className: "border border-slate-300 rounded px-2 py-1 text-sm"
-  }), /*#__PURE__*/React.createElement("input", {
-    type: "date",
-    value: b.eind,
-    onChange: e => wijzigBron(b.id, "eind", e.target.value),
-    title: "Einddatum (leeg = loopt door)",
-    className: "border border-slate-300 rounded px-2 py-1 text-sm"
-  }), /*#__PURE__*/React.createElement("button", {
-    onClick: () => verwijderBron(b.id),
-    className: "text-xs text-rose-600 hover:text-rose-800 px-1"
-  }, "✕")))), /*#__PURE__*/React.createElement("div", {
-    className: "pt-3 border-t border-slate-200"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-xs uppercase tracking-wide text-slate-500 mb-2"
-  }, "Nieuwe bron toevoegen"), /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-wrap gap-2 items-center"
-  }, /*#__PURE__*/React.createElement("input", {
-    type: "text",
-    placeholder: "Omschrijving (bijv. nieuwe baan Vrouw)",
-    value: nieuweBronNaam,
-    onChange: e => setNieuweBronNaam(e.target.value),
-    className: "flex-1 min-w-[160px] border border-slate-300 rounded px-2 py-1.5 text-sm"
-  }), /*#__PURE__*/React.createElement("select", {
-    value: nieuweBronPersoon,
-    onChange: e => setNieuweBronPersoon(e.target.value),
-    className: "border border-slate-300 rounded px-2 py-1.5 text-sm"
-  }, /*#__PURE__*/React.createElement("option", {
-    value: "man"
-  }, "Kostwinner"), /*#__PURE__*/React.createElement("option", {
-    value: "vrouw"
-  }, "Vrouw")), /*#__PURE__*/React.createElement(NumInput, {
-    placeholder: "Netto/mnd",
-    value: nieuweBronBedrag,
-    onChange: e => setNieuweBronBedrag(e.target.value),
-    className: "w-28 border border-slate-300 rounded px-2 py-1.5 font-mono text-sm"
-  }), /*#__PURE__*/React.createElement(NumInput, {
-    step: "0.1",
-    placeholder: "% index",
-    value: nieuweBronIndex,
-    onChange: e => setNieuweBronIndex(e.target.value),
-    className: "w-20 border border-slate-300 rounded px-2 py-1.5 font-mono text-sm"
-  }), /*#__PURE__*/React.createElement("input", {
-    type: "date",
-    title: "Startdatum",
-    value: nieuweBronStart,
-    onChange: e => setNieuweBronStart(e.target.value),
-    className: "border border-slate-300 rounded px-2 py-1.5 text-sm"
-  }), /*#__PURE__*/React.createElement("input", {
-    type: "date",
-    title: "Einddatum (optioneel)",
-    value: nieuweBronEind,
-    onChange: e => setNieuweBronEind(e.target.value),
-    className: "border border-slate-300 rounded px-2 py-1.5 text-sm"
-  }), /*#__PURE__*/React.createElement("button", {
-    onClick: voegBronToe,
-    className: "text-sm px-4 py-1.5 rounded-full bg-slate-900 text-white hover:bg-slate-800"
-  }, "Toevoegen"))), /*#__PURE__*/React.createElement("p", {
-    className: "text-xs text-slate-400"
-  }, "Nieuwe bronnen tellen automatisch mee; de heffingskorting wordt automatisch aan de hoogste inkomensbron toegewezen.")))), actieveTab === "grote_uitgaven" && React.createElement("section",null,
+  }, "Eigen inkomensbronnen"), renderInkomensBronnen())), actieveTab === "grote_uitgaven" && React.createElement("section",null,
   React.createElement("h2",{className:"font-serif text-xl mb-4"},"Grote posten en reserveringen"),
   React.createElement("div",{className:"grid grid-cols-2 gap-2 max-w-xl mb-4"},
     React.createElement("button",{type:"button",onClick:()=>setGroteWeergave("grote"),className:`px-4 py-3 rounded-lg text-sm font-medium ${groteWeergave==="grote"?"bg-slate-900 text-white":"bg-white border border-slate-300"}`},"Grote posten"),
@@ -9579,7 +9762,7 @@ menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-sl
         /*#__PURE__*/React.createElement("div", {className:"bg-white rounded-lg border border-slate-200 p-5"},
           /*#__PURE__*/React.createElement("h3", {className:"font-semibold mb-3"}, "AOW-leeftijd"),
           /*#__PURE__*/React.createElement("div", {className:"text-sm space-y-2"},
-            /*#__PURE__*/React.createElement("div", {className:"flex justify-between"}, /*#__PURE__*/React.createElement("span", null, "Kostwinner"), /*#__PURE__*/React.createElement("span", {className:"font-mono"}, manAOWy, " jaar ", manAOWm, " maanden")),
+            /*#__PURE__*/React.createElement("div", {className:"flex justify-between"}, /*#__PURE__*/React.createElement("span", null, "Man"), /*#__PURE__*/React.createElement("span", {className:"font-mono"}, manAOWy, " jaar ", manAOWm, " maanden")),
             /*#__PURE__*/React.createElement("div", {className:"flex justify-between"}, /*#__PURE__*/React.createElement("span", null, "Vrouw"), /*#__PURE__*/React.createElement("span", {className:"font-mono"}, vrouwAOWy, " jaar ", vrouwAOWm, " maanden"))
           )
         )
