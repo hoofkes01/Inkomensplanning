@@ -7019,7 +7019,8 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     const pt = vmVerloopPunten(maanden);
     const w = (p, nm) => (p.delen.find(d => d.naam === nm) || { waarde: 0 }).waarde;
     const sp = pt.map(p => w(p, "Vrij sparen")), dp = pt.map(p => w(p, "Deposito's")), bl = pt.map(p => w(p, "Beleggen"));
-    const rv = pt.map(p => w(p, "Reserveringen") + w(p, "Overig"));
+    const rvS = pt.map(p => w(p, "Reserveringen")), ovS = pt.map(p => w(p, "Overig"));
+    const rv = pt.map((p, i) => rvS[i] + ovS[i]);
     const mut = vmReg("vrijeBeleggingen").mutaties;
     const kwartalen = [];
     for (let k = 1; k < maanden.length; k++) {
@@ -7038,7 +7039,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
         renteSpaar: som("rentespaar"), renteDepo: som("rentedepo"),
         vrijval: som("vrijval"), naarBeleggen: som("beleggen") , naarDepo: som("verschuiving"),
         spBegin: sp[k - 1], spEind: sp[k],
-        dpBegin: dp[k - 1], dpEind: dp[k], blBegin: bl[k - 1], blEind: bl[k], rvBegin: rv[k - 1], rvEind: rv[k],
+        dpBegin: dp[k - 1], dpEind: dp[k], blBegin: bl[k - 1], blEind: bl[k], rvBegin: rvS[k - 1], rvEind: rvS[k], ovBegin: ovS[k - 1], ovEind: ovS[k],
         mutAlle, depoBel
       };
       r.extBel = mutAlle + r.naarBeleggen;
@@ -7082,12 +7083,15 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     } else if (naam.indexOf("Beleggen") === 0) {
       begin = eerste.blBegin; eind = laatste.blEind;
       voeg("Stortingen en opnames", som("mutAlle")); voeg("Hoofdsom van deposito's", som("depoBel")); voeg("Groei volgens je prognose", som("groei"));
+    } else if (naam.indexOf("Overig") === 0) {
+      begin = eerste.ovBegin; eind = laatste.ovEind;
+      noot = "Overig zijn je andere vermogensposten (geen deposito, spaargeld of beleggen) en de pot voor je inkomensaanvulling.";
     } else {
       begin = eerste.rvBegin; eind = laatste.rvEind;
       noot = "Reserveringen groeien met wat je maandelijks apart zet.";
     }
     const uitleg = lijnen.reduce((x, l) => x + l.v, 0);
-    if (Math.abs((eind - begin) - uitleg) >= 0.5) voeg(naam.indexOf("Reserveringen") === 0 ? "Maandelijks apart gezet" : "Overig", (eind - begin) - uitleg);
+    if (Math.abs((eind - begin) - uitleg) >= 0.5) voeg(naam.indexOf("Reserveringen") === 0 ? "Maandelijks apart gezet" : naam.indexOf("Overig") === 0 ? "Pot inkomensaanvulling en overige posten" : "Overig", (eind - begin) - uitleg);
     const kleur = v => ({ color: v < 0 ? VM_KLEUR.slecht : VM_KLEUR.goed, fontWeight: 600 });
     const rij = (l, v, vet) => vmH("div", { key: l, style: { display: "flex", justifyContent: "space-between", gap: 12, padding: "6px 0", borderTop: "1px solid #e2e8f0", fontWeight: vet ? 700 : 400 } },
       vmH("span", null, l), vmH("span", { className: "font-mono", style: vet ? null : kleur(v) }, vet ? vmGetal(v) : vmTeken(v) + vmGetal(v)));
@@ -7788,7 +7792,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     className: "font-mono text-xs uppercase tracking-widest bg-slate-700/60 border border-slate-500 rounded-full px-3 py-1"
   }, "peildatum ", fmtDate(PEILDATUM)), /*#__PURE__*/React.createElement("span", {
     className: "w-full text-xs text-slate-400 no-print"
-  }, "App-versie ", "17-10-2026 · 19:40")), /*#__PURE__*/React.createElement("p", {
+  }, "App-versie ", "17-10-2026 · 20:00")), /*#__PURE__*/React.createElement("p", {
     className: "mt-2 text-slate-300 text-sm max-w-2xl"
   }, "Bedragen zijn nominaal per peildatum, tenzij een indexatiepercentage is ingevuld. Alle basisbedragen zijn zelf aanpasbaar bij \"Basisgegevens\"." + (actieveTab === "fiscaliteit" ? " Alle aannames staan onderaan bij \"Aannames & beperkingen\". Bij het openen checkt dit bestand automatisch vier fiscale kerncijfers (zie bovenaan) — bij een afwijking wordt er niets automatisch aangepast, dat blijft een bewuste stap." : "")), /*#__PURE__*/React.createElement("div", {
     className: "mt-4 flex flex-wrap gap-2 items-center no-print"
