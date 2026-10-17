@@ -55,7 +55,7 @@
 }catch(e){}})();
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Vermogensplanning — Advies + dashboard — versie 2026-08-15d — advies 50% risicogrens — lokale opslag — rentedatum en rentevisie — momentopname 2026-10-15</title>
+<title>Vermogensplanning — dashboard en vermogen — lokale opslag — momentopname 2026-10-15</title>
 <meta name="theme-color" content="#0f172a">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -2633,6 +2633,15 @@ function IncomePlanner() {
 
 
   const [vermogenPeildatum, setVermogenPeildatum] = useOpslag("vermogenPeildatum", lokaleOpenDatum());
+  // Tabblad Vermogen: horizon voor "over X maanden", prognose voor (verlengde) deposito's,
+  // beleggingsregister (start, stortingen/opnames, waarde per 1 januari) en tijdelijke formulieren.
+  const [vermogenHorizon, setVermogenHorizon] = useOpslag("vermogenHorizon", 12);
+  const [depoPrognose, setDepoPrognose] = useOpslag("depoPrognose", { kort: 3, lang: 3.3, standaard: "sparen" });
+  const [beleggingsRegister, setBeleggingsRegister] = useOpslag("beleggingsRegister", {});
+  const [vermogenDetails, setVermogenDetails] = React.useState(false);
+  const [vmDepForm, setVmDepForm] = React.useState({ open: false, naam: "", bedrag: "", rente: "", looptijd: "", start: "", uitSparen: true });
+  const [vmOpenDep, setVmOpenDep] = React.useState(null);
+  const [vmForm, setVmForm] = React.useState(null);
   React.useEffect(() => {
     // Bij iedere opening de lokale datum van het apparaat gebruiken.
     setVermogenPeildatum(lokaleOpenDatum());
@@ -5405,7 +5414,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
 
     // Bij "naar nieuw deposito / beleggen" (vrijvalNaar = "nieuw") is er geen mutatie op het
     // spaargeld: de gebruiker voert de vervolgpost zelf in, met eigen rente% en bedrag.
-    VERMOGENS_ITEMS.filter(i => i.deposito && geldigeDatum(i.vervaldatum) && (vrijvalNaar || {})[i.id] !== "nieuw").forEach(i => {
+    VERMOGENS_ITEMS.filter(i => i.deposito && geldigeDatum(i.vervaldatum) && vrijvalKeuze(i) === "sparen").forEach(i => {
       voegEventToe(i.vervaldatum,
         i.renteAlVerwerkt ? (Number(i.bedrag)||0) : berekenDepositoMetRente(i, rendementen[i.id] || 0).waarde,
         `Vrijval ${i.label || 'deposito'}`
@@ -5558,7 +5567,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     };
 
     // Deposito's: de volledige waarde verhuist op de exacte vervaldatum naar Rabo sparen.
-    VERMOGENS_ITEMS.filter(i => i.deposito && geldigeDatum(i.vervaldatum) && (vrijvalNaar || {})[i.id] !== "nieuw").forEach(i => {
+    VERMOGENS_ITEMS.filter(i => i.deposito && geldigeDatum(i.vervaldatum) && vrijvalKeuze(i) === "sparen").forEach(i => {
       const verval = geldigeDatum(i.vervaldatum);
       const bedrag = i.renteAlVerwerkt
         ? Number(i.bedrag) || 0
@@ -5629,7 +5638,15 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     const degiroVrij = basis.degiroVrij * Math.pow(1 + (rendementen.degiro_vrij || 0) / 100, jarenTot);
     // Alleen deposito's die op de doeldatum nog lópen; vrijgevallen deposito's zitten al in
     // het rekening-courantsaldo en zouden anders dubbel tellen.
-    const depositos = VERMOGENS_ITEMS.filter(i => i.deposito && (!i.vervaldatum || new Date(i.vervaldatum) > doelDatum)).reduce((s, i) => s + depositoWaardeOpDatum(i, rendementen[i.id] || 0, doelDatum), 0);
+    const depositosLopend = VERMOGENS_ITEMS.filter(i => i.deposito && (!i.vervaldatum || new Date(i.vervaldatum) > doelDatum)).reduce((s, i) => s + depositoWaardeOpDatum(i, rendementen[i.id] || 0, doelDatum), 0);
+    // Deposito's die zijn vervallen maar verlengd worden: hoofdsom plus rente op de einddatum, daarna
+    // groeiend met het prognosepercentage voor verlengde deposito's (tot/langer dan 1 jaar).
+    const depositosVerlengd = VERMOGENS_ITEMS.filter(i => i.deposito && geldigeDatum(i.vervaldatum) && geldigeDatum(i.vervaldatum) <= doelDatum && vrijvalKeuze(i) === "verleng").reduce((s, i) => {
+      const verval = geldigeDatum(i.vervaldatum);
+      const bijVerval = berekenDepositoMetRente(i, rendementen[i.id] || 0).waarde;
+      return s + bijVerval * Math.pow(1 + depoPrognosePct(i) / 100, Math.max(0, (doelDatum - verval) / MS_PER_JAAR));
+    }, 0);
+    const depositos = depositosLopend + depositosVerlengd;
     // Overige eigen vermogensbestanddelen (geen deposito, geen sparen/degiro/leningen)
     const overigeItems = VERMOGENS_ITEMS.filter(i => !i.deposito && i.custom).reduce((s, i) => {
       const start = i.stortingDatum ? new Date(i.stortingDatum) : PEILDATUM;
@@ -6042,6 +6059,390 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     );
   }
 
+  // Wat gebeurt er met een deposito op de einddatum: naar Vrij sparen, verlengen (prognose) of handmatig.
+  function vrijvalKeuze(item) {
+    const k = (vrijvalNaar || {})[item.id];
+    if (k === "nieuw" || k === "sparen" || k === "verleng") return k;
+    return depoPrognose.standaard === "verleng" ? "verleng" : "sparen";
+  }
+  // Prognosepercentage voor een verlengd deposito: looptijd tot en met 1 jaar of langer dan 1 jaar.
+  function depoPrognosePct(item) {
+    const start = geldigeDatum(stortingsdatums[item.id] || item.stortingDatum);
+    const verval = geldigeDatum(item.vervaldatum);
+    const dagen = start && verval ? (verval - start) / 86400000 : 0;
+    return dagen > 366 ? Number(depoPrognose.lang) || 0 : Number(depoPrognose.kort) || 0;
+  }
+  // ===== Nieuw tabblad Vermogen: overzicht, sparen, deposito's, beleggen en pensioen =====
+  // Alleen weergave en eigen invoer; de rekenregels van de rest van de app blijven leidend.
+  const vmH = React.createElement;
+  const vmIso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const vmAddMaanden = (d, n) => new Date(d.getFullYear(), d.getMonth() + n, d.getDate());
+  const vmPct = (x, dec) => (Number(x) || 0).toFixed(dec == null ? 1 : dec).replace(".", ",") + "%";
+  const vmEuro = n => euro(Math.round(Number(n) || 0));
+  const vmGetal = n => new Intl.NumberFormat("nl-NL", { maximumFractionDigits: 0 }).format(Math.round(Number(n) || 0));
+  const vmTeken = n => n > 0.5 ? "+" : "";
+  const vmKleur = n => n > 0.5 ? "text-emerald-700" : n < -0.5 ? "text-rose-700" : "text-slate-600";
+  const vmKaart = "bg-white rounded-lg border border-slate-200 p-5";
+  const vmRij = "flex justify-between gap-3 py-1.5 border-t border-slate-100 text-sm";
+  const vmKnop = "text-sm px-3 py-1.5 rounded-full border border-slate-300 bg-white";
+  const vmKnopDonker = "text-sm px-3 py-1.5 rounded-full bg-slate-900 text-white";
+  const vmInvoer = "border border-slate-300 rounded px-2 py-1 font-mono text-sm";
+
+  // Rente van een deposito vanaf de stortingsdatum tot een bepaalde datum (maximaal de vervaldatum).
+  function vmDepositoRente(item, tot) {
+    const verval = geldigeDatum(item.vervaldatum);
+    const eind = verval && tot > verval ? verval : tot;
+    const r = berekenDepositoMetRente({ ...item, vervaldatum: vmIso(eind) }, rendementen[item.id] || 0);
+    return Math.max(0, r.waarde - (Number(item.bedrag) || 0));
+  }
+  function vmDepositoLijst() {
+    return depositosActief.map(i => {
+      const verval = geldigeDatum(i.vervaldatum);
+      return {
+        item: i,
+        bank: String(i.label || "").replace(/^Deposito\s+/i, "").replace(/^Raisin\s+/i, ""),
+        bedrag: Number(i.bedrag) || 0,
+        pct: Number(rendementen[i.id]) || 0,
+        verval,
+        dagen: verval ? Math.round((verval - APP_VANDAAG) / 86400000) : null,
+        opgebouwd: vmDepositoRente(i, APP_VANDAAG),
+        totaalRente: vmDepositoRente(i, verval || APP_VANDAAG)
+      };
+    }).sort((a, b) => (a.verval ? a.verval.getTime() : 0) - (b.verval ? b.verval.getTime() : 0));
+  }
+
+  // Beleggingsregister: per pakket een startwaarde, stortingen/opnames en de waarde per 1 januari.
+  function vmReg(sleutel) {
+    const r = (beleggingsRegister && beleggingsRegister[sleutel]) || {};
+    return { start: r.start || null, mutaties: Array.isArray(r.mutaties) ? r.mutaties : [], jaarStart: r.jaarStart || {}, waardeDatum: r.waardeDatum || null };
+  }
+  function vmWijzigReg(sleutel, fn) {
+    setBeleggingsRegister(prev => {
+      const huidig = (prev && prev[sleutel]) || {};
+      return { ...(prev || {}), [sleutel]: fn({ start: null, mutaties: [], jaarStart: {}, waardeDatum: null, ...huidig }) };
+    });
+  }
+  // Tijdgewogen rendement (Modified Dietz): een storting vlak voor het einde telt minder mee dan een
+  // storting aan het begin. Winst = eindwaarde - beginwaarde - netto stortingen.
+  function vmDietz(begin, beginDatum, eind, eindDatum, stromen) {
+    const T = (eindDatum - beginDatum) / 86400000;
+    if (!(T > 0)) return null;
+    let netto = 0, gewogen = 0;
+    stromen.forEach(f => {
+      netto += f.bedrag;
+      gewogen += f.bedrag * ((eindDatum - f.datum) / 86400000) / T;
+    });
+    const noemer = begin + gewogen;
+    if (!(noemer > 0)) return null;
+    const winst = eind - begin - netto;
+    return { winst, pct: winst / noemer * 100 };
+  }
+  function vmRendement(sleutel, waarde, waardeDatum) {
+    const reg = vmReg(sleutel);
+    const jaar = APP_VANDAAG.getFullYear();
+    // Boekingen op de begindatum tellen mee (de beginwaarde is de waarde vóór die boeking). Op de
+    // einddatum tellen ze mee, behalve bij "vorig jaar": 1 januari hoort daar al bij het nieuwe jaar.
+    const stromen = (van, tot, eindMee) => reg.mutaties
+      .map(m => ({ datum: geldigeDatum(m.datum), bedrag: Number(m.bedrag) || 0 }))
+      .filter(f => f.datum && f.datum >= van && (eindMee === false ? f.datum < tot : f.datum <= tot));
+    const uit = { gestort: 0, opgenomen: 0, inleg: null, sinds: null, ditJaar: null, vorigJaar: null, startDatum: null };
+    const sd = reg.start ? geldigeDatum(reg.start.datum) : null;
+    if (reg.start && sd) {
+      const sw = Number(reg.start.waarde) || 0;
+      const st = stromen(sd, waardeDatum);
+      uit.startDatum = sd;
+      uit.gestort = st.filter(f => f.bedrag > 0).reduce((s, f) => s + f.bedrag, 0);
+      uit.opgenomen = -st.filter(f => f.bedrag < 0).reduce((s, f) => s + f.bedrag, 0);
+      uit.inleg = sw + uit.gestort - uit.opgenomen;
+      uit.sinds = vmDietz(sw, sd, waarde, waardeDatum, st);
+      if (uit.sinds) uit.sinds.winst = waarde - uit.inleg;
+    }
+    // Dit jaar: vanaf de waarde per 1 januari, of vanaf de start als die dit jaar ligt.
+    const jan1 = new Date(jaar, 0, 1);
+    let beginWaarde = null, beginDatum = null;
+    if (reg.jaarStart[jaar] != null && reg.jaarStart[jaar] !== "") { beginWaarde = Number(reg.jaarStart[jaar]) || 0; beginDatum = jan1; }
+    else if (sd && sd.getFullYear() === jaar) { beginWaarde = Number(reg.start.waarde) || 0; beginDatum = sd; }
+    if (beginDatum) uit.ditJaar = vmDietz(beginWaarde, beginDatum, waarde, waardeDatum, stromen(beginDatum, waardeDatum));
+    // Vorig jaar: waarde per 1 januari vorig jaar en per 1 januari dit jaar nodig.
+    const vj = reg.jaarStart[jaar - 1], dj = reg.jaarStart[jaar];
+    if (vj != null && vj !== "" && dj != null && dj !== "") {
+      uit.vorigJaar = vmDietz(Number(vj) || 0, new Date(jaar - 1, 0, 1), Number(dj) || 0, jan1, stromen(new Date(jaar - 1, 0, 1), jan1, false));
+    }
+    return uit;
+  }
+  function vmPakketWaarde(sleutel) {
+    const p = beleggingsOverzicht && beleggingsOverzicht[sleutel];
+    return Number(p && p.totaal) || 0;
+  }
+  function vmWaardeBijwerken(sleutel, bedrag, datum) {
+    const w = Number(bedrag);
+    if (!Number.isFinite(w) || w < 0 || !geldigeDatum(datum)) return false;
+    setBeleggingsOverzicht(prev => ({ ...prev, [sleutel]: { ...(prev[sleutel] || {}), totaal: w } }));
+    vmWijzigReg(sleutel, r => ({ ...r, waardeDatum: datum }));
+    return true;
+  }
+
+  // Deposito toevoegen (zelfde gevolgen als het bestaande formulier lager op de pagina).
+  function vmVoegDepositoToe(f) {
+    const bedrag = Math.abs(Number(f.bedrag) || 0);
+    const start = geldigeDatum(f.start);
+    const mnd = Math.max(1, Math.round(Number(f.looptijd) || 0));
+    if (!f.naam.trim() || !bedrag || !start || !f.looptijd) return false;
+    const verval = new Date(start);
+    const dagStart = verval.getDate();
+    verval.setDate(1);
+    verval.setMonth(verval.getMonth() + mnd);
+    verval.setDate(Math.min(dagStart, new Date(verval.getFullYear(), verval.getMonth() + 1, 0).getDate()));
+    const id = `custom_${Date.now()}`;
+    setExtraVermogensItems(prev => [...prev, {
+      id, label: f.naam.trim(), bedrag, custom: true, deposito: true,
+      vervaldatum: vmIso(verval), stortingUitRabo: f.uitSparen !== false, stortingDatum: f.start
+    }]);
+    setRendement(id, Number(f.rente) || 0);
+    setStortingsdatum(id, f.start);
+    return true;
+  }
+  function vmZetVervaldatum(id, datum) {
+    setExtraVermogensItems(prev => prev.map(i => i.id === id ? { ...i, vervaldatum: datum } : i));
+  }
+
+  function renderVermogenOverzicht() {
+    const horizon = Number(vermogenHorizon) || 12;
+    const nu = totaalVermogenOpDatum(APP_VANDAAG);
+    const later = totaalVermogenOpDatum(vmAddMaanden(APP_VANDAAG, horizon));
+    const overig = r => (Number(r.overigeItems) || 0) + (Number(r.overbrugging) || 0);
+    const regels = [
+      ["Vrij sparen", nu.sparen, later.sparen],
+      ["Deposito's", nu.depositos, later.depositos],
+      ["Beleggen", nu.degiroVrij, later.degiroVrij],
+      ["Reserveringen", nu.geoormerkt, later.geoormerkt]
+    ];
+    if (Math.abs(overig(nu)) >= 0.5 || Math.abs(overig(later)) >= 0.5) regels.push(["Overig", overig(nu), overig(later)]);
+    const totNu = Number(nu.vrijBesteedbaar) || 0, totLater = Number(later.vrijBesteedbaar) || 0;
+    const lijst = vmDepositoLijst();
+    const somBedrag = lijst.reduce((s, d) => s + d.bedrag, 0);
+    const somOpgebouwd = lijst.reduce((s, d) => s + d.opgebouwd, 0);
+    const somTotaal = lijst.reduce((s, d) => s + d.totaalRente, 0);
+    const rentePct = SPAARRENTE_PCT;
+    const jaar = APP_VANDAAG.getFullYear();
+    const override = spaarRenteOverrides && spaarRenteOverrides[jaar];
+    const dagenVerstreken = Math.floor((APP_VANDAAG - new Date(jaar, 0, 1)) / 86400000);
+    const renteDitJaar = override != null && override !== ""
+      ? { bedrag: Number(override) || 0, bron: "zelf ingevoerd" }
+      : { bedrag: Math.round((Number(spaarStartsaldo) || 0) * rentePct / 100 * dagenVerstreken / 365), bron: "schatting met het saldo van vandaag" };
+
+    // --- prognose-aannames ---
+    const aannames = vmH("div", { className: vmKaart },
+      vmH("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-2" }, "Prognose-aannames"),
+      vmH("p", { className: "text-xs text-slate-500 mb-2" }, "Hiermee rekent de app vooruit. Je kunt ze altijd bijstellen. Lopende deposito's houden hun eigen rente tot de einddatum."),
+      [
+        ["Beleggen (vrij)", rendementen.degiro_vrij || 0, v => setRendement("degiro_vrij", v)],
+        ["Nieuw of verlengd deposito, tot en met 1 jaar", depoPrognose.kort, v => setDepoPrognose(p => ({ ...p, kort: Number(v) || 0 }))],
+        ["Nieuw of verlengd deposito, langer dan 1 jaar", depoPrognose.lang, v => setDepoPrognose(p => ({ ...p, lang: Number(v) || 0 }))]
+      ].map(([naam, waarde, zet]) => vmH("div", { key: naam, className: vmRij },
+        vmH("span", null, naam),
+        vmH("span", { className: "flex items-center gap-1 shrink-0" },
+          vmH(NumInput, { step: "0.1", value: waarde, onChange: e => zet(e.target.value), className: "w-20 " + vmInvoer }),
+          vmH("span", { className: "text-xs text-slate-500" }, "%/jr")))),
+      vmH("div", { className: vmRij },
+        vmH("span", null, "Bij einddatum van een deposito"),
+        vmH("select", {
+          value: depoPrognose.standaard === "verleng" ? "verleng" : "sparen",
+          onChange: e => setDepoPrognose(p => ({ ...p, standaard: e.target.value })),
+          className: "border border-slate-300 rounded px-1 py-1 text-xs"
+        }, vmH("option", { value: "sparen" }, "naar Vrij sparen"), vmH("option", { value: "verleng" }, "verlengen met zelfde looptijd"))),
+      vmH("p", { className: "text-xs text-slate-400 mt-1" }, "Per deposito kun je dit afwijkend instellen. Verlengde deposito's tellen niet mee als beschikbaar spaargeld.")
+    );
+
+    // --- overzicht nu en later ---
+    const overzicht = vmH("div", { className: vmKaart },
+      vmH("div", { className: "text-xs uppercase tracking-wide text-slate-500" }, "Vrij vermogen nu (bedragen in euro)"),
+      vmH("div", { className: "text-3xl font-mono font-semibold mt-1 mb-3" }, vmEuro(totNu)),
+      vmH("table", { className: "w-full font-mono", style: { fontSize: "13px" } },
+        vmH("thead", null, vmH("tr", { className: "text-xs text-slate-500 font-sans" },
+          vmH("th", { className: "text-left font-normal py-1" }, ""),
+          vmH("th", { className: "text-right font-normal py-1" }, "Nu"),
+          vmH("th", { className: "text-right font-normal py-1" }, "Over " + horizon + " mnd"),
+          vmH("th", { className: "text-right font-normal py-1" }, "Verschil"))),
+        vmH("tbody", null,
+          regels.map(([naam, a, b]) => vmH("tr", { key: naam, className: "border-t border-slate-100" },
+            vmH("td", { className: "py-1.5 font-sans text-left" }, naam),
+            vmH("td", { className: "py-1.5 text-right" }, vmGetal(a)),
+            vmH("td", { className: "py-1.5 text-right" }, vmGetal(b)),
+            vmH("td", { className: "py-1.5 text-right " + vmKleur(b - a) }, vmTeken(b - a) + vmGetal(b - a)))),
+          vmH("tr", { className: "border-t border-slate-300 font-semibold" },
+            vmH("td", { className: "py-1.5 font-sans text-left" }, "Totaal"),
+            vmH("td", { className: "py-1.5 text-right" }, vmGetal(totNu)),
+            vmH("td", { className: "py-1.5 text-right" }, vmGetal(totLater)),
+            vmH("td", { className: "py-1.5 text-right " + vmKleur(totLater - totNu) }, vmTeken(totLater - totNu) + vmGetal(totLater - totNu))))),
+      vmH("div", { className: "flex gap-2 flex-wrap mt-3" }, [3, 6, 12, 24].map(m => vmH("button", {
+        key: m, type: "button", onClick: () => setVermogenHorizon(m),
+        className: m === horizon ? vmKnopDonker : vmKnop
+      }, m + " mnd"))),
+      vmH("p", { className: "text-xs text-slate-500 mt-2" }, "Over " + horizon + " maanden: rente, vrijval van deposito's, je grote inkomsten en uitgaven en de prognose-aannames zijn meegerekend. Pensioenpotten en de woning staan hier niet in.")
+    );
+
+    // --- vrij sparen ---
+    const sparen = vmH("div", { className: vmKaart },
+      vmH("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-1" }, "1. Vrij sparen"),
+      vmH("div", { className: vmRij + " items-center" }, vmH("span", null, "Hoofdsom (saldo vandaag)"),
+        vmH("span", { className: "flex items-center gap-1" }, vmH("span", { className: "text-xs text-slate-500" }, "€"),
+          vmH(NumInput, { value: spaarStartsaldo, onChange: e => setSpaarStartsaldo(Number(e.target.value) || 0), className: "w-28 " + vmInvoer }))),
+      vmH("div", { className: vmRij }, vmH("span", null, "Rente nu"), vmH("b", null, vmPct(rentePct, 2) + " per jaar")),
+      vmH("div", { className: vmRij }, vmH("span", null, "Rente dit jaar (bijschrijving 31 dec)"),
+        vmH("span", null, vmH("b", null, vmEuro(renteDitJaar.bedrag)), vmH("span", { className: "text-xs text-slate-500" }, " (" + renteDitJaar.bron + ")"))),
+      vmH("div", { className: "text-xs uppercase tracking-wide text-slate-500 mt-3 mb-1" }, "Spaarrente per datum"),
+      vmH("div", { className: "space-y-1" }, renteSchemaGesorteerd().map(r => vmH("div", { key: r.id, className: "flex items-center gap-2 text-sm" },
+        vmH("span", { className: "text-xs text-slate-500" }, "vanaf"),
+        vmH("input", { type: "date", value: r.vanaf, onChange: e => wijzigRentePercentage(r.id, "vanaf", e.target.value), className: "border border-slate-300 rounded px-2 py-1 font-mono text-xs" }),
+        vmH(NumInput, { step: "0.1", value: r.pct, onChange: e => wijzigRentePercentage(r.id, "pct", e.target.value), className: "w-20 " + vmInvoer }),
+        vmH("span", { className: "text-xs text-slate-500" }, "%/jr"),
+        vmH("button", { onClick: () => verwijderRentePercentage(r.id), className: "text-xs text-rose-600 px-1", title: "Verwijderen" }, "✕")))),
+      vmH("button", { onClick: voegRentePercentageToe, className: vmKnop + " mt-2" }, "+ Percentage toevoegen"),
+      vmH("p", { className: "text-xs text-slate-400 mt-1" }, "Voeg een regel toe zodra de rente verandert, ook voor je prognose. Vanaf die datum geldt het nieuwe percentage.")
+    );
+
+    // --- deposito's ---
+    const dForm = vmDepForm;
+    const zetDF = (k, v) => setVmDepForm(p => ({ ...p, [k]: v }));
+    const deposito = vmH("div", { className: vmKaart },
+      vmH("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-1" }, "2. Deposito's"),
+      vmH("div", { className: vmRij }, vmH("span", null, "Totaal hoofdsom"), vmH("b", null, vmEuro(somBedrag))),
+      vmH("div", { className: vmRij }, vmH("span", null, "Opgebouwde rente tot vandaag"), vmH("b", null, vmEuro(somOpgebouwd))),
+      vmH("div", { className: vmRij }, vmH("span", null, "Verwacht aan rente tot de einddatum"), vmH("b", null, vmEuro(somTotaal))),
+      vmH("p", { className: "text-xs text-slate-500 my-1" }, "Gesorteerd op einddatum. Tik op een deposito om het aan te passen. De opgebouwde rente zit niet in het vrij vermogen hierboven; die komt erbij bij de einddatum."),
+      lijst.map(d => {
+        const open = vmOpenDep === d.item.id;
+        const bijna = d.dagen != null && d.dagen <= 90;
+        return vmH("div", { key: d.item.id, className: "border-t border-slate-100 py-2" },
+          vmH("button", { type: "button", onClick: () => setVmOpenDep(open ? null : d.item.id), className: "w-full text-left" },
+            vmH("div", { className: "flex justify-between font-semibold text-sm" }, vmH("span", null, d.bank), vmH("span", { className: "font-mono" }, vmEuro(d.bedrag))),
+            vmH("div", { className: "text-xs text-slate-600 mt-0.5", style: { display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: "12px" } },
+              vmH("span", null, "Einddatum: ", vmH("b", null, d.verval ? fmtDate(d.verval) : "onbekend"), bijna && vmH("span", { className: "ml-1 text-amber-800 bg-amber-100 rounded-full px-2" }, d.dagen + " dagen")),
+              vmH("span", null, "Rente: ", vmH("b", null, vmPct(d.pct, 2))),
+              vmH("span", null, "Opgebouwd: ", vmH("b", null, vmEuro(d.opgebouwd))),
+              vmH("span", null, "Tot einde: ", vmH("b", null, vmEuro(d.totaalRente))))),
+          open && vmH("div", { className: "mt-2 p-3 bg-slate-50 rounded border border-slate-200 space-y-2 text-sm" },
+            vmH("div", { className: "flex items-center justify-between gap-2" }, vmH("span", null, "Hoofdsom"),
+              vmH(NumInput, { value: d.bedrag, onChange: e => setItemBedrag(d.item.id, e.target.value), className: "w-28 " + vmInvoer })),
+            vmH("div", { className: "flex items-center justify-between gap-2" }, vmH("span", null, "Rente (% per jaar)"),
+              vmH(NumInput, { step: "0.01", value: d.pct, onChange: e => setRendement(d.item.id, e.target.value), className: "w-24 " + vmInvoer })),
+            vmH("div", { className: "flex items-center justify-between gap-2" }, vmH("span", null, "Startdatum"),
+              vmH("input", { type: "date", value: stortingsdatums[d.item.id] || "", onChange: e => setStortingsdatum(d.item.id, e.target.value), className: "border border-slate-300 rounded px-2 py-1 font-mono text-xs" })),
+            vmH("div", { className: "flex items-center justify-between gap-2" }, vmH("span", null, "Einddatum"),
+              vmH("input", { type: "date", value: d.item.vervaldatum || "", onChange: e => vmZetVervaldatum(d.item.id, e.target.value), className: "border border-slate-300 rounded px-2 py-1 font-mono text-xs" })),
+            vmH("div", { className: "flex items-center justify-between gap-2" }, vmH("span", null, "Bij einddatum"),
+              vmH("select", { value: vrijvalKeuze(d.item), onChange: e => zetVrijvalNaar(d.item.id, e.target.value), className: "border border-slate-300 rounded px-1 py-1 text-xs" },
+                vmH("option", { value: "sparen" }, "naar Vrij sparen"),
+                vmH("option", { value: "verleng" }, "verlengen (prognose " + vmPct(depoPrognosePct(d.item), 1) + ")"),
+                vmH("option", { value: "nieuw" }, "naar nieuw deposito / beleggen (zelf invoeren)"))),
+            vmH("button", { type: "button", onClick: () => { if (window.confirm("Dit deposito verwijderen?")) verwijderVermogensitem(d.item.id); }, className: "text-xs text-rose-700 underline" }, "Deposito verwijderen")));
+      }),
+      !dForm.open
+        ? vmH("button", { type: "button", onClick: () => zetDF("open", true), className: vmKnopDonker + " w-full mt-3" }, "+ Deposito toevoegen")
+        : vmH("div", { className: "mt-3 p-3 bg-slate-50 rounded border border-slate-200 space-y-2 text-sm" },
+          vmH("input", { type: "text", placeholder: "Bank of naam (bijv. Raisin Brocc Finance)", value: dForm.naam, onChange: e => zetDF("naam", e.target.value), className: "w-full border border-slate-300 rounded px-2 py-1 text-sm" }),
+          vmH("div", { className: "flex gap-2 flex-wrap items-center" },
+            vmH(NumInput, { placeholder: "Bedrag", value: dForm.bedrag, onChange: e => zetDF("bedrag", e.target.value), className: "w-28 " + vmInvoer }),
+            vmH(NumInput, { step: "0.01", placeholder: "Rente %", value: dForm.rente, onChange: e => zetDF("rente", e.target.value), className: "w-24 " + vmInvoer }),
+            vmH(NumInput, { step: "1", placeholder: "Looptijd (mnd)", value: dForm.looptijd, onChange: e => zetDF("looptijd", e.target.value), className: "w-32 " + vmInvoer })),
+          vmH("div", { className: "flex items-center gap-2" }, vmH("span", { className: "text-xs text-slate-500" }, "Startdatum"),
+            vmH("input", { type: "date", value: dForm.start, onChange: e => zetDF("start", e.target.value), className: "border border-slate-300 rounded px-2 py-1 font-mono text-xs" })),
+          vmH("label", { className: "flex items-center gap-1 text-xs text-slate-600" },
+            vmH("input", { type: "checkbox", checked: dForm.uitSparen !== false, onChange: e => zetDF("uitSparen", e.target.checked) }), "bedrag van Vrij sparen afboeken op de startdatum"),
+          vmH("div", { className: "flex gap-2" },
+            vmH("button", { type: "button", className: vmKnopDonker, onClick: () => { if (vmVoegDepositoToe(dForm)) setVmDepForm({ open: false, naam: "", bedrag: "", rente: "", looptijd: "", start: "", uitSparen: true }); } }, "Toevoegen"),
+            vmH("button", { type: "button", className: vmKnop, onClick: () => zetDF("open", false) }, "Annuleren")))
+    );
+
+    // --- beleggen en pensioen: zelfde opzet ---
+    const pakketKaart = (sleutel, titel, opm) => {
+      const reg = vmReg(sleutel);
+      const waarde = vmPakketWaarde(sleutel);
+      const waardeDatum = geldigeDatum(reg.waardeDatum) || geldigeDatum(beleggingsOverzicht && beleggingsOverzicht.bijgewerkt) || APP_VANDAAG;
+      const r = vmRendement(sleutel, waarde, waardeDatum);
+      const f = vmForm && vmForm.sleutel === sleutel ? vmForm : null;
+      const zetF = (k, v) => setVmForm(p => ({ ...p, [k]: v }));
+      const opens = soort => setVmForm({ sleutel, soort, datum: vmIso(APP_VANDAAG), bedrag: "", waarde: "" });
+      const rendRij = (lbl, x, uitleg) => vmH("div", { className: vmRij }, vmH("span", null, lbl),
+        x ? vmH("b", { className: vmKleur(x.winst) }, vmTeken(x.winst) + vmEuro(x.winst) + " (" + (x.pct > 0 ? "+" : "") + vmPct(x.pct, 1) + ")") : vmH("span", { className: "text-xs text-slate-500" }, uitleg));
+      const jaar = APP_VANDAAG.getFullYear();
+      const jaarStartNodig = reg.start && jaar >= 2027 && (reg.jaarStart[jaar] == null || reg.jaarStart[jaar] === "");
+      const sorted = [...reg.mutaties].sort((a, b) => String(b.datum).localeCompare(String(a.datum)));
+      return vmH("div", { key: sleutel, className: "py-3 border-t border-slate-100" },
+        vmH("div", { className: "flex justify-between items-baseline" }, vmH("span", { className: "font-semibold" }, titel), vmH("span", { className: "text-xl font-mono font-semibold" }, vmEuro(waarde))),
+        vmH("div", { className: "text-xs text-slate-500" }, "Waarde per " + fmtDate(waardeDatum) + (opm ? " · " + opm : "")),
+        reg.start
+          ? vmH(React.Fragment, null,
+            vmH("div", { className: vmRij + " mt-2" }, vmH("span", null, "Startwaarde (" + fmtDate(geldigeDatum(reg.start.datum) || APP_VANDAAG) + ")"), vmH("b", null, vmEuro(reg.start.waarde))),
+            vmH("div", { className: vmRij }, vmH("span", null, "Gestort sinds start"), vmH("b", null, vmEuro(r.gestort))),
+            vmH("div", { className: vmRij }, vmH("span", null, "Opgenomen sinds start"), vmH("b", null, vmEuro(r.opgenomen))),
+            rendRij("Winst/verlies sinds start", r.sinds, "nog te kort om te berekenen"),
+            rendRij("Rendement dit jaar (vanaf 1 jan)", r.ditJaar, jaar >= 2027 ? "waarde per 1 januari invullen" : "wordt zichtbaar vanaf de startdatum of 1-1-2027"),
+            rendRij("Rendement vorig jaar", r.vorigJaar, jaar >= 2028 ? "waarden per 1 jan " + (jaar - 1) + " en " + jaar + " invullen" : "vanaf 2028 zichtbaar"))
+          : vmH("div", { className: "mt-2 text-sm bg-amber-50 border border-amber-200 rounded p-3" },
+            "Nog geen startwaarde vastgelegd, dus geen rendement te tonen. ",
+            vmH("button", { type: "button", className: "underline", onClick: () => vmWijzigReg(sleutel, x => ({ ...x, start: { datum: vmIso(APP_VANDAAG), waarde: waarde }, waardeDatum: x.waardeDatum || vmIso(APP_VANDAAG) })) }, "Start nu vastleggen met de waarde van vandaag")),
+        jaarStartNodig && vmH("div", { className: "mt-2 text-sm bg-amber-50 border border-amber-200 rounded p-3" },
+          "De waarde per 1 januari " + jaar + " ontbreekt, dus het rendement over dit jaar is nog niet te berekenen. ",
+          vmH("button", { type: "button", className: "underline", onClick: () => setVmForm({ sleutel, soort: "jan", datum: vmIso(APP_VANDAAG), bedrag: "", waarde: "", jaar }) }, "Nu invullen")),
+        vmH("div", { className: "flex gap-2 flex-wrap mt-2" },
+          vmH("button", { type: "button", className: vmKnop, onClick: () => opens("storting") }, "+ Storting"),
+          vmH("button", { type: "button", className: vmKnop, onClick: () => opens("opname") }, "− Opname"),
+          vmH("button", { type: "button", className: vmKnop, onClick: () => opens("waarde") }, "Waarde bijwerken"),
+          reg.start && vmH("button", { type: "button", className: vmKnop, onClick: () => opens("jan") }, "Waarde 1 jan")),
+        f && vmH("div", { className: "mt-2 p-3 bg-slate-50 rounded border border-slate-200 space-y-2 text-sm" },
+          vmH("div", { className: "font-semibold" }, f.soort === "storting" ? "Storting vastleggen" : f.soort === "opname" ? "Opname vastleggen" : f.soort === "jan" ? "Waarde per 1 januari" : "Waarde bijwerken"),
+          f.soort === "jan"
+            ? vmH("div", { className: "flex gap-2 items-center flex-wrap" },
+              vmH("input", { type: "number", min: "2020", max: "2100", placeholder: "jaar", value: f.jaar || jaar, onChange: e => zetF("jaar", e.target.value), className: "w-20 " + vmInvoer }),
+              vmH(NumInput, { placeholder: "waarde per 1 jan", value: f.bedrag, onChange: e => zetF("bedrag", e.target.value), className: "w-32 " + vmInvoer }))
+            : vmH("div", { className: "flex gap-2 items-center flex-wrap" },
+              vmH("input", { type: "date", value: f.datum, onChange: e => zetF("datum", e.target.value), className: "border border-slate-300 rounded px-2 py-1 font-mono text-xs" }),
+              vmH(NumInput, { placeholder: f.soort === "waarde" ? "nieuwe totaalwaarde" : "bedrag", value: f.bedrag, onChange: e => zetF("bedrag", e.target.value), className: "w-36 " + vmInvoer })),
+          (f.soort === "storting" || f.soort === "opname") && vmH("div", { className: "flex gap-2 items-center flex-wrap" },
+            vmH("span", { className: "text-xs text-slate-500" }, "Nieuwe totaalwaarde na deze boeking (aanbevolen):"),
+            vmH(NumInput, { placeholder: "totaalwaarde", value: f.waarde, onChange: e => zetF("waarde", e.target.value), className: "w-32 " + vmInvoer })),
+          vmH("div", { className: "flex gap-2" },
+            vmH("button", { type: "button", className: vmKnopDonker, onClick: () => {
+              const bedrag = Math.abs(Number(f.bedrag) || 0);
+              if (f.soort === "waarde") {
+                if (vmWaardeBijwerken(sleutel, f.bedrag, f.datum)) setVmForm(null);
+              } else if (f.soort === "jan") {
+                const jr = Number(f.jaar || jaar);
+                if (f.bedrag !== "" && Number.isFinite(Number(f.bedrag)) && jr >= 2020) { vmWijzigReg(sleutel, x => ({ ...x, jaarStart: { ...x.jaarStart, [jr]: Number(f.bedrag) } })); setVmForm(null); }
+              } else if (bedrag > 0 && geldigeDatum(f.datum)) {
+                vmWijzigReg(sleutel, x => ({ ...x, mutaties: [...x.mutaties, { id: "m" + Date.now(), datum: f.datum, bedrag: f.soort === "storting" ? bedrag : -bedrag }] }));
+                if (f.waarde !== "" && f.waarde != null) vmWaardeBijwerken(sleutel, f.waarde, f.datum);
+                setVmForm(null);
+              }
+            } }, "Opslaan"),
+            vmH("button", { type: "button", className: vmKnop, onClick: () => setVmForm(null) }, "Annuleren"))),
+        sorted.length > 0 && vmH("details", { className: "mt-2 text-xs text-slate-600" },
+          vmH("summary", { className: "cursor-pointer" }, sorted.length + " storting" + (sorted.length === 1 ? "" : "en") + "/opname" + (sorted.length === 1 ? "" : "s")),
+          sorted.map(m => vmH("div", { key: m.id, className: "flex justify-between py-0.5" },
+            vmH("span", null, fmtDate(geldigeDatum(m.datum) || APP_VANDAAG), Number(m.bedrag) >= 0 ? " storting" : " opname"),
+            vmH("span", { className: "font-mono" }, vmEuro(Math.abs(Number(m.bedrag))), vmH("button", { type: "button", className: "ml-2 text-rose-600", title: "Verwijderen", onClick: () => vmWijzigReg(sleutel, x => ({ ...x, mutaties: x.mutaties.filter(y => y.id !== m.id) })) }, "✕")))))
+      );
+    };
+    const beleggen = vmH("div", { className: vmKaart },
+      vmH("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-1" }, "3. Beleggen"),
+      pakketKaart("vrijeBeleggingen", "Vrij beleggen (Hoofkes02)", "prognose " + vmPct(rendementen.degiro_vrij || 0, 1) + " per jaar"),
+      vmH("p", { className: "text-xs text-slate-400" }, "Rendement is de totale waardeontwikkeling (rente, koerswinst, dividend) en houdt rekening met het moment van storten en opnemen. Je houdt alleen het totaal bij.")
+    );
+    const pensioen = vmH("div", { className: vmKaart },
+      vmH("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-1" }, "4. Lijfrente en pensioen"),
+      pakketKaart("pensioenDegiro", "Lijfrente (Hoofkes04)", ""),
+      pakketKaart("pensioenBnd", "Pensioen Brand New Day (Vrouw)", ""),
+      vmH("p", { className: "text-xs text-slate-400" }, "Pensioenpotten tellen niet mee in het vrije vermogen. Hun prognose en uitkering staan bij tabblad Lijfrente en pensioen.")
+    );
+
+    return vmH(React.Fragment, null,
+      vmH("section", { className: "space-y-4" },
+        vmH("h2", { className: "font-serif text-xl" }, "Vermogen"),
+        overzicht, aannames, sparen, deposito, beleggen, pensioen));
+  }
+
   function renderBeleggingen() {
     const kleur = n => n > 0 ? "text-emerald-700" : n < 0 ? "text-rose-700" : "text-slate-500";
     const teken = n => n > 0 ? "+" : "";
@@ -6307,7 +6708,7 @@ React.createElement("button",{type:"button","data-no-print":"true",onClick:()=>{
   ),
   React.createElement("span",{className:"underline"}, totaalUpdateAantal>0 || overallStatus!=="done" || fiscaalTabelMelding ? "bekijk en update →" : "bekijk →")
 ),
-menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-slate-200 rounded-xl p-3 shadow-sm"},React.createElement("div",{className:"text-xs text-slate-500 mb-2"},"Kies een onderwerp"),React.createElement("select",{defaultValue:"",autoFocus:true,onChange:e=>{const id=e.target.value;if(!id)return;setActieveTab(id);setMenuOpen(false);},className:"w-full bg-white border border-slate-300 rounded-lg px-3 py-3 text-sm text-slate-800"},React.createElement("option",{value:"",disabled:true},"Selecteer een onderwerp…"),React.createElement("option",{value:"dashboard"},"Dashboard actueel"),React.createElement("option",{value:"dashboard_detail"},"Advies"),React.createElement("option",{value:"inkomen"},"Inkomen"),React.createElement("option",{value:"inkomensaanvulling"},"Toevoeging inkomen"),React.createElement("option",{value:"lijfrente"},"Lijfrente en pensioen"),React.createElement("option",{value:"vaste_lasten"},"Vaste lasten en dagelijkse uitgaven"),React.createElement("option",{value:"spaarpot"},"Vermogen"),React.createElement("option",{value:"grote_uitgaven"},"Grote posten en reserveringen"),React.createElement("option",{value:"beleggingen"},"Beleggingen"),React.createElement("option",{value:"fiscaliteit"},"Fiscaliteit & AOW"))), actieveTab === "dashboard" && React.createElement(React.Fragment, null, React.createElement("section", null, /*#__PURE__*/React.createElement("h2", {
+menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-slate-200 rounded-xl p-3 shadow-sm"},React.createElement("div",{className:"text-xs text-slate-500 mb-2"},"Kies een onderwerp"),React.createElement("select",{defaultValue:"",autoFocus:true,onChange:e=>{const id=e.target.value;if(!id)return;setActieveTab(id);setMenuOpen(false);},className:"w-full bg-white border border-slate-300 rounded-lg px-3 py-3 text-sm text-slate-800"},React.createElement("option",{value:"",disabled:true},"Selecteer een onderwerp…"),React.createElement("option",{value:"dashboard"},"Dashboard actueel"),React.createElement("option",{value:"inkomen"},"Inkomen"),React.createElement("option",{value:"inkomensaanvulling"},"Toevoeging inkomen"),React.createElement("option",{value:"lijfrente"},"Lijfrente en pensioen"),React.createElement("option",{value:"vaste_lasten"},"Vaste lasten en dagelijkse uitgaven"),React.createElement("option",{value:"spaarpot"},"Vermogen"),React.createElement("option",{value:"grote_uitgaven"},"Grote posten en reserveringen"),React.createElement("option",{value:"fiscaliteit"},"Fiscaliteit & AOW"))), actieveTab === "dashboard" && React.createElement(React.Fragment, null, React.createElement("section", null, /*#__PURE__*/React.createElement("h2", {
     className: "font-serif text-xl mb-4"
   }, "Fasenoverzicht — netto huishouden per maand"),
   React.createElement("div", { className: "mb-4 flex flex-wrap gap-2" },
@@ -7437,7 +7838,7 @@ menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-sl
     className: "text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded p-3"
   }, "Er staat nog niets in de pot, dus de aanvulling van ", euro(Number(obBedrag) || 0), " telt nog niet mee in het fasenoverzicht. Vul hierboven bij \"Gestort vanuit spaargeld\" in hoeveel je erin zet — of klik op \"Benodigd overnemen\" — dan verschijnt de aanvulling vanaf ", fmtDate(obStartDatum), " in je inkomen."), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-400"
-  }, "De storting verschijnt als losse afboeking in de rekening-courant op ", fmtDate(obStartDatum), ". De maandelijkse opname van ", euro(Number(obBedrag) || 0), " telt mee als inkomen in het fasenoverzicht en in het maandsaldo, tot je AOW-datum. Onttrekkingen uit eigen vermogen zijn onbelast, dus dit bedrag is netto."))), actieveTab === "spaarpot" && React.createElement(React.Fragment, null, React.createElement("section", null, React.createElement("h2", {className:"font-serif text-xl mb-4"}, "Vermogen — peildatum"), React.createElement("div", {className:"bg-white rounded-lg border border-slate-200 p-5"}, React.createElement("div", {className:"flex flex-wrap items-end gap-3"}, React.createElement("div", null, React.createElement("label", {className:"text-xs uppercase tracking-wide text-slate-500"}, "Peildatum vermogen"), React.createElement("input", {type:"date", min:PEILDATUM.toISOString().slice(0,10), value:vermogenPeildatum || "", onChange:e=>setVermogenPeildatum(e.target.value), className:"block mt-1 border border-slate-300 rounded px-2 py-1.5 font-mono text-sm"})), React.createElement("button", {onClick:()=>setVermogenPeildatum(vermogenPeildatum || PEILDATUM.toISOString().slice(0,10)), className:"text-sm px-4 py-1.5 rounded-full bg-slate-900 text-white"}, "Bereken vermogen")), React.createElement("p", {className:"text-xs text-slate-500 mt-2"}, "Werkt alleen voor vandaag (", fmtDate(APP_VANDAAG), ") of een datum daarna. Voor een datum in het verleden kan de app het werkelijke verloop niet betrouwbaar terugrekenen."), vermogenPeildatum && geldigeDatum(vermogenPeildatum) && (() => { const d = geldigeDatum(vermogenPeildatum); if (d < APP_VANDAAG) { return React.createElement("p", {className:"text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded p-3 mt-3"}, "Deze peildatum (", fmtDate(d), ") ligt vóór vandaag (", fmtDate(APP_VANDAAG), "). Kies vandaag of een latere datum — de app kan geen betrouwbaar historisch bedrag terugrekenen."); } const actueleDatum = APP_VANDAAG; const actueel = totaalVermogenOpDatum(actueleDatum); const opPeildatum = totaalVermogenOpDatum(d); const actueelBedrag = Number(actueel.vrijBesteedbaar) || 0; const peildatumBedrag = Number(opPeildatum.vrijBesteedbaar) || 0; const verschil = peildatumBedrag - actueelBedrag; const verschilPct = actueelBedrag !== 0 ? (verschil / actueelBedrag) * 100 : 0; const splitRij = (lbl, v, extra) => React.createElement("div", {className:"flex justify-between"+(extra||"")}, React.createElement("span", {className:"font-sans"}, lbl), React.createElement("span", null, euro(Math.round(v)))); const split = r => { const reserv = Number(r.geoormerkt)||0; const overig = (Number(r.overigeItems)||0) + (Number(r.overbrugging)||0); return React.createElement("div", {className:"mt-3 pt-2 border-t border-slate-100 text-xs font-mono text-slate-600 space-y-0.5"}, splitRij("Beleggen Hoofkes02", Number(r.degiroVrij)||0), splitRij("Deposito's", Number(r.depositos)||0), splitRij("Sparen", Number(r.sparen)||0), Math.abs(reserv) >= 0.5 && splitRij("Reserveringen", reserv), Math.abs(overig) >= 0.5 && splitRij("Overbrugging / overig", overig), splitRij("Totaal", Number(r.vrijBesteedbaar)||0, " font-semibold text-slate-800 pt-0.5 border-t border-slate-100")); }; return React.createElement(React.Fragment, null, React.createElement("p", {className:"text-xs text-slate-500 mt-3"}, "Peildatum ingesteld op ", fmtDate(d), "."), React.createElement("div", {className:"mt-4 bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3"}, React.createElement("div", {className:"grid grid-cols-1 sm:grid-cols-2 gap-3"}, React.createElement("div", {className:"bg-white border border-slate-200 rounded p-3"}, React.createElement("div", {className:"text-xs uppercase tracking-wide text-slate-500"}, "Actueel vrij vermogen"), React.createElement("div", {className:"mt-1 text-2xl font-mono font-semibold"}, euro(Math.round(actueelBedrag))), React.createElement("p", {className:"text-xs text-slate-500 mt-1"}, "Vandaag / bovenaan bij Advies"), split(actueel)), React.createElement("div", {className:"bg-white border border-slate-200 rounded p-3"}, React.createElement("div", {className:"text-xs uppercase tracking-wide text-slate-500"}, "Vrij vermogen op peildatum ", fmtDate(d)), React.createElement("div", {className:"mt-1 text-2xl font-mono font-semibold"}, euro(Math.round(peildatumBedrag))), split(opPeildatum))), React.createElement("div", {className:`text-sm font-mono font-semibold ${verschil > 0.5 ? "text-emerald-700" : verschil < -0.5 ? "text-red-700" : "text-slate-600"}`}, "Afwijking t.o.v. actueel: ", verschil > 0 ? "+" : "", euro(Math.round(verschil)), " (", verschil > 0 ? "+" : "", verschilPct.toFixed(2).replace(".", ","), "%)"), React.createElement("p", {className:"text-xs text-slate-500"}, "Het actuele vermogen is altijd de waarde van vandaag zoals gebruikt bij Advies. Het bedrag op de gekozen peildatum kan daarvan afwijken. Pensioenpotten en de woning zijn niet inbegrepen."))); })())), vermogenPeildatum && geldigeDatum(vermogenPeildatum) && geldigeDatum(vermogenPeildatum) >= APP_VANDAAG && renderPeildatumVerklaring(geldigeDatum(vermogenPeildatum), APP_VANDAAG), React.createElement("section", null, /*#__PURE__*/React.createElement("h2", {
+  }, "De storting verschijnt als losse afboeking in de rekening-courant op ", fmtDate(obStartDatum), ". De maandelijkse opname van ", euro(Number(obBedrag) || 0), " telt mee als inkomen in het fasenoverzicht en in het maandsaldo, tot je AOW-datum. Onttrekkingen uit eigen vermogen zijn onbelast, dus dit bedrag is netto."))), actieveTab === "spaarpot" && React.createElement(React.Fragment, null, renderVermogenOverzicht(), React.createElement("section", null, React.createElement("button", {type:"button", onClick:()=>setVermogenDetails(v=>!v), className:"w-full text-sm px-4 py-3 rounded-lg border border-slate-300 bg-white"}, vermogenDetails ? "Details en bewerken verbergen ▲" : "Peildatum en alle bestanddelen bewerken ▼")), vermogenDetails && React.createElement(React.Fragment, null, React.createElement("section", null, React.createElement("h2", {className:"font-serif text-xl mb-4"}, "Vermogen — peildatum"), React.createElement("div", {className:"bg-white rounded-lg border border-slate-200 p-5"}, React.createElement("div", {className:"flex flex-wrap items-end gap-3"}, React.createElement("div", null, React.createElement("label", {className:"text-xs uppercase tracking-wide text-slate-500"}, "Peildatum vermogen"), React.createElement("input", {type:"date", min:PEILDATUM.toISOString().slice(0,10), value:vermogenPeildatum || "", onChange:e=>setVermogenPeildatum(e.target.value), className:"block mt-1 border border-slate-300 rounded px-2 py-1.5 font-mono text-sm"})), React.createElement("button", {onClick:()=>setVermogenPeildatum(vermogenPeildatum || PEILDATUM.toISOString().slice(0,10)), className:"text-sm px-4 py-1.5 rounded-full bg-slate-900 text-white"}, "Bereken vermogen")), React.createElement("p", {className:"text-xs text-slate-500 mt-2"}, "Werkt alleen voor vandaag (", fmtDate(APP_VANDAAG), ") of een datum daarna. Voor een datum in het verleden kan de app het werkelijke verloop niet betrouwbaar terugrekenen."), vermogenPeildatum && geldigeDatum(vermogenPeildatum) && (() => { const d = geldigeDatum(vermogenPeildatum); if (d < APP_VANDAAG) { return React.createElement("p", {className:"text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded p-3 mt-3"}, "Deze peildatum (", fmtDate(d), ") ligt vóór vandaag (", fmtDate(APP_VANDAAG), "). Kies vandaag of een latere datum — de app kan geen betrouwbaar historisch bedrag terugrekenen."); } const actueleDatum = APP_VANDAAG; const actueel = totaalVermogenOpDatum(actueleDatum); const opPeildatum = totaalVermogenOpDatum(d); const actueelBedrag = Number(actueel.vrijBesteedbaar) || 0; const peildatumBedrag = Number(opPeildatum.vrijBesteedbaar) || 0; const verschil = peildatumBedrag - actueelBedrag; const verschilPct = actueelBedrag !== 0 ? (verschil / actueelBedrag) * 100 : 0; const splitRij = (lbl, v, extra) => React.createElement("div", {className:"flex justify-between"+(extra||"")}, React.createElement("span", {className:"font-sans"}, lbl), React.createElement("span", null, euro(Math.round(v)))); const split = r => { const reserv = Number(r.geoormerkt)||0; const overig = (Number(r.overigeItems)||0) + (Number(r.overbrugging)||0); return React.createElement("div", {className:"mt-3 pt-2 border-t border-slate-100 text-xs font-mono text-slate-600 space-y-0.5"}, splitRij("Beleggen Hoofkes02", Number(r.degiroVrij)||0), splitRij("Deposito's", Number(r.depositos)||0), splitRij("Sparen", Number(r.sparen)||0), Math.abs(reserv) >= 0.5 && splitRij("Reserveringen", reserv), Math.abs(overig) >= 0.5 && splitRij("Overbrugging / overig", overig), splitRij("Totaal", Number(r.vrijBesteedbaar)||0, " font-semibold text-slate-800 pt-0.5 border-t border-slate-100")); }; return React.createElement(React.Fragment, null, React.createElement("p", {className:"text-xs text-slate-500 mt-3"}, "Peildatum ingesteld op ", fmtDate(d), "."), React.createElement("div", {className:"mt-4 bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3"}, React.createElement("div", {className:"grid grid-cols-1 sm:grid-cols-2 gap-3"}, React.createElement("div", {className:"bg-white border border-slate-200 rounded p-3"}, React.createElement("div", {className:"text-xs uppercase tracking-wide text-slate-500"}, "Actueel vrij vermogen"), React.createElement("div", {className:"mt-1 text-2xl font-mono font-semibold"}, euro(Math.round(actueelBedrag))), React.createElement("p", {className:"text-xs text-slate-500 mt-1"}, "Vandaag"), split(actueel)), React.createElement("div", {className:"bg-white border border-slate-200 rounded p-3"}, React.createElement("div", {className:"text-xs uppercase tracking-wide text-slate-500"}, "Vrij vermogen op peildatum ", fmtDate(d)), React.createElement("div", {className:"mt-1 text-2xl font-mono font-semibold"}, euro(Math.round(peildatumBedrag))), split(opPeildatum))), React.createElement("div", {className:`text-sm font-mono font-semibold ${verschil > 0.5 ? "text-emerald-700" : verschil < -0.5 ? "text-red-700" : "text-slate-600"}`}, "Afwijking t.o.v. actueel: ", verschil > 0 ? "+" : "", euro(Math.round(verschil)), " (", verschil > 0 ? "+" : "", verschilPct.toFixed(2).replace(".", ","), "%)"), React.createElement("p", {className:"text-xs text-slate-500"}, "Het actuele vermogen is altijd de waarde van vandaag. Het bedrag op de gekozen peildatum kan daarvan afwijken. Pensioenpotten en de woning zijn niet inbegrepen."))); })())), vermogenPeildatum && geldigeDatum(vermogenPeildatum) && geldigeDatum(vermogenPeildatum) >= APP_VANDAAG && renderPeildatumVerklaring(geldigeDatum(vermogenPeildatum), APP_VANDAAG), React.createElement("section", null, /*#__PURE__*/React.createElement("h2", {
     className: "font-serif text-xl mb-4"
   }, "Rendement & rente — elk bestanddeel los"), /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-lg border border-amber-200 p-5 space-y-4"
@@ -7594,7 +7995,7 @@ menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-sl
     className: "text-xs text-amber-700"
   }, "De percentages kunnen naar keuze worden aangepast. Vul per bestanddeel het eigen tarief in; voor deposito's ook de stortingsdatum, dan boekt de rente automatisch op de exacte jaardag en telt hij bij het deposito op. Nog niet verwerkt in de nettototalen van het fasenoverzicht; is bruto en fiscaal nog niet doorgerekend (box 3)."), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-400"
-  }, "De rendementen op de lijfrentepotten (DEGIRO ", euro(DEGIRO_KAPITAAL_NU), " en BND ", euro(BND_KAPITAAL_NU), ") staan niet hier, maar bij \"Lijfrente-uitkeringen & hypotheekrente vanaf 2031\" hierboven — daar horen ze functioneel bij, samen met de sluitpost-looptijd."))), false && React.createElement("section", null, /*#__PURE__*/React.createElement("h2", {
+  }, "De rendementen op de lijfrentepotten (DEGIRO ", euro(DEGIRO_KAPITAAL_NU), " en BND ", euro(BND_KAPITAAL_NU), ") staan niet hier, maar bij \"Lijfrente-uitkeringen & hypotheekrente vanaf 2031\" hierboven — daar horen ze functioneel bij, samen met de sluitpost-looptijd.")))), false && React.createElement("section", null, /*#__PURE__*/React.createElement("h2", {
     className: "font-serif text-xl mb-4"
   }, "Reserveringspotjes"), /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-lg border border-slate-200 p-5 space-y-4"
