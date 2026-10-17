@@ -7068,7 +7068,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     const punten = vmVerloopPunten([0, 3, 6, 9, 12, 15, 18, 21, 24]);
     const nu = punten[0], j1 = punten[4], j2 = punten[8];
     const lijst = vmDepositoLijst();
-    const depoJaren = vmDepositoJaartabel(lijst).filter(x => x.y <= jaar + 4);
+    const depoJaren = vmDepositoJaartabel(lijst);
     const nuTotaal = totaalVermogenOpDatum(APP_VANDAAG);
     const controles = vmControles(nuTotaal, lijst);
     const fouten = controles.filter(x => !x.ok);
