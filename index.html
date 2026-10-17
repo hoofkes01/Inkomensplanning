@@ -5546,8 +5546,8 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
       events.get(key).push({ delta:Number(delta)||0, omschrijving, datum:d, ...extra });
     }
 
-    // Bij "naar nieuw deposito / beleggen" (vrijvalNaar = "nieuw") is er geen mutatie op het
-    // spaargeld: de gebruiker voert de vervolgpost zelf in, met eigen rente% en bedrag.
+    // Bij "nieuw deposito" (vrijvalNaar = "nieuw") gaat alleen de rente naar het spaargeld: de hoofdsom
+    // voert de gebruiker zelf in als vervolgpost, met eigen rente% en bedrag.
     VERMOGENS_ITEMS.filter(i => i.deposito).forEach(i => vmDepositoBetalingen(i, eindDag).forEach(b => voegEventToe(b.datum, b.bedrag, b.omschrijving)));
     VERMOGENS_ITEMS.filter(i => i.stortingUitRabo && geldigeDatum(i.stortingDatum)).forEach(i => {
       voegEventToe(i.stortingDatum, -(Number(i.overboekingBedrag != null ? i.overboekingBedrag : i.bedrag)||0),
@@ -6328,7 +6328,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     const uit = [];
     const keuze = vrijvalKeuze(item);
     const verval = geldigeDatum(item.vervaldatum);
-    if (!verval || keuze === "nieuw") return uit;
+    if (!verval) return uit;
     const h = Number(item.bedrag) || 0;
     const jl = vmRenteJaarlijks(item);
     vmCycli(item, tot).forEach((c, k) => {
@@ -6535,11 +6535,11 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
   }
   // Keuze bij de einddatum van een deposito.
   function vmKeuzeSelect(item) {
-    return vmH("select", { value: vrijvalKeuze(item), onChange: e => zetVrijvalNaar(item.id, e.target.value), className: "border border-slate-300 rounded px-1 py-1 text-xs" },
+    return vmH("select", { value: vrijvalKeuze(item), onChange: e => zetVrijvalNaar(item.id, e.target.value), style: { maxWidth: "100%" }, className: "border border-slate-300 rounded px-1 py-1 text-xs" },
       vmH("option", { value: "sparen" }, "hoofdsom en rente naar Vrij sparen"),
-      vmH("option", { value: "verleng" }, "verlengen (rente " + vmPct(depoPrognosePct(item), 1) + " naar sparen)"),
-      vmH("option", { value: "belegging" }, "hoofdsom naar beleggen"),
-      vmH("option", { value: "nieuw" }, "niets, ik voer het vervolg zelf in"));
+      vmH("option", { value: "verleng" }, "verlengen (rente naar sparen)"),
+      vmH("option", { value: "belegging" }, "hoofdsom naar beleggen, rente sparen"),
+      vmH("option", { value: "nieuw" }, "nieuw deposito, rente naar sparen"));
   }
   function vmZetVervaldatum(id, datum) {
     setExtraVermogensItems(prev => prev.map(i => i.id === id ? { ...i, vervaldatum: datum } : i));
@@ -6748,7 +6748,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
           value: depoPrognose.standaard === "verleng" || depoPrognose.standaard === "belegging" ? depoPrognose.standaard : "sparen",
           onChange: e => setDepoPrognose(p => ({ ...p, standaard: e.target.value })),
           className: "border border-slate-300 rounded px-1 py-1 text-xs"
-        }, vmH("option", { value: "sparen" }, "hoofdsom en rente naar Vrij sparen"), vmH("option", { value: "verleng" }, "verlengen (rente naar sparen)"), vmH("option", { value: "belegging" }, "hoofdsom naar beleggen"))),
+        }, vmH("option", { value: "sparen" }, "hoofdsom en rente naar Vrij sparen"), vmH("option", { value: "verleng" }, "verlengen (rente naar sparen)"), vmH("option", { value: "belegging" }, "hoofdsom naar beleggen, rente sparen"))),
       vmH("p", { className: "text-xs text-slate-400 mt-1" }, "Standaard gaan hoofdsom en rente van een deposito op de einddatum naar je spaarsaldo: de deposito's nemen geleidelijk af en het spaargeld neemt toe. Kies je voor een nieuw deposito, dan leg je dat hieronder vast: het spaargeld daalt en de deposito's stijgen. De percentages gelden voor verlengde deposito's. Per deposito kun je het anders instellen. De prognose voor pensioenpotten stel je in bij Lijfrente en pensioen.")
     );
 
@@ -7768,7 +7768,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     className: "font-mono text-xs uppercase tracking-widest bg-slate-700/60 border border-slate-500 rounded-full px-3 py-1"
   }, "peildatum ", fmtDate(PEILDATUM)), /*#__PURE__*/React.createElement("span", {
     className: "w-full text-xs text-slate-400 no-print"
-  }, "App-versie ", "17-10-2026 · 15:55")), /*#__PURE__*/React.createElement("p", {
+  }, "App-versie ", "17-10-2026 · 16:15")), /*#__PURE__*/React.createElement("p", {
     className: "mt-2 text-slate-300 text-sm max-w-2xl"
   }, "Bedragen zijn nominaal per peildatum, tenzij een indexatiepercentage is ingevuld. Alle basisbedragen zijn zelf aanpasbaar bij \"Basisgegevens\"." + (actieveTab === "fiscaliteit" ? " Alle aannames staan onderaan bij \"Aannames & beperkingen\". Bij het openen checkt dit bestand automatisch vier fiscale kerncijfers (zie bovenaan) — bij een afwijking wordt er niets automatisch aangepast, dat blijft een bewuste stap." : "")), /*#__PURE__*/React.createElement("div", {
     className: "mt-4 flex flex-wrap gap-2 items-center no-print"
@@ -8980,7 +8980,7 @@ menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-sl
       onChange: e => zetStortingUitRabo(item.id, e.target.checked)
     }), "afboeken van Sparen Rabo"), item.deposito && item.vervaldatum && /*#__PURE__*/React.createElement("label", {
       className: "flex items-center gap-1 text-xs text-slate-500",
-      title: "Naar Sparen Rabo: hoofdsom plus rente vallen vrij op het spaargeld. Naar nieuw deposito / beleggen: geen mutatie op het spaargeld. Voer de vervolgpost zelf in (eigen rente% en bedrag, eventueel inclusief de oude rente) met dezelfde datum en zet daar afboeken van Sparen Rabo uit."
+      title: "Naar Sparen Rabo: hoofdsom plus rente vallen vrij op het spaargeld. Naar nieuw deposito: alleen de rente komt op het spaargeld. Voer de vervolgpost zelf in (eigen rente% en bedrag, eventueel inclusief de oude rente) met dezelfde datum en zet daar afboeken van Sparen Rabo uit."
     }, "bij verval:", /*#__PURE__*/React.createElement("select", {
       value: (vrijvalNaar || {})[item.id] === "nieuw" ? "nieuw" : "sparen",
       onChange: e => zetVrijvalNaar(item.id, e.target.value),
