@@ -2642,6 +2642,7 @@ function IncomePlanner() {
   const [vmDepForm, setVmDepForm] = React.useState({ open: false, naam: "", bedrag: "", rente: "", looptijd: "", start: "", uitSparen: true });
   const [vmOpenDep, setVmOpenDep] = React.useState(null);
   const [vmForm, setVmForm] = React.useState(null);
+  const [groteToonAlles, setGroteToonAlles] = React.useState(false);
   React.useEffect(() => {
     // Bij iedere opening de lokale datum van het apparaat gebruiken.
     setVermogenPeildatum(lokaleOpenDatum());
@@ -5542,7 +5543,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
   function depositoHuidigeWaarde(i) {
     return depositoWaardeOpDatum(i, rendementen[i.id] || 0, PEILDATUM);
   }
-  function sparenRaboOpDatum(doelDatum) {
+  function sparenRaboOpDatum(doelDatum, reeks) {
     // Rekent exact per kalenderdag. Gebeurtenissen (depositovrijval, stortingen,
     // mutaties, inkomen/lasten, lijfrente, vakantiegeld en overbrugging) worden
     // op hun exacte boekdatum verwerkt. Rente wordt over het werkelijke aantal
@@ -5555,6 +5556,8 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
 
     let balans = Number(sparenRaboBerekend) || 0;
     let renteOpgebouwd = 0;
+    // Optioneel: de dagelijkse saldo-reeks teruggeven (voor de controle "heb ik genoeg geld").
+    if (reeks) reeks.push({ datum: new Date(startDatum), balans });
 
     const dagKey = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     const events = new Map();
@@ -5627,6 +5630,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
         balans += override != null ? Number(override) || 0 : renteOpgebouwd;
         renteOpgebouwd = 0;
       }
+      if (reeks) reeks.push({ datum: new Date(dag), balans });
 
       dag.setDate(dag.getDate() + 1);
     }
@@ -6204,6 +6208,50 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
   }
   function vmZetVervaldatum(id, datum) {
     setExtraVermogensItems(prev => prev.map(i => i.id === id ? { ...i, vervaldatum: datum } : i));
+  }
+
+  // Grote posten: heb ik genoeg geld in het lopende en het volgende jaar? Alleen spaargeld telt mee
+  // (Vrij sparen plus vrijvallende deposito's); beleggingen en verlengde deposito's niet.
+  function renderGenoegGeld() {
+    const jaar = APP_VANDAAG.getFullYear();
+    const eind = new Date(jaar + 1, 11, 31);
+    const reeks = [];
+    sparenRaboOpDatum(eind, reeks);
+    const minimum = Number(spaarBufferMinimum) || 0;
+    if (!reeks.length) return null;
+    const laagste = reeks.reduce((m, p) => (p.balans < m.balans ? p : m), reeks[0]);
+    const eersteTekort = reeks.find(p => p.balans < minimum);
+    const maanden = [];
+    for (let y = jaar, m = APP_VANDAAG.getMonth(); y <= jaar + 1; ) {
+      const inMaand = reeks.filter(p => p.datum.getFullYear() === y && p.datum.getMonth() === m);
+      if (inMaand.length) maanden.push({ y, m, eind: inMaand[inMaand.length - 1].balans, min: Math.min(...inMaand.map(p => p.balans)) });
+      m += 1;
+      if (m > 11) { m = 0; y += 1; }
+    }
+    const naamMaand = (y, m) => new Date(y, m, 1).toLocaleDateString("nl-NL", { month: "short", year: "numeric" });
+    const genoeg = !eersteTekort;
+    const beleggen = Number(totaalVermogenOpDatum(APP_VANDAAG).degiroVrij) || 0;
+    return vmH("div", { className: "bg-white rounded-lg border border-slate-200 p-5 mb-4" },
+      vmH("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-2" }, "Heb ik genoeg geld? " + jaar + " en " + (jaar + 1)),
+      vmH("div", { className: "rounded-lg p-3 text-sm font-semibold " + (genoeg ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-rose-50 text-rose-800 border border-rose-300") },
+        genoeg
+          ? "Ja. Het spaargeld blijft tot en met december " + (jaar + 1) + " boven je minimum van " + vmEuro(minimum) + "."
+          : "Nee. Vanaf " + fmtDate(eersteTekort.datum) + " komt het spaargeld onder je minimum van " + vmEuro(minimum) + "."),
+      vmH("div", { className: vmRij + " mt-2" }, vmH("span", null, "Laagste punt"), vmH("b", { className: laagste.balans < minimum ? "text-rose-700" : "" }, vmEuro(laagste.balans) + " op " + fmtDate(laagste.datum))),
+      vmH("div", { className: vmRij + " items-center" }, vmH("span", null, "Minimumsaldo"),
+        vmH("span", { className: "flex items-center gap-1" }, vmH("span", { className: "text-xs text-slate-500" }, "€"),
+          vmH(NumInput, { value: spaarBufferMinimum, onChange: e => setSpaarBufferMinimum(Number(e.target.value) || 0), className: "w-24 " + vmInvoer }))),
+      vmH("table", { className: "w-full font-mono mt-2", style: { fontSize: "13px" } },
+        vmH("thead", null, vmH("tr", { className: "text-xs text-slate-500 font-sans" },
+          vmH("th", { className: "text-left font-normal py-1" }, "Maand"),
+          vmH("th", { className: "text-right font-normal py-1" }, "Einde maand"),
+          vmH("th", { className: "text-right font-normal py-1" }, "Laagste"))),
+        vmH("tbody", null, maanden.map(x => vmH("tr", { key: x.y + "-" + x.m, className: "border-t border-slate-100" },
+          vmH("td", { className: "py-1 font-sans text-left" }, naamMaand(x.y, x.m)),
+          vmH("td", { className: "py-1 text-right" }, vmGetal(x.eind)),
+          vmH("td", { className: "py-1 text-right " + (x.min < minimum ? "text-rose-700 font-semibold" : "") }, vmGetal(x.min)))))),
+      vmH("p", { className: "text-xs text-slate-500 mt-2" }, "Bedragen in euro. Meegerekend: je spaarsaldo, maandelijkse inkomsten en uitgaven, grote posten en vrijvallende deposito's. Niet meegerekend: beleggingen (" + vmEuro(beleggen) + " nu, als extra reserve) en deposito's die je verlengt.")
+    );
   }
 
   function renderVermogenOverzicht() {
@@ -8541,37 +8589,8 @@ menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-sl
       
     )
   ),
-  React.createElement("div", {
-    className: "text-xs uppercase tracking-wide text-slate-500 mb-2"
-  }, "Spaarrente per datum"), /*#__PURE__*/React.createElement("p", {className: "text-xs text-slate-500 mb-2"}, "Voeg een nieuwe regel toe zodra de rente verandert. Vanaf die datum geldt het nieuwe percentage."), /*#__PURE__*/React.createElement("div", {
-    className: "space-y-1"
-  }, renteSchemaGesorteerd().map(r => /*#__PURE__*/React.createElement("div", {
-    key: r.id,
-    className: "flex items-center gap-2 text-sm"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "text-xs text-slate-500 w-10"
-  }, "vanaf"), /*#__PURE__*/React.createElement("input", {
-    type: "date",
-    value: r.vanaf,
-    onChange: e => wijzigRentePercentage(r.id, "vanaf", e.target.value),
-    className: "border border-slate-300 rounded px-2 py-1 font-mono text-xs"
-  }), /*#__PURE__*/React.createElement(NumInput, {
-    step: "0.1",
-    value: r.pct,
-    onChange: e => wijzigRentePercentage(r.id, "pct", e.target.value),
-    className: "w-20 border border-slate-300 rounded px-2 py-1 font-mono text-sm"
-  }), /*#__PURE__*/React.createElement("span", {
-    className: "text-xs text-slate-500"
-  }, "%/jr"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => verwijderRentePercentage(r.id),
-    className: "text-xs text-rose-600 hover:text-rose-800 px-1",
-    title: "Verwijderen"
-  }, "✕")))), /*#__PURE__*/React.createElement("button", {
-    onClick: voegRentePercentageToe,
-    className: "text-sm px-4 py-1.5 rounded-full bg-slate-900 text-white hover:bg-slate-800 mt-2"
-  }, "+ Percentage toevoegen"), /*#__PURE__*/React.createElement("p", {
-    className: "text-xs text-slate-400 mt-1"
-  }, "Nu geldend (", fmtDate(PEILDATUM), "): ", SPAARRENTE_PCT, "%/jr.")), actieveTab === "grote_uitgaven" && groteWeergave==="grote" && React.createElement(React.Fragment, null, React.createElement("h2", {className: "font-serif text-xl mb-4"}, "Grote uitgaven en inkomsten"),
+  renderGenoegGeld(),
+  React.createElement("div", {className: "text-sm text-slate-600 mb-4"}, "Saldo en spaarrente (nu ", SPAARRENTE_PCT, "%/jr) beheer je bij ", React.createElement("button", {type:"button", className:"underline text-sky-700", onClick:()=>setActieveTab("spaarpot")}, "Vermogen"), ".")), actieveTab === "grote_uitgaven" && groteWeergave==="grote" && React.createElement(React.Fragment, null, React.createElement("h2", {className: "font-serif text-xl mb-4"}, "Grote uitgaven en inkomsten"),
   React.createElement("div", {className: "bg-white rounded-lg border border-slate-200 p-5 space-y-3"}, React.createElement("div", {
     className: "pt-3 border-t border-slate-200"
   }, /*#__PURE__*/React.createElement("div", {
@@ -8777,7 +8796,9 @@ menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-sl
     className: "text-xs uppercase tracking-wide text-slate-500 mb-2"
   }, "Verloop per boeking — ", PEILDATUM.getFullYear(), " t/m ", Math.min(2045, PEILDATUM.getFullYear() + 4)), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-500 mb-2"
-  }, "Blauw zijn je eigen posten. Automatische regels worden door de app berekend; corrigeer alleen als een werkelijke afschrijving afwijkt."), /*#__PURE__*/React.createElement("div", {
+  }, "Blauw zijn je eigen posten. Automatische regels worden door de app berekend; corrigeer alleen als een werkelijke afschrijving afwijkt."), React.createElement("div", {className: "flex items-center gap-2 flex-wrap mb-2"},
+    React.createElement("button", {type:"button", onClick:()=>setGroteToonAlles(v=>!v), className:"text-xs px-3 py-1.5 rounded-full border border-slate-300 bg-white"}, groteToonAlles ? "Alleen grote posten van dit en volgend jaar tonen" : "Ook maandelijkse saldoregels en latere jaren tonen"),
+    !groteToonAlles && React.createElement("span", {className:"text-xs text-slate-500"}, "De maandelijkse inkomsten minus uitgaven zijn verborgen, maar zitten wel in het saldo.")), /*#__PURE__*/React.createElement("div", {
     className: "overflow-x-auto"
   }, /*#__PURE__*/React.createElement("table", {
     className: "w-full text-xs font-mono"
@@ -8857,7 +8878,13 @@ menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-sl
                    String(a.omschrijving || a.label || "").localeCompare(String(b.omschrijving || b.label || "")));
 })().filter(b => {
  const y=new Date(b.datum).getFullYear();
- return y>=PEILDATUM.getFullYear() && y<=Math.min(2045,PEILDATUM.getFullYear()+4);
+ if (!(y>=PEILDATUM.getFullYear() && y<=Math.min(2045,PEILDATUM.getFullYear()+4))) return false;
+ // Standaard alleen het lopende en volgende jaar, zonder de maandelijkse saldoregels.
+ if (!groteToonAlles) {
+  if (y>PEILDATUM.getFullYear()+1) return false;
+  if (String(b.omschrijving||"")==="Saldo inkomsten minus uitgaven") return false;
+ }
+ return true;
 }).flatMap((b, i, zichtbareDetails) => {
     const huidigeJaar = new Date(b.datum).getFullYear();
     const volgende = zichtbareDetails[i + 1];
