@@ -165,7 +165,26 @@ function postCaoFactorCentraal(type, vanDatum, totDatum, pct){
 .rp-fasen td:first-child, .rp-fasen td:nth-child(2) { white-space: nowrap; }
 .rp-fasen td:nth-child(3), .rp-fasen td:nth-child(4) { width: 30%; }
 .rp-fasen .rp-sub { font-size: 8pt; line-height: 1.25; }
-@media print { .rp-analyse { break-inside: avoid; page-break-inside: avoid; } .rp-analyse th, .rp-analyse td { font-size: 8.5pt; padding-left: 3px; padding-right: 3px; white-space: nowrap; } .rp-analyse th:first-child, .rp-analyse td:first-child { white-space: normal; width: 30%; } }
+@media screen and (max-width: 640px) {
+  .gp-tabel, .gp-tabel tbody { display: block; width: 100%; }
+  .gp-tabel thead { display: none; }
+  .gp-tabel tr { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "datum bedrag" "omschr omschr" "soort saldo"; column-gap: 10px; row-gap: 4px; padding: 8px 6px; font-size: 13px; }
+  .gp-tabel td { display: block; padding: 0 !important; min-width: 0; text-align: left !important; white-space: normal !important; }
+  .gp-tabel td:nth-child(1) { grid-area: datum; }
+  .gp-tabel td:nth-child(2) { grid-area: omschr; font-weight: 600; }
+  .gp-tabel td:nth-child(3) { grid-area: soort; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; }
+  .gp-tabel td:nth-child(4) { grid-area: bedrag; text-align: right !important; font-weight: 700; }
+  .gp-tabel td:nth-child(5) { grid-area: saldo; text-align: right !important; color: #475569; }
+  .gp-tabel td:nth-child(5)::before { content: "saldo "; font-weight: 400; font-size: 11px; }
+  .gp-tabel input, .gp-tabel select { width: 100% !important; min-height: 36px; font-size: 14px !important; }
+  .gp-tabel td:nth-child(4) input { width: 110px !important; text-align: right; }
+  .gp-tabel button { min-height: 32px; padding-left: 8px; padding-right: 8px; }
+  .gp-tabel tr.gp-sub { grid-template-areas: "tot saldo"; font-size: 13px; }
+  .gp-tabel tr.gp-sub td:nth-child(1) { grid-area: tot; font-weight: 700; }
+  .gp-tabel tr.gp-sub td:nth-child(2) { grid-area: saldo; font-weight: 700; color: #0f172a; }
+  .gp-tabel tr.gp-sub td:nth-child(2)::before { content: ""; }
+}
+@media print { .rp-nieuwepagina { break-before: page; page-break-before: always; } .rp-analyse { break-inside: avoid; page-break-inside: avoid; } .rp-analyse th, .rp-analyse td { font-size: 8.5pt; padding-left: 3px; padding-right: 3px; white-space: nowrap; } .rp-analyse th:first-child, .rp-analyse td:first-child { white-space: normal; width: 30%; } }
 @media print { .rp-pagina svg { max-height: 95mm; width: 100%; } }
 @media print { .rp { font-size: 10.5pt; } .rp-pagina { border: 0; border-radius: 0; padding: 0; margin: 0; } .rp { max-width: none; } .rp-kpi { grid-template-columns: repeat(4, 1fr); } .rp-tabel, .rp table { font-size: 10pt; } .rp th { font-size: 9.5pt; } .rp-noot, .rp-sub { font-size: 9pt; } .rp-banner { font-size: 10.5pt; } }
 </style>
@@ -6988,8 +7007,8 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
       r.rest = r.verschil - (r.maandsaldo + r.grootIn + r.grootUit + r.aanvulling + r.renteSpaar + r.renteDepo + r.extBel + r.groei);
       kwartalen.push(r);
     }
-    const topEvents = log.filter(e => e.datum <= vmAddMaanden(APP_VANDAAG, 12) && e.soort !== "maandsaldo" && Math.abs(e.delta) >= 500)
-      .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)).slice(0, 10).sort((a, b) => a.datum - b.datum);
+    const topEvents = log.filter(e => e.datum <= vmAddMaanden(APP_VANDAAG, 12) && e.soort !== "maandsaldo" && Math.abs(e.delta) >= 200)
+      .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)).slice(0, 18).sort((a, b) => a.datum - b.datum);
     return { kwartalen, topEvents, log };
   }
   // Uitleg bij een saldo op het tabblad Vermogen: wat verandert er ten opzichte van nu (het vorige saldo)?
@@ -6998,23 +7017,27 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     const K = an.kwartalen.slice(0, Math.max(1, Math.round(maanden / 3)));
     const som = s => K.reduce((x, q) => x + (q[s] || 0), 0);
     const eerste = K[0], laatste = K[K.length - 1];
+    const tot = vmAddMaanden(APP_VANDAAG, maanden);
+    const periode = an.log.filter(e => e.datum <= tot);
     const lijnen = [];
-    const voeg = (label, v) => { if (Math.abs(v) >= 0.5) lijnen.push([label, v]); };
-    let begin, eind, noot = null;
+    // Elke regel krijgt waar mogelijk een specificatie: de afzonderlijke boekingen die erachter zitten.
+    const voeg = (label, v, items) => { if (Math.abs(v) >= 0.5) lijnen.push({ label, v, items: items || [] }); };
+    const soort = (s, f) => periode.filter(e => e.soort === s && (!f || f(e)));
+    let begin, eind, noot = null, tweeSpaar = false;
     if (naam === "Totaal") {
       begin = eerste.begin; eind = laatste.eind;
-      voeg("Maandsaldo (inkomen min lasten)", som("maandsaldo")); voeg("Grote inkomsten", som("grootIn")); voeg("Grote uitgaven", som("grootUit"));
-      voeg("Vakantiegeld, lijfrente, aanvulling", som("aanvulling")); voeg("Rente spaargeld", som("renteSpaar")); voeg("Rente deposito's", som("renteDepo"));
+      voeg("Maandsaldo (inkomen min lasten)", som("maandsaldo")); voeg("Grote inkomsten", som("grootIn"), soort("eigen", e => e.delta > 0)); voeg("Grote uitgaven", som("grootUit"), soort("eigen", e => e.delta < 0));
+      voeg("Vakantiegeld, lijfrente, aanvulling", som("aanvulling"), soort("aanvulling")); voeg("Rente spaargeld", som("renteSpaar"), soort("rentespaar")); voeg("Rente deposito's", som("renteDepo"), soort("rentedepo"));
       voeg("Beleggen: stortingen buiten sparen", som("extBel")); voeg("Beleggen: groei", som("groei")); voeg("Reserveringen en overig", som("rest"));
-      noot = "Verschuivingen tussen spaargeld, deposito's en beleggen veranderen het totaal niet en staan hier niet in.";
+      noot = "Verschuivingen tussen spaargeld, deposito's en beleggen (zoals de vrijval van een deposito) veranderen het totaal niet en staan hier niet in.";
     } else if (naam.indexOf("Vrij sparen") === 0) {
       begin = eerste.spBegin; eind = laatste.spEind;
-      voeg("Maandsaldo (inkomen min lasten)", som("maandsaldo")); voeg("Grote inkomsten", som("grootIn")); voeg("Grote uitgaven", som("grootUit"));
-      voeg("Vakantiegeld, lijfrente, aanvulling", som("aanvulling")); voeg("Rente spaargeld", som("renteSpaar")); voeg("Rente deposito's", som("renteDepo"));
-      voeg("Hoofdsom deposito's vrijgevallen", som("vrijval")); voeg("Naar beleggen (storting/opname)", som("naarBeleggen")); voeg("Naar nieuw deposito", som("naarDepo"));
+      voeg("Maandsaldo (inkomen min lasten)", som("maandsaldo")); voeg("Grote inkomsten", som("grootIn"), soort("eigen", e => e.delta > 0)); voeg("Grote uitgaven", som("grootUit"), soort("eigen", e => e.delta < 0));
+      voeg("Vakantiegeld, lijfrente, aanvulling", som("aanvulling"), soort("aanvulling")); voeg("Rente spaargeld", som("renteSpaar"), soort("rentespaar")); voeg("Rente deposito's", som("renteDepo"), soort("rentedepo"));
+      voeg("Hoofdsom deposito's vrijgevallen", som("vrijval"), soort("vrijval")); voeg("Naar beleggen (storting/opname)", som("naarBeleggen"), soort("beleggen")); voeg("Naar nieuw deposito", som("naarDepo"), soort("verschuiving"));
     } else if (naam.indexOf("Deposito") === 0) {
       begin = eerste.dpBegin; eind = laatste.dpEind;
-      voeg("Hoofdsom vrijgevallen naar spaargeld", -som("vrijval")); voeg("Nieuw deposito uit spaargeld", -som("naarDepo")); voeg("Hoofdsom naar beleggen", -som("depoBel"));
+      voeg("Hoofdsom vrijgevallen naar spaargeld", -som("vrijval"), soort("vrijval").map(e => ({ ...e, delta: -e.delta }))); voeg("Nieuw deposito uit spaargeld", -som("naarDepo"), soort("verschuiving").map(e => ({ ...e, delta: -e.delta }))); voeg("Hoofdsom naar beleggen", -som("depoBel"));
       noot = "Een deposito telt voor zijn hoofdsom. De rente komt bij het spaargeld zodra zij wordt uitgekeerd.";
     } else if (naam.indexOf("Beleggen") === 0) {
       begin = eerste.blBegin; eind = laatste.blEind;
@@ -7023,26 +7046,36 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
       begin = eerste.rvBegin; eind = laatste.rvEind;
       noot = "Reserveringen groeien met wat je maandelijks apart zet.";
     }
-    const uitleg = lijnen.reduce((x, l) => x + l[1], 0);
-    if (Math.abs((eind - begin) - uitleg) >= 0.5) lijnen.push([naam.indexOf("Reserveringen") === 0 ? "Maandelijks apart gezet" : "Overig", (eind - begin) - uitleg]);
-    const tot = vmAddMaanden(APP_VANDAAG, maanden);
-    const intern = e => e.soort === "vrijval" || e.soort === "verschuiving" || e.soort === "beleggen";
-    const events = an.log.filter(e => e.datum <= tot && e.soort !== "maandsaldo" && Math.abs(e.delta) >= 500 && (naam === "Totaal" ? !intern(e) : (naam.indexOf("Vrij sparen") === 0 || (naam.indexOf("Deposito") === 0 && (e.soort === "vrijval" || e.soort === "verschuiving")) || (naam.indexOf("Beleggen") === 0 && e.soort === "beleggen"))))
-      .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)).slice(0, 8).sort((a, b) => a.datum - b.datum).map(e => (naam.indexOf("Deposito") === 0 ? { ...e, delta: -e.delta } : e));
+    const uitleg = lijnen.reduce((x, l) => x + l.v, 0);
+    if (Math.abs((eind - begin) - uitleg) >= 0.5) voeg(naam.indexOf("Reserveringen") === 0 ? "Maandelijks apart gezet" : "Overig", (eind - begin) - uitleg);
+    const kleur = v => ({ color: v < 0 ? VM_KLEUR.slecht : VM_KLEUR.goed, fontWeight: 600 });
     const rij = (l, v, vet) => vmH("div", { key: l, style: { display: "flex", justifyContent: "space-between", gap: 12, padding: "6px 0", borderTop: "1px solid #e2e8f0", fontWeight: vet ? 700 : 400 } },
-      vmH("span", null, l), vmH("span", { className: "font-mono", style: vet ? null : { color: v < 0 ? VM_KLEUR.slecht : VM_KLEUR.goed, fontWeight: 600 } }, vet ? vmGetal(v) : vmTeken(v) + vmGetal(v)));
+      vmH("span", null, l), vmH("span", { className: "font-mono", style: vet ? null : kleur(v) }, vet ? vmGetal(v) : vmTeken(v) + vmGetal(v)));
+    // Terugkerende posten ("Aflossing kind (1/12)" ... "(12/12)") worden samengevoegd tot één regel.
+    const groepeer = items => {
+      const m = new Map();
+      items.forEach(e => {
+        const sl = String(e.omschrijving).replace(/\s*\(\d+\/\d+\)\s*$/, "");
+        const g = m.get(sl) || { datum: e.datum, omschrijving: sl, delta: 0, n: 0 };
+        g.delta += e.delta; g.n += 1; if (e.datum < g.datum) g.datum = e.datum; m.set(sl, g);
+      });
+      return [...m.values()].map(g => ({ ...g, omschrijving: g.omschrijving + (g.n > 1 ? " (" + g.n + "×)" : "") }));
+    };
+    const blok = l => [
+      rij(l.label, l.v, false),
+      groepeer(l.items).sort((a, b) => a.datum - b.datum).slice(0, 14).map((e, i) => vmH("div", { key: l.label + i, style: { display: "flex", justifyContent: "space-between", gap: 12, padding: "2px 0 2px 14px", fontSize: 12.5, color: "#475569" } },
+        vmH("span", null, vmDatumKort(e.datum) + " · " + e.omschrijving), vmH("span", { className: "font-mono", style: { whiteSpace: "nowrap" } }, vmTeken(e.delta) + vmGetal(e.delta)))),
+      groepeer(l.items).length > 14 ? vmH("div", { key: l.label + "meer", style: { padding: "2px 0 4px 14px", fontSize: 12, color: "#64748b" } }, "… en " + (groepeer(l.items).length - 14) + " andere boekingen") : null
+    ];
     const paneel = vmH("div", { onClick: () => setVmDetail(null), style: { position: "fixed", inset: 0, background: "rgba(15,23,42,.5)", zIndex: 60, display: "flex", alignItems: "flex-end", justifyContent: "center" }, className: "no-print" },
-      vmH("div", { onClick: e => e.stopPropagation(), style: { background: "#fff", width: "100%", maxWidth: 520, maxHeight: "85vh", overflowY: "auto", borderRadius: "16px 16px 0 0", padding: 16, fontSize: 14 } },
+      vmH("div", { onClick: e => e.stopPropagation(), style: { background: "#fff", width: "100%", maxWidth: 520, maxHeight: "88vh", overflowY: "auto", borderRadius: "16px 16px 0 0", padding: 16, fontSize: 14 } },
         vmH("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 } },
           vmH("div", { style: { fontWeight: 700, fontSize: 16 } }, naam.replace(" (geschat)", "") + ": waarom verandert het?"),
           vmH("button", { type: "button", onClick: () => setVmDetail(null), style: { fontSize: 20, padding: "0 8px" }, "aria-label": "Sluiten" }, "✕")),
         vmH("div", { style: { color: "#64748b", fontSize: 12, marginBottom: 8 } }, "Ten opzichte van nu, over " + maanden + " maanden"),
         rij("Saldo nu", begin, true),
-        lijnen.map(l => rij(l[0], l[1], false)),
+        lijnen.map(blok),
         rij("Saldo over " + maanden + " mnd", eind, true),
-        events.length ? vmH("div", { style: { marginTop: 12, fontWeight: 600 } }, "Belangrijkste mutaties") : null,
-        events.map((e, i) => vmH("div", { key: i, style: { display: "flex", justifyContent: "space-between", gap: 12, padding: "5px 0", borderTop: "1px solid #f1f5f9", fontSize: 13 } },
-          vmH("span", null, vmDatumKort(e.datum) + " · " + e.omschrijving), vmH("span", { className: "font-mono", style: { color: e.delta < 0 ? VM_KLEUR.slecht : VM_KLEUR.goed, whiteSpace: "nowrap" } }, vmTeken(e.delta) + vmGetal(e.delta)))),
         noot ? vmH("p", { style: { color: "#64748b", fontSize: 12, marginTop: 10 } }, noot) : null));
     // Via een portal, zodat het scherm altijd over de hele telefoon staat.
     return ReactDOM.createPortal(paneel, document.body);
@@ -7273,7 +7306,11 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
           const q = K.slice(0, m / 3); const v0 = q[0].begin, v1 = q[q.length - 1].eind;
           const agg = {}; ["maandsaldo", "grootIn", "grootUit", "aanvulling", "renteSpaar", "renteDepo", "extBel", "groei", "rest"].forEach(s => { agg[s] = tot(m, s); });
           const namen = { maandsaldo: "maandsaldo (inkomen min lasten)", grootIn: "grote inkomsten", grootUit: "grote uitgaven", aanvulling: "vakantiegeld, lijfrente en aanvulling", renteSpaar: "rente op spaargeld", renteDepo: "rente van deposito's", extBel: "stortingen beleggen buiten spaargeld", groei: "beleggingsgroei", rest: "reserveringen en overig" };
-          const top = Object.keys(agg).filter(s => Math.abs(agg[s]) >= 500).sort((a, b) => Math.abs(agg[b]) - Math.abs(agg[a])).slice(0, 3).map(s => namen[s] + " " + pm(agg[s])).join(", ");
+          const tot2 = vmAddMaanden(APP_VANDAAG, m);
+          const kand = [];
+          ["maandsaldo", "aanvulling", "renteSpaar", "extBel", "groei", "rest"].forEach(s => { if (Math.abs(agg[s]) >= 500) kand.push([namen[s], agg[s]]); });
+          an.log.filter(e => e.datum <= tot2 && (e.soort === "eigen" || e.soort === "rentedepo") && Math.abs(e.delta) >= 500).forEach(e => kand.push([e.omschrijving, e.delta]));
+          const top = kand.sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])).slice(0, 5).map(x => x[0] + " " + pm(x[1])).join(", ");
           const sp0 = q[0].spBegin, sp1 = q[q.length - 1].spEind;
           return "Over " + m + " maanden is het vrij vermogen " + vmEuro(Math.abs(v1 - v0)) + (v1 >= v0 ? " hoger" : " lager") + " (" + vmEuro(v0) + " naar " + vmEuro(v1) + "). Belangrijkste oorzaken: " + (top || "geen grote mutaties") + ". Het spaargeld " + (sp1 >= sp0 ? "stijgt" : "daalt") + " met " + vmEuro(Math.abs(sp1 - sp0)) + " (" + vmEuro(sp0) + " naar " + vmEuro(sp1) + ").";
         };
@@ -7303,14 +7340,14 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
               regel("Hoofdsom deposito's vrijgevallen", "vrijval"),
               regel("Naar beleggen (storting/opname)", "naarBeleggen"), regel("Naar nieuw deposito", "naarDepo"),
               vmH("tr", { style: { fontWeight: 700 } }, vmH("td", null, "Nieuw saldo"), K.map((q, i) => vmH("td", { key: i }, vmGetal(q.spEind)))))),
-          vmH("div", { className: "rp-pagekop" }, vmH("h2", null, "Belangrijkste mutaties, komende 12 maanden")),
+          vmH("div", { className: "rp-pagekop rp-nieuwepagina" }, vmH("h2", null, "Belangrijkste mutaties, komende 12 maanden")),
           vmH("table", { className: "rp-tabel" },
             vmH("thead", null, vmH("tr", null, vmH("th", null, "Datum"), vmH("th", { style: { textAlign: "left" } }, "Omschrijving"), vmH("th", null, "Spaargeld"), vmH("th", null, "Vrij vermogen"))),
             vmH("tbody", null, an.topEvents.map((e, i) => {
               const intern = e.soort === "vrijval" || e.soort === "verschuiving" || e.soort === "beleggen";
               return vmH("tr", { key: i }, vmH("td", null, vmDatumKort(e.datum)), vmH("td", { style: { textAlign: "left" } }, e.omschrijving), vmH("td", { style: kl(e.delta) }, pm(e.delta)), vmH("td", { style: intern ? null : kl(e.delta) }, intern ? "verschuiving" : pm(e.delta)));
             }))),
-          noot("Alleen mutaties vanaf € 500, gesorteerd op datum. Verschuiving: het geld gaat van de ene pot naar de andere, het totaal blijft gelijk."));
+          noot("Alleen mutaties vanaf € 200, gesorteerd op datum. Verschuiving: het geld gaat van de ene pot naar de andere, het totaal blijft gelijk."));
       })(),
 
       // 3. Spaargeld
@@ -9613,7 +9650,7 @@ menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-sl
     !groteToonAlles && React.createElement("span", {className:"text-xs text-slate-500"}, "De maandelijkse inkomsten minus uitgaven zijn verborgen, maar zitten wel in het saldo.")), /*#__PURE__*/React.createElement("div", {
     className: "overflow-x-auto"
   }, /*#__PURE__*/React.createElement("table", {
-    className: "w-full text-xs font-mono"
+    className: "w-full text-xs font-mono gp-tabel"
   }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", {
     className: "text-left text-slate-500 font-sans border-b border-slate-200"
   }, /*#__PURE__*/React.createElement("th", {
@@ -9795,7 +9832,7 @@ menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-sl
       title: "Verwijder deze boeking: het geld komt niet van Sparen Rabo"
     }, "✕"))), isLaatsteVanJaar && jaarStand ? /*#__PURE__*/React.createElement("tr", {
       key: "subtotaal-" + huidigeJaar,
-      className: "bg-slate-100 border-t-2 border-slate-300"
+      className: "bg-slate-100 border-t-2 border-slate-300 gp-sub"
     }, /*#__PURE__*/React.createElement("td", {
       className: "py-2 font-semibold font-sans",
       colSpan: 4
