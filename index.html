@@ -4058,6 +4058,7 @@ function nettoMarginaal(bestaandBrutoJaar, extraBrutoJaar, naAOW, datum, metExtr
     setInkomensBronnenExtra(prev => prev.filter(b => b.id !== id));
   }
   const [cpiPrognose, setCpiPrognose] = useOpslag("cpiPrognose", 3);
+  const [vmDetail, setVmDetail] = React.useState(null);
   const [nieuweBron, setNieuweBron] = useOpslag("nieuweBronFormulier", { naam: "", persoon: "man", soort: "werk", bedrag: "", indexType: "vast", index: "", caoTot: "", start: "", eind: "" });
   function voegBronToe() {
     const nb = nieuweBron || {};
@@ -6727,13 +6728,15 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
           regels.map(([naam, a, b, kl]) => vmH("tr", { key: naam, className: "border-t border-slate-100" },
             vmH("td", { className: "py-1.5 font-sans text-left" }, vmPunt(kl), naam),
             vmH("td", { className: "py-1.5 text-right" }, vmGetal(a)),
-            vmH("td", { className: "py-1.5 text-right" }, vmGetal(b)),
-            vmH("td", { className: "py-1.5 text-right " + vmKleur(b - a) }, vmTeken(b - a) + vmGetal(b - a)))),
+            vmH("td", { className: "py-1.5 text-right" }, vmH("button", { type: "button", onClick: () => setVmDetail(naam), style: { textDecoration: "underline dotted", font: "inherit" } }, vmGetal(b))),
+            vmH("td", { className: "py-1.5 text-right " + vmKleur(b - a) }, vmH("button", { type: "button", onClick: () => setVmDetail(naam), style: { textDecoration: "underline dotted", font: "inherit" } }, vmTeken(b - a) + vmGetal(b - a))))),
           vmH("tr", { className: "border-t border-slate-300 font-semibold" },
             vmH("td", { className: "py-1.5 font-sans text-left" }, "Totaal"),
             vmH("td", { className: "py-1.5 text-right" }, vmGetal(totNu)),
-            vmH("td", { className: "py-1.5 text-right" }, vmGetal(totLater)),
-            vmH("td", { className: "py-1.5 text-right " + vmKleur(totLater - totNu) }, vmTeken(totLater - totNu) + vmGetal(totLater - totNu))))),
+            vmH("td", { className: "py-1.5 text-right" }, vmH("button", { type: "button", onClick: () => setVmDetail("Totaal"), style: { textDecoration: "underline dotted", font: "inherit", fontWeight: 600 } }, vmGetal(totLater))),
+            vmH("td", { className: "py-1.5 text-right " + vmKleur(totLater - totNu) }, vmH("button", { type: "button", onClick: () => setVmDetail("Totaal"), style: { textDecoration: "underline dotted", font: "inherit", fontWeight: 600 } }, vmTeken(totLater - totNu) + vmGetal(totLater - totNu)))))),
+      vmH("p", { className: "text-xs text-slate-500 mt-2" }, "Tik op een bedrag onder 'Over " + horizon + " mnd' of 'Verschil' voor de belangrijkste mutaties ten opzichte van nu."),
+      vmDetail ? vmDetailPaneel(vmDetail, horizon) : null,
       vmH("div", { className: "flex gap-2 flex-wrap mt-3" }, [3, 6, 12, 24].map(m => vmH("button", {
         key: m, type: "button", onClick: () => setVermogenHorizon(m),
         className: m === horizon ? vmKnopDonker : vmKnop
@@ -6975,7 +6978,9 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
         aanvulling: som("aanvulling"),
         renteSpaar: som("rentespaar"), renteDepo: som("rentedepo"),
         vrijval: som("vrijval"), naarBeleggen: som("beleggen") , naarDepo: som("verschuiving"),
-        spBegin: sp[k - 1], spEind: sp[k]
+        spBegin: sp[k - 1], spEind: sp[k],
+        dpBegin: dp[k - 1], dpEind: dp[k], blBegin: bl[k - 1], blEind: bl[k], rvBegin: rv[k - 1], rvEind: rv[k],
+        mutAlle, depoBel
       };
       r.extBel = mutAlle + r.naarBeleggen;
       r.groei = (bl[k] - bl[k - 1]) - mutAlle - depoBel;
@@ -6986,6 +6991,61 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     const topEvents = log.filter(e => e.datum <= vmAddMaanden(APP_VANDAAG, 12) && e.soort !== "maandsaldo" && Math.abs(e.delta) >= 500)
       .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)).slice(0, 10).sort((a, b) => a.datum - b.datum);
     return { kwartalen, topEvents, log };
+  }
+  // Uitleg bij een saldo op het tabblad Vermogen: wat verandert er ten opzichte van nu (het vorige saldo)?
+  function vmDetailPaneel(naam, maanden) {
+    const an = vmAnalyse();
+    const K = an.kwartalen.slice(0, Math.max(1, Math.round(maanden / 3)));
+    const som = s => K.reduce((x, q) => x + (q[s] || 0), 0);
+    const eerste = K[0], laatste = K[K.length - 1];
+    const lijnen = [];
+    const voeg = (label, v) => { if (Math.abs(v) >= 0.5) lijnen.push([label, v]); };
+    let begin, eind, noot = null;
+    if (naam === "Totaal") {
+      begin = eerste.begin; eind = laatste.eind;
+      voeg("Maandsaldo (inkomen min lasten)", som("maandsaldo")); voeg("Grote inkomsten", som("grootIn")); voeg("Grote uitgaven", som("grootUit"));
+      voeg("Vakantiegeld, lijfrente, aanvulling", som("aanvulling")); voeg("Rente spaargeld", som("renteSpaar")); voeg("Rente deposito's", som("renteDepo"));
+      voeg("Beleggen: stortingen buiten sparen", som("extBel")); voeg("Beleggen: groei", som("groei")); voeg("Reserveringen en overig", som("rest"));
+      noot = "Verschuivingen tussen spaargeld, deposito's en beleggen veranderen het totaal niet en staan hier niet in.";
+    } else if (naam.indexOf("Vrij sparen") === 0) {
+      begin = eerste.spBegin; eind = laatste.spEind;
+      voeg("Maandsaldo (inkomen min lasten)", som("maandsaldo")); voeg("Grote inkomsten", som("grootIn")); voeg("Grote uitgaven", som("grootUit"));
+      voeg("Vakantiegeld, lijfrente, aanvulling", som("aanvulling")); voeg("Rente spaargeld", som("renteSpaar")); voeg("Rente deposito's", som("renteDepo"));
+      voeg("Hoofdsom deposito's vrijgevallen", som("vrijval")); voeg("Naar beleggen (storting/opname)", som("naarBeleggen")); voeg("Naar nieuw deposito", som("naarDepo"));
+    } else if (naam.indexOf("Deposito") === 0) {
+      begin = eerste.dpBegin; eind = laatste.dpEind;
+      voeg("Hoofdsom vrijgevallen naar spaargeld", -som("vrijval")); voeg("Nieuw deposito uit spaargeld", -som("naarDepo")); voeg("Hoofdsom naar beleggen", -som("depoBel"));
+      noot = "Een deposito telt voor zijn hoofdsom. De rente komt bij het spaargeld zodra zij wordt uitgekeerd.";
+    } else if (naam.indexOf("Beleggen") === 0) {
+      begin = eerste.blBegin; eind = laatste.blEind;
+      voeg("Stortingen en opnames", som("mutAlle")); voeg("Hoofdsom van deposito's", som("depoBel")); voeg("Groei volgens je prognose", som("groei"));
+    } else {
+      begin = eerste.rvBegin; eind = laatste.rvEind;
+      noot = "Reserveringen groeien met wat je maandelijks apart zet.";
+    }
+    const uitleg = lijnen.reduce((x, l) => x + l[1], 0);
+    if (Math.abs((eind - begin) - uitleg) >= 0.5) lijnen.push([naam.indexOf("Reserveringen") === 0 ? "Maandelijks apart gezet" : "Overig", (eind - begin) - uitleg]);
+    const tot = vmAddMaanden(APP_VANDAAG, maanden);
+    const intern = e => e.soort === "vrijval" || e.soort === "verschuiving" || e.soort === "beleggen";
+    const events = an.log.filter(e => e.datum <= tot && e.soort !== "maandsaldo" && Math.abs(e.delta) >= 500 && (naam === "Totaal" ? !intern(e) : (naam.indexOf("Vrij sparen") === 0 || (naam.indexOf("Deposito") === 0 && (e.soort === "vrijval" || e.soort === "verschuiving")) || (naam.indexOf("Beleggen") === 0 && e.soort === "beleggen"))))
+      .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)).slice(0, 8).sort((a, b) => a.datum - b.datum).map(e => (naam.indexOf("Deposito") === 0 ? { ...e, delta: -e.delta } : e));
+    const rij = (l, v, vet) => vmH("div", { key: l, style: { display: "flex", justifyContent: "space-between", gap: 12, padding: "6px 0", borderTop: "1px solid #e2e8f0", fontWeight: vet ? 700 : 400 } },
+      vmH("span", null, l), vmH("span", { className: "font-mono", style: vet ? null : { color: v < 0 ? VM_KLEUR.slecht : VM_KLEUR.goed, fontWeight: 600 } }, vet ? vmGetal(v) : vmTeken(v) + vmGetal(v)));
+    const paneel = vmH("div", { onClick: () => setVmDetail(null), style: { position: "fixed", inset: 0, background: "rgba(15,23,42,.5)", zIndex: 60, display: "flex", alignItems: "flex-end", justifyContent: "center" }, className: "no-print" },
+      vmH("div", { onClick: e => e.stopPropagation(), style: { background: "#fff", width: "100%", maxWidth: 520, maxHeight: "85vh", overflowY: "auto", borderRadius: "16px 16px 0 0", padding: 16, fontSize: 14 } },
+        vmH("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 } },
+          vmH("div", { style: { fontWeight: 700, fontSize: 16 } }, naam.replace(" (geschat)", "") + ": waarom verandert het?"),
+          vmH("button", { type: "button", onClick: () => setVmDetail(null), style: { fontSize: 20, padding: "0 8px" }, "aria-label": "Sluiten" }, "✕")),
+        vmH("div", { style: { color: "#64748b", fontSize: 12, marginBottom: 8 } }, "Ten opzichte van nu, over " + maanden + " maanden"),
+        rij("Saldo nu", begin, true),
+        lijnen.map(l => rij(l[0], l[1], false)),
+        rij("Saldo over " + maanden + " mnd", eind, true),
+        events.length ? vmH("div", { style: { marginTop: 12, fontWeight: 600 } }, "Belangrijkste mutaties") : null,
+        events.map((e, i) => vmH("div", { key: i, style: { display: "flex", justifyContent: "space-between", gap: 12, padding: "5px 0", borderTop: "1px solid #f1f5f9", fontSize: 13 } },
+          vmH("span", null, vmDatumKort(e.datum) + " · " + e.omschrijving), vmH("span", { className: "font-mono", style: { color: e.delta < 0 ? VM_KLEUR.slecht : VM_KLEUR.goed, whiteSpace: "nowrap" } }, vmTeken(e.delta) + vmGetal(e.delta)))),
+        noot ? vmH("p", { style: { color: "#64748b", fontSize: 12, marginTop: 10 } }, noot) : null));
+    // Via een portal, zodat het scherm altijd over de hele telefoon staat.
+    return ReactDOM.createPortal(paneel, document.body);
   }
   function vmVerloopPunten(maandenLijst) {
     return maandenLijst.map(m => {
