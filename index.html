@@ -55,7 +55,7 @@
 }catch(e){}})();
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Vermogensplanning — Advies + dashboard — versie 2026-08-15d — advies 50% risicogrens — lokale opslag — rentedatum en rentevisie — momentopname 2026-08-16 — momentopname 2026-08-16 — momentopname 2026-08-17 — momentopname 2026-08-18 — momentopname 2026-08-18 — momentopname 2026-08-19 — momentopname 2026-08-19 — momentopname 2026-08-23 — momentopname 2026-08-27 — momentopname 2026-09-03 — momentopname 2026-09-04 — momentopname 2026-09-08 — momentopname 2026-09-12 — momentopname 2026-09-18 — momentopname 2026-09-20 — momentopname 2026-09-22 — momentopname 2026-09-22 — momentopname 2026-09-25 — momentopname 2026-09-27 — momentopname 2026-10-01 — momentopname 2026-10-01 — momentopname 2026-10-02 — momentopname 2026-10-03 — momentopname 2026-10-04 — momentopname 2026-10-13 — momentopname 2026-10-15</title>
+<title>Vermogensplanning — Advies + dashboard — versie 2026-08-15d — advies 50% risicogrens — lokale opslag — rentedatum en rentevisie — momentopname 2026-10-15</title>
 <meta name="theme-color" content="#0f172a">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -2686,7 +2686,7 @@ function IncomePlanner() {
       const stempel = new Date().toISOString().slice(0, 10);
       const seedScript = "<script>(function(){var d=" + JSON.stringify(alles) + ";try{Object.keys(d).forEach(function(k){if(window.localStorage.getItem(k)===null){window.localStorage.setItem(k,d[k]);}});}catch(e){}})();" + "/* momentopname " + stempel + " — zet alleen waarden die nog niet bestaan, overschrijft geen latere wijzigingen */</scr" + "ipt>\n";
       html = html.replace(/<body([^>]*)>/i, (m, attrs) => `<body${attrs}>\n${seedScript}`);
-      html = html.replace(/<title>([^<]*)<\/title>/i, (m, t) => `<title>${t} — momentopname ${stempel}</title>`);
+      html = html.replace(/<title>([^<]*)<\/title>/i, (m, t) => `<title>${t.replace(/( — momentopname \d{4}-\d{2}-\d{2})+/g, "")} — momentopname ${stempel}</title>`);
       const blob = new Blob([html], {
         type: "text/html"
       });
