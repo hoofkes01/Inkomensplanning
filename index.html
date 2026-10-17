@@ -6951,7 +6951,12 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
               if (f.soort === "waarde") {
                 if (vmWaardeBijwerken(sleutel, f.bedrag, f.datum)) setVmForm(null);
               } else if (f.soort === "jan") {
-                if (f.bedrag !== "" && vmJaarInvoer(sleutel, Number(f.jaar), f.bedrag, f.gestort, f.opgenomen)) setVmForm(null);
+                if (f.bedrag !== "" && vmJaarInvoer(sleutel, Number(f.jaar), f.bedrag, f.gestort, f.opgenomen)) {
+                  // Een waarde per 1 januari die ouder is dan de laatst bekende waarde wijzigt het saldo van vandaag niet.
+                  const nu = vmBekend(sleutel);
+                  if (nu && new Date(Number(f.jaar), 0, 1) < nu.datum) window.alert("Opgeslagen. Let op: deze waarde per 1 januari " + f.jaar + " is ouder dan je laatst bekende waarde (" + vmEuro(nu.waarde) + " op " + fmtDate(nu.datum) + ") en verandert het saldo van vandaag niet. Gebruik 'Actuele waarde' om de waarde van vandaag aan te passen.");
+                  setVmForm(null);
+                }
               } else if (bedrag > 0 && geldigeDatum(f.datum)) {
                 vmWijzigReg(sleutel, x => ({ ...x, mutaties: [...x.mutaties, { id: "m" + Date.now(), datum: f.datum, bedrag: f.soort === "storting" ? bedrag : -bedrag, sparen: !!f.sparen && sleutel === "vrijeBeleggingen" }] }));
                 if (f.waarde !== "" && f.waarde != null) vmWaardeBijwerken(sleutel, f.waarde, f.datum);
@@ -7770,7 +7775,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     className: "font-mono text-xs uppercase tracking-widest bg-slate-700/60 border border-slate-500 rounded-full px-3 py-1"
   }, "peildatum ", fmtDate(PEILDATUM)), /*#__PURE__*/React.createElement("span", {
     className: "w-full text-xs text-slate-400 no-print"
-  }, "App-versie ", "17-10-2026 · 18:10")), /*#__PURE__*/React.createElement("p", {
+  }, "App-versie ", "17-10-2026 · 18:35")), /*#__PURE__*/React.createElement("p", {
     className: "mt-2 text-slate-300 text-sm max-w-2xl"
   }, "Bedragen zijn nominaal per peildatum, tenzij een indexatiepercentage is ingevuld. Alle basisbedragen zijn zelf aanpasbaar bij \"Basisgegevens\"." + (actieveTab === "fiscaliteit" ? " Alle aannames staan onderaan bij \"Aannames & beperkingen\". Bij het openen checkt dit bestand automatisch vier fiscale kerncijfers (zie bovenaan) — bij een afwijking wordt er niets automatisch aangepast, dat blijft een bewuste stap." : "")), /*#__PURE__*/React.createElement("div", {
     className: "mt-4 flex flex-wrap gap-2 items-center no-print"
