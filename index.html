@@ -1,5 +1,7 @@
 <!doctype html>
 <html lang="nl"><head>
+<meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
 <meta charset="utf-8">
 <script id="kopie-melding">
 /* Toont bovenaan een waarschuwing als het bestand is gestart met de ingebouwde kopie van je gegevens
@@ -7761,7 +7763,9 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     className: "font-serif text-3xl tracking-tight"
   }, "Vermogensplanning"), /*#__PURE__*/React.createElement("span", {
     className: "font-mono text-xs uppercase tracking-widest bg-slate-700/60 border border-slate-500 rounded-full px-3 py-1"
-  }, "peildatum ", fmtDate(PEILDATUM))), /*#__PURE__*/React.createElement("p", {
+  }, "peildatum ", fmtDate(PEILDATUM)), /*#__PURE__*/React.createElement("span", {
+    className: "w-full text-xs text-slate-400 no-print"
+  }, "App-versie ", "17-10-2026 · 15:30")), /*#__PURE__*/React.createElement("p", {
     className: "mt-2 text-slate-300 text-sm max-w-2xl"
   }, "Bedragen zijn nominaal per peildatum, tenzij een indexatiepercentage is ingevuld. Alle basisbedragen zijn zelf aanpasbaar bij \"Basisgegevens\"." + (actieveTab === "fiscaliteit" ? " Alle aannames staan onderaan bij \"Aannames & beperkingen\". Bij het openen checkt dit bestand automatisch vier fiscale kerncijfers (zie bovenaan) — bij een afwijking wordt er niets automatisch aangepast, dat blijft een bewuste stap." : "")), /*#__PURE__*/React.createElement("div", {
     className: "mt-4 flex flex-wrap gap-2 items-center no-print"
