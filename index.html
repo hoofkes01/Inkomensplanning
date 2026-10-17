@@ -348,7 +348,7 @@ function postCaoFactorCentraal(type, vanDatum, totDatum, pct){
 }catch(e){}})();
 </script>
 <script id="lincare-netto-2026-10-13">
-/* Netto per maand van Vrouw (Lincare): 1.850 sinds oktober 2026 (was 1.750). Eenmalig per opslag;
+/* Netto per maand van Vrouw (Linc): 1.850 sinds oktober 2026 (was 1.750). Eenmalig per opslag;
    daarna geldt wat je zelf invult. Latere jaren rekenen vanaf dit bedrag door. */
 (function(){try{
   var P="inkomensplanning_", G=P+"lincareNettoInvoer", V="2026-10-13-1850";
@@ -3038,7 +3038,7 @@ function IncomePlanner() {
       ["Rabo-pensioen ná AOW", setIndexRaboPostAOW],
       ["PFZW", setIndexPFZW],
       ["salaris ná cao", setIndexSalarisManNaCao],
-      ["Lincare ná cao", setIndexLincareNaCao],
+      ["Linc ná cao", setIndexLincareNaCao],
       ["dagelijkse uitgaven", setIndexDagelijkseUitgaven],
       // Schijfgrenzen (en de kortingsgrenzen/-bedragen die ermee meebewegen) staan standaard op
       // 0% en zouden anders permanent los blijven van de inflatie — met CPI als voorlopige
@@ -4158,7 +4158,7 @@ function nettoMarginaal(bestaandBrutoJaar, extraBrutoJaar, naAOW, datum, metExtr
   }
 
   // Extra inkomensbronnen: zelf toe te voegen en te verwijderen, bovenop de vaste bronnen
-  // (salaris gemeente, ABP, AOW, Lincare, Rabopensioen, PFZW). Elke bron hoort bij één persoon,
+  // (salaris gemeente, ABP, AOW, Linc, Rabopensioen, PFZW). Elke bron hoort bij één persoon,
   // heeft een eigen indexatie, een start- (en eventueel eind)datum, en een eigen keuze of de
   // heffingskorting al in het opgegeven nettobedrag zit. Nieuwe bronnen staan daar standaard op
   // "nee": het bedrag is dan vóór heffingskorting, en de korting wordt (net als bij de andere
@@ -4614,7 +4614,7 @@ function nettoMarginaal(bestaandBrutoJaar, extraBrutoJaar, naAOW, datum, metExtr
   }
   const extraABP2027 = berekenExtraABP2027();
 
-  // Lincare/FWG 40: de ingevulde trede en het ingevulde fulltime-bruto (tabblad Inkomen) zijn het vertrekpunt
+  // Linc/FWG 40: de ingevulde trede en het ingevulde fulltime-bruto (tabblad Inkomen) zijn het vertrekpunt
   // van het lopende jaar. De hogere tredes zijn dezelfde schaal, naar verhouding meegeschaald met wat je invult.
   const VVT_FWG40_TABEL = {
     7: { bruto: 3592.96, uur: 22.96 },
@@ -4627,7 +4627,7 @@ function nettoMarginaal(bestaandBrutoJaar, extraBrutoJaar, naAOW, datum, metExtr
   const VVT_FWG40 = {};
   [7, 8, 9, 10].forEach(t => { VVT_FWG40[t] = { bruto: VVT_FWG40_TABEL[t].bruto * VVT_SCHAAL_FACTOR, uur: VVT_FWG40_TABEL[t].uur * VVT_SCHAAL_FACTOR }; });
   // VVT: voor de jaarlijkse planning wordt de cao-index per kalenderjaar toegepast.
-  // 2027 = 3,6% en 2028 = 3,6%. Daarna geldt de afzonderlijke Lincare-index.
+  // 2027 = 3,6% en 2028 = 3,6%. Daarna geldt de afzonderlijke Linc-index.
   const VVT_CAO_INDEX_PER_JAAR = {
     2027: Number(indexLincare) || 3.6,
     2028: Number(indexLincare) || 3.6
@@ -4642,7 +4642,7 @@ function nettoMarginaal(bestaandBrutoJaar, extraBrutoJaar, naAOW, datum, metExtr
     return cao * postCaoFactorCentraal("lincare", PEILDATUM, atDate, Number(indexLincareNaCao)||2);
   }
   function lincareTredeOpDatum(atDate) {
-    // Lincare/FWG 40: periodiek per 1 januari. De afgesproken tredes zijn
+    // Linc/FWG 40: periodiek per 1 januari. De afgesproken tredes zijn
     // expliciet gekoppeld aan het kalenderjaar, zodat het fasenoverzicht nooit
     // door een dagverschil of 365,25-dagenberekening een trede opschuift.
     const jaar = (atDate instanceof Date ? atDate : new Date(atDate)).getFullYear();
@@ -4881,7 +4881,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
         {
           const lincare = lincareBrutoGegevens(atDate);
           bronnen = [{
-            naam: `Lincare — FWG 40 trede ${lincare.trede}`,
+            naam: `Linc — FWG 40 trede ${lincare.trede}`,
             netto: lincareNettoUitBruto(lincare.brutoMaand, atDate),
             brutoJaar: lincare.brutoMaand * 12,
             heeftKorting: !!basis.kortingInLincare
@@ -5013,7 +5013,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
   }
   function verdeelKorting(bronnen, naAOW, atDate) {
     // Twee soorten bronnen. (1) Een echt loonstrook-/pensioenopgavebedrag (salaris, ABP,
-    // Lincare) bevat al de eigen heffingskorting via de loonheffing van die betaler — daar
+    // Linc) bevat al de eigen heffingskorting via de loonheffing van die betaler — daar
     // wordt nooit iets aan toegevoegd of afgehaald. (2) Een bedrag dat zonder korting is
     // ingevuld (Rabopensioen, PFZW, AOW-tabelbedrag) krijgt de gezamenlijke heffingskorting
     // toegewezen zodra het de hoogste bruto bron van dit type is — precies zoals in
@@ -5029,7 +5029,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
 
     // Alleen als er voor deze persoon in deze fase géén loonstrookbron actief is (die de
     // korting al zelf toepast), mag de hoogste overige bron de gezamenlijke korting krijgen.
-    // Is er wél zo'n bron (bijvoorbeeld Lincare), dan blijven de overige bronnen op hun
+    // Is er wél zo'n bron (bijvoorbeeld Linc), dan blijven de overige bronnen op hun
     // ingevulde bedrag staan — in werkelijkheid past ook maar één betaler tegelijk de
     // loonheffingskorting toe.
     const heeftLoonstrookbron = actief.some(b => b.heeftKorting);
@@ -7931,7 +7931,7 @@ menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-sl
     velden: [["salarisManNetto", "Salaris gemeente netto/mnd (huidige referentie)"], ["salarisManBruto", "Salaris gemeente bruto/mnd (maximum)"], ["abpVoorAOWNetto", "ABP vóór AOW netto/mnd"], ["abpVoorAOWBruto", "ABP vóór AOW bruto/mnd"], ["abpNaAOWNetto", "ABP na AOW netto/mnd"], ["abpNaAOWBruto", "ABP na AOW bruto/mnd"]]
   }, {
     titel: "Inkomensbestanddelen Vrouw",
-    velden: [["lincareNetto", "Lincare netto/mnd (huidige loonstrook, incl. ORT)"], ["lincareBrutoFulltime", "Lincare bruto/mnd fulltime (FWG 40)"], ["lincareUren", "Lincare contracturen per week"], ["lincareORTUren", "Lincare ORT-uren per maand"], ["lincareORTPct", "Lincare ORT-toeslag (%)"], ["lincareTrede", "Lincare huidige trede"], ["raboVoorAOWNetto", "Rabopensioen vóór AOW netto/mnd"], ["raboVoorAOWBruto", "Rabopensioen vóór AOW bruto/mnd"], ["raboNaAOWNetto", "Rabopensioen na AOW netto/mnd"], ["raboNaAOWBruto", "Rabopensioen na AOW bruto/mnd"], ["pfzwNettoMaand", "PFZW netto/mnd bij doorwerken tot AOW-datum"], ["pfzwVervroegdNetto", "PFZW netto/mnd bij per direct stoppen (prijspeil nu)"], ["pfzwBrutoJaar", "PFZW bruto/jaar"]]
+    velden: [["lincareNetto", "Linc netto/mnd (huidige loonstrook, incl. ORT)"], ["lincareBrutoFulltime", "Linc bruto/mnd fulltime (FWG 40)"], ["lincareUren", "Linc contracturen per week"], ["lincareORTUren", "Linc ORT-uren per maand"], ["lincareORTPct", "Linc ORT-toeslag (%)"], ["lincareTrede", "Linc huidige trede"], ["raboVoorAOWNetto", "Rabopensioen vóór AOW netto/mnd"], ["raboVoorAOWBruto", "Rabopensioen vóór AOW bruto/mnd"], ["raboNaAOWNetto", "Rabopensioen na AOW netto/mnd"], ["raboNaAOWBruto", "Rabopensioen na AOW bruto/mnd"], ["pfzwNettoMaand", "PFZW netto/mnd bij doorwerken tot AOW-datum"], ["pfzwVervroegdNetto", "PFZW netto/mnd bij per direct stoppen (prijspeil nu)"], ["pfzwBrutoJaar", "PFZW bruto/jaar"]]
     }].map(groep => /*#__PURE__*/React.createElement("div", {
     key: groep.titel
   }, /*#__PURE__*/React.createElement("div", {
@@ -8172,7 +8172,7 @@ menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-sl
     className: "text-sm text-slate-500"
   }, "%/jr"))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
     className: "text-xs uppercase tracking-wide text-slate-500"
-  }, "Lincare — index cao"), /*#__PURE__*/React.createElement("div", {
+  }, "Linc — index cao"), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2 mt-1 items-center"
   }, /*#__PURE__*/React.createElement(IndexInput, {
     value: indexLincare,
@@ -8182,7 +8182,7 @@ menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-sl
     className: "text-sm text-slate-500"
   }, "automatisch"))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
     className: "text-xs uppercase tracking-wide text-slate-500"
-  }, "Lincare — index"), /*#__PURE__*/React.createElement("div", {
+  }, "Linc — index"), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2 mt-1 items-center"
   }, /*#__PURE__*/React.createElement(IndexInput, {
     value: indexLincareNaCao,
@@ -8219,7 +8219,7 @@ menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-sl
     className: "text-sm text-slate-500"
   }, "%/jr")))), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-400 mt-2"
-  }, "Elk inkomensbestanddeel rekent zelfstandig door. Voor Gemeente en Lincare geldt: de bekende CAO-stappen tijdens de looptijd van de CAO, daarna de afzonderlijke index na cao. Die staat standaard op 2,0% en is aanpasbaar.")), React.createElement("section", null, /*#__PURE__*/React.createElement("h2", {
+  }, "Elk inkomensbestanddeel rekent zelfstandig door. Voor Gemeente en Linc geldt: de bekende CAO-stappen tijdens de looptijd van de CAO, daarna de afzonderlijke index na cao. Die staat standaard op 2,0% en is aanpasbaar.")), React.createElement("section", null, /*#__PURE__*/React.createElement("h2", {
     className: "font-serif text-xl mb-4"
   }, "Extra inkomensbronnen"), /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-lg border border-slate-200 p-5 space-y-3"
