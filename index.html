@@ -6201,8 +6201,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     const k = (vrijvalNaar || {})[item.id];
     // Verlengen en "nieuw deposito" bestaan niet meer: het vrijgevallen bedrag staat op de spaarrekening en je boekt
     // een nieuw deposito zelf vanuit het spaargeld. Oude keuzes tellen daarom als "naar sparen".
-    if (k === "belegging") return k;
-    return depoPrognose.standaard === "belegging" && k === undefined ? "belegging" : "sparen";
+    return "sparen";
   }
   // Prognosepercentage voor een verlengd deposito: looptijd tot en met 1 jaar of langer dan 1 jaar.
   function depoPrognosePct(item) {
@@ -6545,12 +6544,6 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     setStortingsdatum(id, f.start);
     return true;
   }
-  // Keuze bij de einddatum van een deposito.
-  function vmKeuzeSelect(item) {
-    return vmH("select", { value: vrijvalKeuze(item), onChange: e => zetVrijvalNaar(item.id, e.target.value), style: { maxWidth: "100%" }, className: "border border-slate-300 rounded px-1 py-1 text-xs" },
-      vmH("option", { value: "sparen" }, "hoofdsom en rente naar Vrij sparen"),
-      vmH("option", { value: "belegging" }, "hoofdsom naar beleggen, rente naar sparen"));
-  }
   function vmZetVervaldatum(id, datum) {
     setExtraVermogensItems(prev => prev.map(i => i.id === id ? { ...i, vervaldatum: datum } : i));
   }
@@ -6688,7 +6681,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
       vmH("p", { className: "text-xs text-slate-500 mt-2" }, "Bedragen in euro. Alleen spaargeld telt mee: je spaarsaldo, maandelijkse inkomsten en uitgaven, grote posten, de inkomensaanvulling en stortingen die je via Vermogen van of naar sparen boekt. Deposito's tellen mee zodra ze vervallen (hoofdsom en rente naar sparen), tenzij je ze verlengt of naar beleggen zet."),
       !genoeg && vmH("div", { className: "mt-2 p-3 bg-slate-50 rounded border border-slate-200 text-sm" },
         vmH("div", { className: "font-semibold mb-1" }, "Hier los je het mee op (bij Vermogen)"),
-        vmH("div", { className: "text-xs text-slate-600 mb-1" }, "Eerstvolgende einddatums van deposito's. Staat een deposito op 'hoofdsom naar beleggen', zet het dan op 'naar sparen' zodat het geld op de einddatum in je spaarsaldo komt."),
+        vmH("div", { className: "text-xs text-slate-600 mb-1" }, "Eerstvolgende einddatums van deposito's. Op de einddatum komt het geld op je spaarrekening."),
         vmDepositoLijst().slice(0, 4).map(d => vmH("div", { key: d.item.id, className: "flex justify-between items-center gap-2 py-1 border-t border-slate-200" },
           vmH("span", null, d.bank + " · " + (d.verval ? fmtDate(d.verval) : "onbekend")),
           vmH("span", { className: "flex items-center gap-2 shrink-0" }, vmH("span", { className: "font-mono" }, vmEuro(d.bedrag + d.totaalRente)),
@@ -6734,10 +6727,9 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     const binnenkort = lijst.filter(d => d.dagen != null && d.dagen >= 0 && d.dagen <= 90);
     const beslis = binnenkort.length === 0 ? null : vmH("div", { className: vmKaart },
       vmH("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-1" }, "Deposito's die binnen 90 dagen vervallen"),
-      vmH("p", { className: "text-xs text-slate-500 mb-1" }, "Standaard gaan hoofdsom en rente op de einddatum naar je spaarsaldo. Wil je het geld in beleggen zetten, kies dan hieronder 'hoofdsom naar beleggen'. Een nieuw deposito leg je onderaan vast; dat wordt van sparen afgeboekt."),
+      vmH("p", { className: "text-xs text-slate-500 mb-1" }, "Op de einddatum komen hoofdsom en rente op je spaarrekening. Een nieuw deposito of belegging boek je zelf vanaf de spaarrekening bij Vermogen."),
       binnenkort.map(d => vmH("div", { key: d.item.id, className: "py-2 border-t border-slate-100 text-sm" },
-        vmH("div", { className: "flex justify-between" }, vmH("span", { className: "font-semibold" }, d.bank + " · " + fmtDate(d.verval) + " (" + d.dagen + " dagen)"), vmH("span", { className: "font-mono" }, vmEuro(d.bedrag + d.totaalRente))),
-        vmH("div", { className: "mt-1" }, vmKeuzeSelect(d.item)))));
+        vmH("div", { className: "flex justify-between" }, vmH("span", { className: "font-semibold" }, d.bank + " · " + fmtDate(d.verval) + " (" + d.dagen + " dagen)"), vmH("span", { className: "font-mono" }, vmEuro(d.bedrag + d.totaalRente))),)));
 
     // --- prognose-aannames ---
     const aannames = vmH("div", { className: vmKaart },
@@ -6752,14 +6744,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
         vmH("span", { className: "flex items-center gap-1 shrink-0" },
           vmH(NumInput, { step: "0.1", value: waarde, onChange: e => zet(e.target.value), className: "w-20 " + vmInvoer }),
           vmH("span", { className: "text-xs text-slate-500" }, "%/jr")))),
-      vmH("div", { className: vmRij },
-        vmH("span", null, "Bij einddatum van een deposito (standaard)"),
-        vmH("select", {
-          value: depoPrognose.standaard === "belegging" ? "belegging" : "sparen",
-          onChange: e => setDepoPrognose(p => ({ ...p, standaard: e.target.value })),
-          className: "border border-slate-300 rounded px-1 py-1 text-xs"
-        }, vmH("option", { value: "sparen" }, "hoofdsom en rente naar Vrij sparen"), vmH("option", { value: "belegging" }, "hoofdsom naar beleggen, rente sparen"))),
-      vmH("p", { className: "text-xs text-slate-400 mt-1" }, "Standaard gaan hoofdsom en rente van een deposito op de einddatum naar je spaarsaldo: de deposito's nemen geleidelijk af en het spaargeld neemt toe. Kies je voor een nieuw deposito, dan leg je dat hieronder vast: het spaargeld daalt en de deposito's stijgen. De percentages gelden voor verlengde deposito's. Per deposito kun je het anders instellen. De prognose voor pensioenpotten stel je in bij Lijfrente en pensioen.")
+      vmH("p", { className: "text-xs text-slate-400 mt-1" }, "Op de einddatum gaan hoofdsom en rente van een deposito naar je spaarsaldo: de deposito's nemen geleidelijk af en het spaargeld neemt toe. Een nieuw deposito of belegging boek je zelf vanaf de spaarrekening."),
     );
 
     // --- overzicht nu en later ---
@@ -6837,7 +6822,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
       vmH("div", { className: vmRij }, vmH("span", null, "Totaal hoofdsom"), vmH("b", null, vmEuro(somBedrag))),
       vmH("div", { className: vmRij }, vmH("span", null, "Opgebouwde rente, nog niet uitgekeerd"), vmH("b", null, vmEuro(somOpgebouwd))),
       vmH("div", { className: vmRij }, vmH("span", null, "Nog uit te keren rente (huidige looptijd)"), vmH("b", null, vmEuro(somTotaal))),
-      vmH("p", { className: "text-xs text-slate-500 my-1" }, "Gesorteerd op einddatum. Het deposito blijft zijn hoofdsom waard. De rente gaat standaard pas bij het einde van de looptijd naar Vrij sparen (rente op rente per jaardag), samen met de hoofdsom, tenzij je kiest voor 'hoofdsom naar beleggen'. De rente is de rente van dat deposito zelf, berekend over zijn eigen looptijd. Wordt de rente van een deposito jaarlijks uitgekeerd, dan gaat zij elke jaardag naar Vrij sparen. De opgebouwde rente zit nog niet in het vrij vermogen. Tik op een deposito voor de uitkeringen en om het aan te passen."),
+      vmH("p", { className: "text-xs text-slate-500 my-1" }, "Gesorteerd op einddatum. Het deposito blijft zijn hoofdsom waard. De rente gaat standaard pas bij het einde van de looptijd naar Vrij sparen (rente op rente per jaardag), samen met de hoofdsom, De rente is de rente van dat deposito zelf, berekend over zijn eigen looptijd. Wordt de rente van een deposito jaarlijks uitgekeerd, dan gaat zij elke jaardag naar Vrij sparen. De opgebouwde rente zit nog niet in het vrij vermogen. Tik op een deposito voor de uitkeringen en om het aan te passen."),
       lijst.map(d => {
         const open = vmOpenDep === d.item.id;
         const bijna = d.dagen != null && d.dagen <= 90;
@@ -6868,10 +6853,6 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
             vmH("div", { className: "flex items-center justify-between gap-2" }, vmH("span", null, "Rente wordt uitgekeerd"),
               vmH("select", { value: vmRenteJaarlijks(d.item) ? "jaarlijks" : "einde", onChange: e => setDepositoRenteUitkering(p => ({ ...(p || {}), [d.item.id]: e.target.value })), style: { maxWidth: "100%" }, className: "border border-slate-300 rounded px-1 py-1 text-xs" },
                 vmH("option", { value: "einde" }, "bij einde looptijd"), vmH("option", { value: "jaarlijks" }, "jaarlijks op de jaardag"))),
-            vmH("div", { className: "flex items-center justify-between gap-2" }, vmH("span", null, "Al uitgekeerde rente"),
-              vmH(NumInput, { value: vmReedsUitgekeerd(d.item) || "", placeholder: "0", onChange: e => setExtraVermogensItems(prev => prev.map(i => i.id === d.item.id ? { ...i, renteReedsUitgekeerd: Number(e.target.value) || 0 } : i)), className: "w-24 border border-slate-300 rounded px-2 py-1 font-mono text-xs text-right" })),
-            vmH("div", { className: "flex items-center justify-between gap-2" }, vmH("span", null, "Bij einddatum"),
-              vmKeuzeSelect(d.item)),
             vmH("button", { type: "button", onClick: () => { if (window.confirm("Dit deposito verwijderen?")) verwijderVermogensitem(d.item.id); }, className: "text-xs text-rose-700 underline" }, "Deposito verwijderen")));
       }),
       vmH("div", { className: "text-xs uppercase tracking-wide text-slate-500 mt-3 mb-1" }, "Rente van deposito's per jaar"),
@@ -7789,7 +7770,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     className: "font-mono text-xs uppercase tracking-widest bg-slate-700/60 border border-slate-500 rounded-full px-3 py-1"
   }, "peildatum ", fmtDate(PEILDATUM)), /*#__PURE__*/React.createElement("span", {
     className: "w-full text-xs text-slate-400 no-print"
-  }, "App-versie ", "17-10-2026 · 17:50")), /*#__PURE__*/React.createElement("p", {
+  }, "App-versie ", "17-10-2026 · 18:10")), /*#__PURE__*/React.createElement("p", {
     className: "mt-2 text-slate-300 text-sm max-w-2xl"
   }, "Bedragen zijn nominaal per peildatum, tenzij een indexatiepercentage is ingevuld. Alle basisbedragen zijn zelf aanpasbaar bij \"Basisgegevens\"." + (actieveTab === "fiscaliteit" ? " Alle aannames staan onderaan bij \"Aannames & beperkingen\". Bij het openen checkt dit bestand automatisch vier fiscale kerncijfers (zie bovenaan) — bij een afwijking wordt er niets automatisch aangepast, dat blijft een bewuste stap." : "")), /*#__PURE__*/React.createElement("div", {
     className: "mt-4 flex flex-wrap gap-2 items-center no-print"
