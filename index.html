@@ -5717,7 +5717,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     // Lijfrente-, vakantiegeld- en overbruggingsboekingen hebben eveneens hun eigen dag.
     lijfrenteBoekingen.forEach(b => voegEventToe(new Date(b.jaar, b.maand, b.dag), b.delta, b.omschrijving, "aanvulling"));
     vakantiegeldRijen.forEach(b => voegEventToe(new Date(b.jaar, b.maand, b.dag), b.delta, b.omschrijving, "aanvulling"));
-    overbruggingBoekingen.forEach(b => voegEventToe(new Date(b.jaar, b.maand, b.dag), b.delta, b.omschrijving, "aanvulling"));
+    overbruggingBoekingen.forEach(b => voegEventToe(new Date(b.jaar, b.maand, b.dag), b.delta, b.omschrijving, "pot"));
     vmSparenBeleggenEvents().forEach(b => voegEventToe(b.datum, b.delta, b.omschrijving, "beleggen"));
 
     // Het maandelijkse saldo wordt op de bestaande boekdag (22e) als één exacte mutatie geboekt.
@@ -7035,7 +7035,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
         begin: pt[k - 1].totaal, eind: pt[k].totaal,
         maandsaldo: som("maandsaldo"),
         grootIn: som("eigen", e => e.delta > 0), grootUit: som("eigen", e => e.delta < 0),
-        aanvulling: som("aanvulling"),
+        aanvulling: som("aanvulling"), pot: som("pot"),
         renteSpaar: som("rentespaar"), renteDepo: som("rentedepo"),
         vrijval: som("vrijval"), naarBeleggen: som("beleggen") , naarDepo: som("verschuiving"),
         spBegin: sp[k - 1], spEind: sp[k],
@@ -7093,7 +7093,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     } else if (naam.indexOf("Vrij sparen") === 0) {
       begin = eerste.spBegin; eind = laatste.spEind;
       voeg("Maandsaldo (inkomen min lasten)", som("maandsaldo")); voeg("Grote posten", som("grootIn") + som("grootUit"), soort("eigen"));
-      voeg("Vakantiegeld, lijfrente, aanvulling", som("aanvulling"), soort("aanvulling")); voeg("Rente spaargeld", som("renteSpaar"), soort("rentespaar")); voeg("Rente deposito's", som("renteDepo"), soort("rentedepo"));
+      voeg("Vakantiegeld, lijfrente, aanvulling", som("aanvulling"), soort("aanvulling")); voeg("Pot inkomensaanvulling", som("pot"), soort("pot")); voeg("Rente spaargeld", som("renteSpaar"), soort("rentespaar")); voeg("Rente deposito's", som("renteDepo"), soort("rentedepo"));
       voeg("Hoofdsom deposito's vrijgevallen", som("vrijval"), soort("vrijval")); voeg("Naar beleggen (storting/opname)", som("naarBeleggen"), soort("beleggen")); voeg("Naar nieuw deposito", som("naarDepo"), soort("verschuiving"));
     } else if (naam.indexOf("Deposito") === 0) {
       begin = eerste.dpBegin; eind = laatste.dpEind;
@@ -7104,6 +7104,8 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
       voeg("Stortingen en opnames", som("mutAlle")); voeg("Hoofdsom van deposito's", som("depoBel")); voeg("Groei volgens je prognose", som("groei"));
     } else if (naam.indexOf("Overig") === 0) {
       begin = eerste.ovBegin; eind = laatste.ovEind;
+      const potItems = periode.filter(e => e.soort === "pot").map(e => ({ ...e, delta: -e.delta }));
+      voeg("Gestort in (of teruggeboekt uit) de pot voor je inkomensaanvulling", potItems.reduce((s, e) => s + e.delta, 0), potItems);
       noot = "Overig zijn je andere vermogensposten (geen deposito, spaargeld of beleggen) en de pot voor je inkomensaanvulling.";
     } else {
       begin = eerste.rvBegin; eind = laatste.rvEind;
@@ -7112,7 +7114,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
       noot = "Elke maand op de 22e wordt het bedrag van elke reservering apart gezet. Het komt uit je maandsaldo en blijft meetellen in het vrij vermogen.";
     }
     const uitleg = lijnen.reduce((x, l) => x + l.v, 0);
-    if (Math.abs((eind - begin) - uitleg) >= 0.5) voeg(naam.indexOf("Reserveringen") === 0 ? "Maandelijks apart gezet" : naam.indexOf("Overig") === 0 ? "Pot inkomensaanvulling en overige posten" : "Overig", (eind - begin) - uitleg);
+    if (Math.abs((eind - begin) - uitleg) >= 0.5) voeg(naam.indexOf("Reserveringen") === 0 ? "Maandelijks apart gezet" : naam.indexOf("Overig") === 0 ? "Rente en maandelijkse opnames uit de pot, overige posten" : "Overig", (eind - begin) - uitleg);
     const kleur = v => ({ color: v < 0 ? VM_KLEUR.slecht : VM_KLEUR.goed, fontWeight: 600 });
     const rij = (l, v, vet) => vmH("div", { key: l, style: { display: "flex", justifyContent: "space-between", gap: 12, padding: "6px 0", borderTop: "1px solid #e2e8f0", fontWeight: vet ? 700 : 400 } },
       vmH("span", null, l), vmH("span", { className: "font-mono", style: vet ? null : kleur(v) }, vet ? vmGetal(v) : vmTeken(v) + vmGetal(v)));
@@ -7458,7 +7460,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
               regel("Vakantiegeld, lijfrente, aanvulling", "aanvulling"),
               regel("Rente spaargeld", "renteSpaar"), regel("Rente deposito's", "renteDepo"),
               regel("Hoofdsom deposito's vrijgevallen", "vrijval"),
-              regel("Naar beleggen (storting/opname)", "naarBeleggen"), regel("Naar nieuw deposito", "naarDepo"),
+              regel("Pot inkomensaanvulling", "pot"), regel("Naar beleggen (storting/opname)", "naarBeleggen"), regel("Naar nieuw deposito", "naarDepo"),
               vmH("tr", { style: { fontWeight: 700 } }, vmH("td", null, "Nieuw saldo"), K.map((q, i) => vmH("td", { key: i }, vmGetal(q.spEind)))))),
           vmH("div", { className: "rp-pagekop rp-nieuwepagina" }, vmH("h2", null, "Belangrijkste mutaties, komende 12 maanden")),
           vmH("table", { className: "rp-tabel" },
@@ -7813,7 +7815,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     className: "font-mono text-xs uppercase tracking-widest bg-slate-700/60 border border-slate-500 rounded-full px-3 py-1"
   }, "peildatum ", fmtDate(PEILDATUM)), /*#__PURE__*/React.createElement("span", {
     className: "w-full text-xs text-slate-400 no-print"
-  }, "App-versie ", "17-10-2026 · 23:15")), /*#__PURE__*/React.createElement("p", {
+  }, "App-versie ", "17-10-2026 · 23:40")), /*#__PURE__*/React.createElement("p", {
     className: "mt-2 text-slate-300 text-sm max-w-2xl"
   }, "Bedragen zijn nominaal per peildatum, tenzij een indexatiepercentage is ingevuld. Alle basisbedragen zijn zelf aanpasbaar bij \"Basisgegevens\"." + (actieveTab === "fiscaliteit" ? " Alle aannames staan onderaan bij \"Aannames & beperkingen\". Bij het openen checkt dit bestand automatisch vier fiscale kerncijfers (zie bovenaan) — bij een afwijking wordt er niets automatisch aangepast, dat blijft een bewuste stap." : "")), /*#__PURE__*/React.createElement("div", {
     className: "mt-4 flex flex-wrap gap-2 items-center no-print"
