@@ -122,12 +122,52 @@ function postCaoFactorCentraal(type, vanDatum, totDatum, pct){
 </style>
 <!-- herindeling: dashboard actueel + invoerschermen in gevraagde volgorde -->
 <meta name="inkomensplanning-build" content="local-storage-clean-2026-08-16"><meta name="viewport" content="width=device-width, initial-scale=1">
+<style id="layout-print-2026-10">
+/* Afdrukken: invoervelden en keuzelijsten tonen hun waarde als gewone tekst; knoppen blijven weg. */
+@media print {
+  #kopie-melding-balk, #snelle-mutatie-schil, #backup-balkje-knop, #app-terug-naar-schil-boven { display: none !important; }
+  input:not([type="checkbox"]):not([type="file"]), select, textarea {
+    display: inline-block !important; border: 0 !important; background: transparent !important; box-shadow: none !important;
+    padding: 0 !important; margin: 0 !important; -webkit-appearance: none !important; appearance: none !important;
+    color: #0f172a !important; font: inherit !important; width: auto !important; min-width: 0 !important; field-sizing: content;
+  }
+  body.print-rapport .bg-slate-900.text-slate-100 { display: none !important; }
+  .bg-slate-900.text-slate-100 { background: #fff !important; color: #0f172a !important; border-bottom: 2px solid #0f172a; }
+  .bg-slate-900.text-slate-100 * { color: inherit !important; border-color: #cbd5e1 !important; background: transparent !important; }
+  .min-h-screen { background: #fff !important; }
+  html body section { break-inside: auto !important; page-break-inside: auto !important; }
+  .bg-white.rounded-lg.vm-breekbaar { break-inside: auto !important; page-break-inside: auto !important; }
+  .vm-hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html body button.vm-rij-knop { display: block !important; width: 100% !important; text-align: left !important; background: transparent !important; border: 0 !important; padding: 0 !important; color: inherit !important; }
+  .rp-pagina { break-after: page; page-break-after: always; }
+  .rp-pagina:last-child { break-after: auto; page-break-after: auto; }
+  .rp-pagina svg, .rp-kpi, .rp-banner { break-inside: avoid; page-break-inside: avoid; }
+  .rp td, .rp th { padding-top: 3px !important; padding-bottom: 3px !important; }
+}
+/* Rapport (scherm en print) */
+.rp { max-width: 820px; margin: 0 auto; color: #0f172a; }
+.rp-pagina { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+.rp-kop { background: #0f172a; color: #fff; border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.rp-kpi { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+.rp-kaart { border-radius: 10px; padding: 10px 12px; color: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.rp h2 { font: 600 17px Georgia, serif; margin: 16px 0 6px; color: #0f172a; break-after: avoid; }
+.rp table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.rp th { text-align: right; color: #64748b; font-weight: 500; padding: 4px 3px; font-size: 11.5px; }
+.rp td { padding: 5px 3px; border-top: 1px solid #e2e8f0; text-align: right; font-variant-numeric: tabular-nums; }
+.rp th:first-child, .rp td:first-child { text-align: left; }
+@media (max-width: 480px) { .rp table { font-size: 11.5px; } .rp th, .rp td { padding-left: 1px; padding-right: 1px; } .rp-pagina { padding: 12px; } }
+.rp-noot { font-size: 11.5px; color: #64748b; margin: 6px 0 10px; line-height: 1.4; }
+.rp-banner { border: 1px solid; border-radius: 8px; padding: 9px 11px; font-size: 13px; margin: 8px 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+@media print { .rp-pagina { border: 0; border-radius: 0; padding: 0; margin: 0; } .rp { max-width: none; } .rp-kpi { grid-template-columns: repeat(4, 1fr); } }
+</style>
 <style id="hide-rente-overrides">
 /* 2026 blijft intern op €200 staan; vanaf 2027 automatische dagrentelogica. */
 .rente-override-verbergen { display:none !important; }
 </style>
 
 <style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.sticky{position:sticky}.top-0{top:0px}.z-10{z-index:10}.-mx-6{margin-left:-1.5rem;margin-right:-1.5rem}.mx-auto{margin-left:auto;margin-right:auto}.mb-2{margin-bottom:0.5rem}.mb-4{margin-bottom:1rem}.mr-2{margin-right:0.5rem}.mt-1{margin-top:0.25rem}.mt-2{margin-top:0.5rem}.mt-3{margin-top:0.75rem}.mt-4{margin-top:1rem}.flex{display:flex}.inline-flex{display:inline-flex}.grid{display:grid}.hidden{display:none}.h-1\.5{height:0.375rem}.h-full{height:100%}.min-h-screen{min-height:100vh}.w-1\.5{width:0.375rem}.w-12{width:3rem}.w-20{width:5rem}.w-24{width:6rem}.w-28{width:7rem}.w-full{width:100%}.min-w-\[140px\]{min-width:140px}.min-w-\[180px\]{min-width:180px}.max-w-2xl{max-width:42rem}.max-w-4xl{max-width:56rem}.flex-1{flex:1 1 0%}.shrink-0{flex-shrink:0}.cursor-pointer{cursor:pointer}.grid-cols-1{grid-template-columns:repeat(1, minmax(0, 1fr))}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.items-center{align-items:center}.items-baseline{align-items:baseline}.justify-between{justify-content:space-between}.gap-1{gap:0.25rem}.gap-2{gap:0.5rem}.gap-3{gap:0.75rem}.space-y-1 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.25rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.25rem * var(--tw-space-y-reverse))}.space-y-10 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(2.5rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(2.5rem * var(--tw-space-y-reverse))}.space-y-3 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.75rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.75rem * var(--tw-space-y-reverse))}.divide-y > :not([hidden]) ~ :not([hidden]){--tw-divide-y-reverse:0;border-top-width:calc(1px * calc(1 - var(--tw-divide-y-reverse)));border-bottom-width:calc(1px * var(--tw-divide-y-reverse))}.divide-slate-100 > :not([hidden]) ~ :not([hidden]){--tw-divide-opacity:1;border-color:rgb(241 245 249 / var(--tw-divide-opacity, 1))}.overflow-hidden{overflow:hidden}.overflow-x-auto{overflow-x:auto}.whitespace-nowrap{white-space:nowrap}.rounded{border-radius:0.25rem}.rounded-full{border-radius:9999px}.rounded-lg{border-radius:0.5rem}.border{border-width:1px}.border-b{border-bottom-width:1px}.border-t{border-top-width:1px}.border-t-2{border-top-width:2px}.border-amber-200{--tw-border-opacity:1;border-color:rgb(253 230 138 / var(--tw-border-opacity, 1))}.border-emerald-200{--tw-border-opacity:1;border-color:rgb(167 243 208 / var(--tw-border-opacity, 1))}.border-emerald-300{--tw-border-opacity:1;border-color:rgb(110 231 183 / var(--tw-border-opacity, 1))}.border-slate-100{--tw-border-opacity:1;border-color:rgb(241 245 249 / var(--tw-border-opacity, 1))}.border-slate-200{--tw-border-opacity:1;border-color:rgb(226 232 240 / var(--tw-border-opacity, 1))}.border-slate-300{--tw-border-opacity:1;border-color:rgb(203 213 225 / var(--tw-border-opacity, 1))}.border-slate-500{--tw-border-opacity:1;border-color:rgb(100 116 139 / var(--tw-border-opacity, 1))}.border-slate-700{--tw-border-opacity:1;border-color:rgb(51 65 85 / var(--tw-border-opacity, 1))}.border-slate-900{--tw-border-opacity:1;border-color:rgb(15 23 42 / var(--tw-border-opacity, 1))}.bg-amber-50{--tw-bg-opacity:1;background-color:rgb(255 251 235 / var(--tw-bg-opacity, 1))}.bg-amber-500{--tw-bg-opacity:1;background-color:rgb(245 158 11 / var(--tw-bg-opacity, 1))}.bg-emerald-50{--tw-bg-opacity:1;background-color:rgb(236 253 245 / var(--tw-bg-opacity, 1))}.bg-emerald-600{--tw-bg-opacity:1;background-color:rgb(5 150 105 / var(--tw-bg-opacity, 1))}.bg-green-50{--tw-bg-opacity:1;background-color:rgb(255 241 242 / var(--tw-bg-opacity, 1))}.bg-rose-50{--tw-bg-opacity:1;background-color:rgb(255 241 242 / var(--tw-bg-opacity, 1))}.border-rose-200{--tw-border-opacity:1;border-color:rgb(254 205 211 / var(--tw-border-opacity, 1))}.border-rose-300{--tw-border-opacity:1;border-color:rgb(253 164 175 / var(--tw-border-opacity, 1))}.bg-slate-100{--tw-bg-opacity:1;background-color:rgb(241 245 249 / var(--tw-bg-opacity, 1))}.bg-slate-50{--tw-bg-opacity:1;background-color:rgb(248 250 252 / var(--tw-bg-opacity, 1))}.bg-slate-50\/95{background-color:rgb(248 250 252 / 0.95)}.bg-slate-700{--tw-bg-opacity:1;background-color:rgb(51 65 85 / var(--tw-bg-opacity, 1))}.bg-slate-700\/60{background-color:rgb(51 65 85 / 0.6)}.bg-slate-800\/60{background-color:rgb(30 41 59 / 0.6)}.bg-slate-900{--tw-bg-opacity:1;background-color:rgb(15 23 42 / var(--tw-bg-opacity, 1))}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255 / var(--tw-bg-opacity, 1))}.p-4{padding:1rem}.p-5{padding:1.25rem}.px-1{padding-left:0.25rem;padding-right:0.25rem}.px-2{padding-left:0.5rem;padding-right:0.5rem}.px-3{padding-left:0.75rem;padding-right:0.75rem}.px-4{padding-left:1rem;padding-right:1rem}.px-6{padding-left:1.5rem;padding-right:1.5rem}.py-0\.5{padding-top:0.125rem;padding-bottom:0.125rem}.py-1{padding-top:0.25rem;padding-bottom:0.25rem}.py-1\.5{padding-top:0.375rem;padding-bottom:0.375rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.py-3{padding-top:0.75rem;padding-bottom:0.75rem}.py-8{padding-top:2rem;padding-bottom:2rem}.pl-2{padding-left:0.5rem}.pr-2{padding-right:0.5rem}.pt-1{padding-top:0.25rem}.pt-2{padding-top:0.5rem}.pt-3{padding-top:0.75rem}.pt-4{padding-top:1rem}.text-left{text-align:left}.text-right{text-align:right}.font-mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}.font-sans{font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"}.font-serif{font-family:ui-serif, Georgia, Cambria, "Times New Roman", Times, serif}.text-3xl{font-size:1.875rem;line-height:2.25rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:0.75rem;line-height:1rem}.font-bold{font-weight:700}.font-normal{font-weight:400}.font-semibold{font-weight:600}.uppercase{text-transform:uppercase}.tracking-tight{letter-spacing:-0.025em}.tracking-wide{letter-spacing:0.025em}.tracking-widest{letter-spacing:0.1em}.text-amber-800{--tw-text-opacity:1;color:rgb(146 64 14 / var(--tw-text-opacity, 1))}.text-emerald-700{--tw-text-opacity:1;color:rgb(4 120 87 / var(--tw-text-opacity, 1))}.text-emerald-800{--tw-text-opacity:1;color:rgb(6 95 70 / var(--tw-text-opacity, 1))}.text-rose-600{--tw-text-opacity:1;color:rgb(225 29 72 / var(--tw-text-opacity, 1))}.text-green-700{--tw-text-opacity:1;color:rgb(190 18 60 / var(--tw-text-opacity, 1))}.text-rose-700{--tw-text-opacity:1;color:rgb(190 18 60 / var(--tw-text-opacity, 1))}.text-rose-800{--tw-text-opacity:1;color:rgb(159 18 57 / var(--tw-text-opacity, 1))}.text-sky-700{--tw-text-opacity:1;color:rgb(3 105 161 / var(--tw-text-opacity, 1))}.text-slate-100{--tw-text-opacity:1;color:rgb(241 245 249 / var(--tw-text-opacity, 1))}.text-slate-200{--tw-text-opacity:1;color:rgb(226 232 240 / var(--tw-text-opacity, 1))}.text-slate-300{--tw-text-opacity:1;color:rgb(203 213 225 / var(--tw-text-opacity, 1))}.text-slate-400{--tw-text-opacity:1;color:rgb(148 163 184 / var(--tw-text-opacity, 1))}.text-slate-500{--tw-text-opacity:1;color:rgb(100 116 139 / var(--tw-text-opacity, 1))}.text-slate-600{--tw-text-opacity:1;color:rgb(71 85 105 / var(--tw-text-opacity, 1))}.text-slate-700{--tw-text-opacity:1;color:rgb(51 65 85 / var(--tw-text-opacity, 1))}.text-slate-900{--tw-text-opacity:1;color:rgb(15 23 42 / var(--tw-text-opacity, 1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.underline{-webkit-text-decoration-line:underline;text-decoration-line:underline}.backdrop-blur{--tw-backdrop-blur:blur(8px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.hover\:bg-slate-600:hover{--tw-bg-opacity:1;background-color:rgb(71 85 105 / var(--tw-bg-opacity, 1))}.hover\:bg-slate-800:hover{--tw-bg-opacity:1;background-color:rgb(30 41 59 / var(--tw-bg-opacity, 1))}.hover\:bg-white:hover{--tw-bg-opacity:1;background-color:rgb(255 255 255 / var(--tw-bg-opacity, 1))}.hover\:text-rose-800:hover{--tw-text-opacity:1;color:rgb(159 18 57 / var(--tw-text-opacity, 1))}@media (min-width: 640px){.sm\:w-52{width:13rem}.sm\:grid-cols-3{grid-template-columns:repeat(3, minmax(0, 1fr))}.sm\:flex-row{flex-direction:row}.sm\:items-center{align-items:center}}</style><style id="print-logical-pages">@media print{@page{size:A4 portrait;margin:12mm 10mm 14mm 10mm}body{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}button,input,select,.no-print,[data-no-print="true"]{display:none!important}.sticky{position:static!important}table{width:100%!important;border-collapse:collapse!important}thead{display:table-header-group!important}tfoot{display:table-footer-group!important}tr{break-inside:avoid!important;page-break-inside:avoid!important}h1,h2,h3{break-after:avoid!important;page-break-after:avoid!important}section{break-inside:avoid-page!important;page-break-inside:avoid!important}.bg-white.rounded-lg,.bg-white.rounded-xl{break-inside:avoid!important;page-break-inside:avoid!important}.overflow-x-auto{overflow:visible!important}p{orphans:3;widows:3}}</style>
+<!-- Opmaakklassen vooraf berekend (Tailwind 3.4, zonder preflight), zodat de app ook zonder internet goed oogt. Opnieuw genereren na het toevoegen van nieuwe klassen. -->
+<style id="tailwind-vast">.visible{visibility:visible}.collapse{visibility:collapse}.static{position:static}.fixed{position:fixed}.sticky{position:sticky}.top-0{top:0}.z-10{z-index:10}.-mx-6{margin-left:-1.5rem;margin-right:-1.5rem}.mx-auto{margin-left:auto;margin-right:auto}.my-1{margin-top:.25rem;margin-bottom:.25rem}.-mt-2{margin-top:-.5rem}.mb-1{margin-bottom:.25rem}.mb-1\.5{margin-bottom:.375rem}.mb-2{margin-bottom:.5rem}.mb-3{margin-bottom:.75rem}.mb-4{margin-bottom:1rem}.mb-5{margin-bottom:1.25rem}.ml-1{margin-left:.25rem}.ml-2{margin-left:.5rem}.mr-2{margin-right:.5rem}.mt-0\.5{margin-top:.125rem}.mt-1{margin-top:.25rem}.mt-2{margin-top:.5rem}.mt-3{margin-top:.75rem}.mt-4{margin-top:1rem}.mt-5{margin-top:1.25rem}.mt-6{margin-top:1.5rem}.block{display:block}.inline-block{display:inline-block}.flex{display:flex}.inline-flex{display:inline-flex}.table{display:table}.grid{display:grid}.hidden{display:none}.h-1{height:.25rem}.h-1\.5{height:.375rem}.h-full{height:100%}.max-h-80{max-height:20rem}.max-h-\[32rem\]{max-height:32rem}.min-h-screen{min-height:100vh}.w-1{width:.25rem}.w-1\.5{width:.375rem}.w-10{width:2.5rem}.w-12{width:3rem}.w-14{width:3.5rem}.w-16{width:4rem}.w-20{width:5rem}.w-24{width:6rem}.w-28{width:7rem}.w-32{width:8rem}.w-36{width:9rem}.w-40{width:10rem}.w-full{width:100%}.min-w-0{min-width:0}.min-w-\[120px\]{min-width:120px}.min-w-\[140px\]{min-width:140px}.min-w-\[150px\]{min-width:150px}.min-w-\[160px\]{min-width:160px}.min-w-\[180px\]{min-width:180px}.max-w-2xl{max-width:42rem}.max-w-4xl{max-width:56rem}.max-w-full{max-width:100%}.max-w-xl{max-width:36rem}.max-w-xs{max-width:20rem}.flex-1{flex:1 1 0%}.shrink-0{flex-shrink:0}.border-collapse{border-collapse:collapse}.cursor-pointer{cursor:pointer}.resize{resize:both}.list-inside{list-style-position:inside}.list-disc{list-style-type:disc}.grid-cols-1{grid-template-columns:repeat(1,minmax(0,1fr))}.grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.items-start{align-items:flex-start}.items-end{align-items:flex-end}.items-center{align-items:center}.items-baseline{align-items:baseline}.justify-start{justify-content:flex-start}.justify-between{justify-content:space-between}.gap-1{gap:.25rem}.gap-1\.5{gap:.375rem}.gap-2{gap:.5rem}.gap-3{gap:.75rem}.gap-4{gap:1rem}.gap-5{gap:1.25rem}.gap-x-3{-moz-column-gap:.75rem;column-gap:.75rem}.gap-x-4{-moz-column-gap:1rem;column-gap:1rem}.gap-x-6{-moz-column-gap:1.5rem;column-gap:1.5rem}.gap-y-0\.5{row-gap:.125rem}.gap-y-1{row-gap:.25rem}.gap-y-2{row-gap:.5rem}.space-y-0\.5>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.125rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.125rem*var(--tw-space-y-reverse))}.space-y-1>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.25rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.25rem*var(--tw-space-y-reverse))}.space-y-10>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(2.5rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(2.5rem*var(--tw-space-y-reverse))}.space-y-2>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.5rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.5rem*var(--tw-space-y-reverse))}.space-y-3>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.75rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.75rem*var(--tw-space-y-reverse))}.space-y-4>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1rem*var(--tw-space-y-reverse))}.space-y-5>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1.25rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1.25rem*var(--tw-space-y-reverse))}.divide-y>:not([hidden])~:not([hidden]){--tw-divide-y-reverse:0;border-top-width:calc(1px*(1 - var(--tw-divide-y-reverse)));border-bottom-width:calc(1px*var(--tw-divide-y-reverse))}.divide-slate-100>:not([hidden])~:not([hidden]){--tw-divide-opacity:1;border-color:rgb(241 245 249/var(--tw-divide-opacity,1))}.self-center{align-self:center}.overflow-hidden{overflow:hidden}.overflow-x-auto{overflow-x:auto}.overflow-y-auto{overflow-y:auto}.truncate{overflow:hidden;text-overflow:ellipsis}.truncate,.whitespace-nowrap{white-space:nowrap}.rounded{border-radius:.25rem}.rounded-full{border-radius:9999px}.rounded-lg{border-radius:.5rem}.rounded-xl{border-radius:.75rem}.border{border-width:1px}.border-2{border-width:2px}.border-b{border-bottom-width:1px}.border-t{border-top-width:1px}.border-t-2{border-top-width:2px}.border-amber-200{--tw-border-opacity:1;border-color:rgb(253 230 138/var(--tw-border-opacity,1))}.border-amber-300{--tw-border-opacity:1;border-color:rgb(252 211 77/var(--tw-border-opacity,1))}.border-emerald-200{--tw-border-opacity:1;border-color:rgb(167 243 208/var(--tw-border-opacity,1))}.border-emerald-300{--tw-border-opacity:1;border-color:rgb(110 231 183/var(--tw-border-opacity,1))}.border-green-300{--tw-border-opacity:1;border-color:rgb(134 239 172/var(--tw-border-opacity,1))}.border-red-300{--tw-border-opacity:1;border-color:rgb(252 165 165/var(--tw-border-opacity,1))}.border-red-400{--tw-border-opacity:1;border-color:rgb(248 113 113/var(--tw-border-opacity,1))}.border-rose-200{--tw-border-opacity:1;border-color:rgb(254 205 211/var(--tw-border-opacity,1))}.border-rose-300{--tw-border-opacity:1;border-color:rgb(253 164 175/var(--tw-border-opacity,1))}.border-sky-200{--tw-border-opacity:1;border-color:rgb(186 230 253/var(--tw-border-opacity,1))}.border-slate-100{--tw-border-opacity:1;border-color:rgb(241 245 249/var(--tw-border-opacity,1))}.border-slate-200{--tw-border-opacity:1;border-color:rgb(226 232 240/var(--tw-border-opacity,1))}.border-slate-300{--tw-border-opacity:1;border-color:rgb(203 213 225/var(--tw-border-opacity,1))}.border-slate-500{--tw-border-opacity:1;border-color:rgb(100 116 139/var(--tw-border-opacity,1))}.border-slate-700{--tw-border-opacity:1;border-color:rgb(51 65 85/var(--tw-border-opacity,1))}.border-slate-900{--tw-border-opacity:1;border-color:rgb(15 23 42/var(--tw-border-opacity,1))}.bg-amber-100{--tw-bg-opacity:1;background-color:rgb(254 243 199/var(--tw-bg-opacity,1))}.bg-amber-50{--tw-bg-opacity:1;background-color:rgb(255 251 235/var(--tw-bg-opacity,1))}.bg-amber-500{--tw-bg-opacity:1;background-color:rgb(245 158 11/var(--tw-bg-opacity,1))}.bg-emerald-50{--tw-bg-opacity:1;background-color:rgb(236 253 245/var(--tw-bg-opacity,1))}.bg-emerald-600{--tw-bg-opacity:1;background-color:rgb(5 150 105/var(--tw-bg-opacity,1))}.bg-green-50{--tw-bg-opacity:1;background-color:rgb(240 253 244/var(--tw-bg-opacity,1))}.bg-green-500{--tw-bg-opacity:1;background-color:rgb(34 197 94/var(--tw-bg-opacity,1))}.bg-red-50{--tw-bg-opacity:1;background-color:rgb(254 242 242/var(--tw-bg-opacity,1))}.bg-rose-300{--tw-bg-opacity:1;background-color:rgb(253 164 175/var(--tw-bg-opacity,1))}.bg-rose-50{--tw-bg-opacity:1;background-color:rgb(255 241 242/var(--tw-bg-opacity,1))}.bg-sky-50{--tw-bg-opacity:1;background-color:rgb(240 249 255/var(--tw-bg-opacity,1))}.bg-slate-100{--tw-bg-opacity:1;background-color:rgb(241 245 249/var(--tw-bg-opacity,1))}.bg-slate-200{--tw-bg-opacity:1;background-color:rgb(226 232 240/var(--tw-bg-opacity,1))}.bg-slate-50{--tw-bg-opacity:1;background-color:rgb(248 250 252/var(--tw-bg-opacity,1))}.bg-slate-50\/95{background-color:rgba(248,250,252,.95)}.bg-slate-700{--tw-bg-opacity:1;background-color:rgb(51 65 85/var(--tw-bg-opacity,1))}.bg-slate-700\/60{background-color:rgba(51,65,85,.6)}.bg-slate-800{--tw-bg-opacity:1;background-color:rgb(30 41 59/var(--tw-bg-opacity,1))}.bg-slate-800\/60{background-color:rgba(30,41,59,.6)}.bg-slate-900{--tw-bg-opacity:1;background-color:rgb(15 23 42/var(--tw-bg-opacity,1))}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1))}.object-contain{-o-object-fit:contain;object-fit:contain}.p-2{padding:.5rem}.p-3{padding:.75rem}.p-4{padding:1rem}.p-5{padding:1.25rem}.px-1{padding-left:.25rem;padding-right:.25rem}.px-2{padding-left:.5rem;padding-right:.5rem}.px-3{padding-left:.75rem;padding-right:.75rem}.px-4{padding-left:1rem;padding-right:1rem}.px-6{padding-left:1.5rem;padding-right:1.5rem}.py-0{padding-top:0;padding-bottom:0}.py-0\.5{padding-top:.125rem;padding-bottom:.125rem}.py-1{padding-top:.25rem;padding-bottom:.25rem}.py-1\.5{padding-top:.375rem;padding-bottom:.375rem}.py-2{padding-top:.5rem;padding-bottom:.5rem}.py-2\.5{padding-top:.625rem;padding-bottom:.625rem}.py-3{padding-top:.75rem;padding-bottom:.75rem}.py-8{padding-top:2rem;padding-bottom:2rem}.pb-2{padding-bottom:.5rem}.pb-3{padding-bottom:.75rem}.pl-1{padding-left:.25rem}.pl-2{padding-left:.5rem}.pr-1{padding-right:.25rem}.pr-2{padding-right:.5rem}.pt-0\.5{padding-top:.125rem}.pt-1{padding-top:.25rem}.pt-2{padding-top:.5rem}.pt-3{padding-top:.75rem}.pt-4{padding-top:1rem}.pt-5{padding-top:1.25rem}.text-left{text-align:left}.text-right{text-align:right}.font-mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace}.font-sans{font-family:ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji}.font-serif{font-family:ui-serif,Georgia,Cambria,Times New Roman,Times,serif}.text-2xl{font-size:1.5rem;line-height:2rem}.text-3xl{font-size:1.875rem;line-height:2.25rem}.text-\[10px\]{font-size:10px}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:.75rem;line-height:1rem}.font-bold{font-weight:700}.font-medium{font-weight:500}.font-normal{font-weight:400}.font-semibold{font-weight:600}.uppercase{text-transform:uppercase}.italic{font-style:italic}.tracking-tight{letter-spacing:-.025em}.tracking-wide{letter-spacing:.025em}.tracking-widest{letter-spacing:.1em}.text-amber-700{--tw-text-opacity:1;color:rgb(180 83 9/var(--tw-text-opacity,1))}.text-amber-800{--tw-text-opacity:1;color:rgb(146 64 14/var(--tw-text-opacity,1))}.text-amber-900{--tw-text-opacity:1;color:rgb(120 53 15/var(--tw-text-opacity,1))}.text-emerald-700{--tw-text-opacity:1;color:rgb(4 120 87/var(--tw-text-opacity,1))}.text-emerald-800{--tw-text-opacity:1;color:rgb(6 95 70/var(--tw-text-opacity,1))}.text-green-700{--tw-text-opacity:1;color:rgb(21 128 61/var(--tw-text-opacity,1))}.text-green-800{--tw-text-opacity:1;color:rgb(22 101 52/var(--tw-text-opacity,1))}.text-red-700{--tw-text-opacity:1;color:rgb(185 28 28/var(--tw-text-opacity,1))}.text-red-800{--tw-text-opacity:1;color:rgb(153 27 27/var(--tw-text-opacity,1))}.text-rose-600{--tw-text-opacity:1;color:rgb(225 29 72/var(--tw-text-opacity,1))}.text-rose-700{--tw-text-opacity:1;color:rgb(190 18 60/var(--tw-text-opacity,1))}.text-rose-800{--tw-text-opacity:1;color:rgb(159 18 57/var(--tw-text-opacity,1))}.text-sky-600{--tw-text-opacity:1;color:rgb(2 132 199/var(--tw-text-opacity,1))}.text-sky-700{--tw-text-opacity:1;color:rgb(3 105 161/var(--tw-text-opacity,1))}.text-sky-900{--tw-text-opacity:1;color:rgb(12 74 110/var(--tw-text-opacity,1))}.text-slate-100{--tw-text-opacity:1;color:rgb(241 245 249/var(--tw-text-opacity,1))}.text-slate-200{--tw-text-opacity:1;color:rgb(226 232 240/var(--tw-text-opacity,1))}.text-slate-300{--tw-text-opacity:1;color:rgb(203 213 225/var(--tw-text-opacity,1))}.text-slate-400{--tw-text-opacity:1;color:rgb(148 163 184/var(--tw-text-opacity,1))}.text-slate-500{--tw-text-opacity:1;color:rgb(100 116 139/var(--tw-text-opacity,1))}.text-slate-600{--tw-text-opacity:1;color:rgb(71 85 105/var(--tw-text-opacity,1))}.text-slate-700{--tw-text-opacity:1;color:rgb(51 65 85/var(--tw-text-opacity,1))}.text-slate-800{--tw-text-opacity:1;color:rgb(30 41 59/var(--tw-text-opacity,1))}.text-slate-900{--tw-text-opacity:1;color:rgb(15 23 42/var(--tw-text-opacity,1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.underline{text-decoration-line:underline}.line-through{text-decoration-line:line-through}.opacity-80{opacity:.8}.shadow-sm{--tw-shadow:0 1px 2px 0 rgba(0,0,0,.05);--tw-shadow-colored:0 1px 2px 0 var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.ring{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(3px + var(--tw-ring-offset-width)) var(--tw-ring-color)}.ring,.ring-1{box-shadow:var(--tw-ring-offset-shadow),var(--tw-ring-shadow),var(--tw-shadow,0 0 #0000)}.ring-1{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color)}.ring-inset{--tw-ring-inset:inset}.ring-red-200{--tw-ring-opacity:1;--tw-ring-color:rgb(254 202 202/var(--tw-ring-opacity,1))}.blur{--tw-blur:blur(8px)}.blur,.filter{filter:var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)}.backdrop-blur{--tw-backdrop-blur:blur(8px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.transition{transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,-webkit-backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter,-webkit-backdrop-filter;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.hover\:bg-emerald-50:hover{--tw-bg-opacity:1;background-color:rgb(236 253 245/var(--tw-bg-opacity,1))}.hover\:bg-rose-50:hover{--tw-bg-opacity:1;background-color:rgb(255 241 242/var(--tw-bg-opacity,1))}.hover\:bg-slate-300:hover{--tw-bg-opacity:1;background-color:rgb(203 213 225/var(--tw-bg-opacity,1))}.hover\:bg-slate-50:hover{--tw-bg-opacity:1;background-color:rgb(248 250 252/var(--tw-bg-opacity,1))}.hover\:bg-slate-600:hover{--tw-bg-opacity:1;background-color:rgb(71 85 105/var(--tw-bg-opacity,1))}.hover\:bg-slate-800:hover{--tw-bg-opacity:1;background-color:rgb(30 41 59/var(--tw-bg-opacity,1))}.hover\:bg-white:hover{--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1))}.hover\:text-rose-800:hover{--tw-text-opacity:1;color:rgb(159 18 57/var(--tw-text-opacity,1))}.disabled\:opacity-50:disabled{opacity:.5}@media (min-width:640px){.sm\:col-span-2{grid-column:span 2/span 2}.sm\:w-24{width:6rem}.sm\:w-52{width:13rem}.sm\:shrink-0{flex-shrink:0}.sm\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.sm\:grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}.sm\:flex-row{flex-direction:row}.sm\:items-center{align-items:center}.sm\:justify-end{justify-content:flex-end}.sm\:justify-between{justify-content:space-between}.sm\:gap-3{gap:.75rem}.sm\:text-right{text-align:right}}@media (min-width:768px){.md\:col-span-2{grid-column:span 2/span 2}.md\:col-span-6{grid-column:span 6/span 6}.md\:grid-cols-6{grid-template-columns:repeat(6,minmax(0,1fr))}}@media (min-width:1024px){.lg\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}}</style>
 <style id="snelle-mutatie-schil-css">
 #snelle-mutatie-schil{position:fixed;inset:0;z-index:99999;background:#f8fafc;overflow:auto;font-family:Arial,sans-serif;color:#0f172a}
 #snelle-mutatie-schil .sm-wrap{max-width:760px;margin:0 auto;padding:20px}
@@ -1550,7 +1590,7 @@ function IncomePlanner() {
   const [actieveTab, setActieveTab] = useState("dashboard");
   const [menuOpen, setMenuOpen] = useState(false);
   function printHuidigScherm() {
-    const namen={dashboard:"Dashboard actueel",dashboard_detail:"Advies",inkomen:"Inkomen",inkomensaanvulling:"Toevoeging inkomen",lijfrente:"Lijfrente en pensioen",vaste_lasten:"Vaste lasten en dagelijkse uitgaven",spaarpot:"Vermogen",grote_uitgaven:"Grote posten en reserveringen",beleggingen:"Beleggingen",fiscaliteit:"Fiscaliteit & AOW"};
+    const namen={dashboard:"Dashboard actueel",dashboard_detail:"Advies",inkomen:"Inkomen",inkomensaanvulling:"Toevoeging inkomen",lijfrente:"Lijfrente en pensioen",vaste_lasten:"Vaste lasten en dagelijkse uitgaven",spaarpot:"Vermogen",grote_uitgaven:"Grote posten en reserveringen",beleggingen:"Beleggingen",fiscaliteit:"Fiscaliteit & AOW",rapport:"Financieel overzicht"};
     document.title="Inkomensplanning - "+(namen[actieveTab]||"Overzicht");
     window.print();
   }
@@ -6413,6 +6453,8 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
       vmH("div", { className: vmRij + " items-center" }, vmH("span", null, "Minimumsaldo"),
         vmH("span", { className: "flex items-center gap-1" }, vmH("span", { className: "text-xs text-slate-500" }, "€"),
           vmH(NumInput, { value: spaarBufferMinimum, onChange: e => setSpaarBufferMinimum(Number(e.target.value) || 0), className: "w-24 " + vmInvoer }))),
+      vmH("div", { style: { marginTop: "10px" } }, vmGrafiekLijn(reeks, minimum, "g")),
+      vmH("p", { className: "text-xs text-slate-500 mb-1" }, "Het spaargeld per dag. Rood is onder je minimum."),
       vmH("table", { className: "w-full font-mono mt-2", style: { fontSize: "13px" } },
         vmH("thead", null, vmH("tr", { className: "text-xs text-slate-500 font-sans" },
           vmH("th", { className: "text-left font-normal py-1" }, "Maand"),
@@ -6443,12 +6485,12 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     const overig = r => (Number(r.overigeItems) || 0) + (Number(r.overbrugging) || 0);
     const vrijRend = vmRendement("vrijeBeleggingen");
     const regels = [
-      ["Vrij sparen", nu.sparen, later.sparen],
-      ["Deposito's", nu.depositos, later.depositos],
-      ["Beleggen" + (vrijRend.geschat ? " (geschat)" : ""), nu.degiroVrij, later.degiroVrij],
-      ["Reserveringen", nu.geoormerkt, later.geoormerkt]
+      ["Vrij sparen", nu.sparen, later.sparen, VM_KLEUR.sparen],
+      ["Deposito's", nu.depositos, later.depositos, VM_KLEUR.deposito],
+      ["Beleggen" + (vrijRend.geschat ? " (geschat)" : ""), nu.degiroVrij, later.degiroVrij, VM_KLEUR.beleggen],
+      ["Reserveringen", nu.geoormerkt, later.geoormerkt, VM_KLEUR.reserv]
     ];
-    if (Math.abs(overig(nu)) >= 0.5 || Math.abs(overig(later)) >= 0.5) regels.push(["Overig", overig(nu), overig(later)]);
+    if (Math.abs(overig(nu)) >= 0.5 || Math.abs(overig(later)) >= 0.5) regels.push(["Overig", overig(nu), overig(later), VM_KLEUR.overig]);
     const totNu = Number(nu.vrijBesteedbaar) || 0, totLater = Number(later.vrijBesteedbaar) || 0;
     const lijst = vmDepositoLijst();
     const somBedrag = lijst.reduce((s, d) => s + d.bedrag, 0);
@@ -6500,9 +6542,19 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     );
 
     // --- overzicht nu en later ---
+    const hero = vmH("div", { className: "vm-hero", style: { background: "#0f172a", color: "#fff", borderRadius: "12px", padding: "16px" } },
+      vmH("div", { style: { fontSize: "12px", letterSpacing: "0.06em", textTransform: "uppercase", opacity: 0.8 } }, "Vrij vermogen nu"),
+      vmH("div", { style: { fontSize: "34px", fontWeight: 700, fontFamily: "ui-monospace,Menlo,monospace", lineHeight: 1.15, marginTop: "2px" } }, vmEuro(totNu)),
+      vmH("div", { style: { marginTop: "8px", fontSize: "14px" } },
+        "Over " + horizon + " maanden: ", vmH("b", null, vmEuro(totLater)), " ",
+        vmH("span", { style: { background: totLater - totNu >= 0 ? "#065f46" : "#9f1239", borderRadius: "999px", padding: "2px 9px", fontSize: "12.5px", fontWeight: 600 } }, vmTeken(totLater - totNu) + vmEuro(totLater - totNu))));
+    const verloopPunten = vmVerloopPunten([0, 3, 6, 9, 12, 15, 18, 21, 24]);
+    const grafiek = vmH("div", { className: vmKaart },
+      vmH("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-1" }, "Vermogensprognose 24 maanden (bedragen in duizenden euro)"),
+      vmGrafiekStapel(verloopPunten, 240),
+      vmLegenda(vmDelenNamen.concat(Math.abs(overig(nu)) >= 0.5 ? [["Overig", VM_KLEUR.overig]] : [])),
+      vmH("p", { className: "text-xs text-slate-500 mt-2" }, "Elke kolom is het vrij vermogen op dat moment, met de prognose-aannames hieronder. De cijfers boven de kolommen zijn het totaal."));
     const overzicht = vmH("div", { className: vmKaart },
-      vmH("div", { className: "text-xs uppercase tracking-wide text-slate-500" }, "Vrij vermogen nu (bedragen in euro)"),
-      vmH("div", { className: "text-3xl font-mono font-semibold mt-1 mb-3" }, vmEuro(totNu)),
       vmH("table", { className: "w-full font-mono", style: { fontSize: "13px" } },
         vmH("thead", null, vmH("tr", { className: "text-xs text-slate-500 font-sans" },
           vmH("th", { className: "text-left font-normal py-1" }, ""),
@@ -6510,8 +6562,8 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
           vmH("th", { className: "text-right font-normal py-1" }, "Over " + horizon + " mnd"),
           vmH("th", { className: "text-right font-normal py-1" }, "Verschil"))),
         vmH("tbody", null,
-          regels.map(([naam, a, b]) => vmH("tr", { key: naam, className: "border-t border-slate-100" },
-            vmH("td", { className: "py-1.5 font-sans text-left" }, naam),
+          regels.map(([naam, a, b, kl]) => vmH("tr", { key: naam, className: "border-t border-slate-100" },
+            vmH("td", { className: "py-1.5 font-sans text-left" }, vmPunt(kl), naam),
             vmH("td", { className: "py-1.5 text-right" }, vmGetal(a)),
             vmH("td", { className: "py-1.5 text-right" }, vmGetal(b)),
             vmH("td", { className: "py-1.5 text-right " + vmKleur(b - a) }, vmTeken(b - a) + vmGetal(b - a)))),
@@ -6528,7 +6580,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     );
 
     // --- vrij sparen ---
-    const sparen = vmH("div", { className: vmKaart },
+    const sparen = vmH("div", { className: vmKaart + " vm-breekbaar" },
       vmH("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-1" }, "1. Vrij sparen"),
       vmH("div", { className: vmRij + " items-center" }, vmH("span", null, "Hoofdsom (saldo vandaag)"),
         vmH("span", { className: "flex items-center gap-1" }, vmH("span", { className: "text-xs text-slate-500" }, "€"),
@@ -6544,7 +6596,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
           vmH("td", { className: "py-1 font-sans text-left" }, "31-12-" + x.jaar),
           vmH("td", { className: "py-1 text-right" }, vmEuro(x.bedrag), x.handmatig ? vmH("span", { className: "font-sans text-xs text-slate-500" }, " (zelf ingevoerd)") : x.schatting ? vmH("span", { className: "font-sans text-xs text-slate-500" }, " (incl. schatting tot vandaag)") : null))))),
       vmH("div", { className: "text-xs uppercase tracking-wide text-slate-500 mt-3 mb-1" }, "Spaarrente per datum"),
-      vmH("div", { className: "space-y-1" }, renteSchemaGesorteerd().map(r => vmH("div", { key: r.id, className: "flex items-center gap-2 text-sm" },
+      vmH("div", { className: "space-y-1" }, renteSchemaGesorteerd().map(r => vmH("div", { key: r.id, className: "flex items-center gap-2 text-sm flex-wrap" },
         vmH("span", { className: "text-xs text-slate-500" }, "vanaf"),
         vmH("input", { type: "date", value: r.vanaf, onChange: e => wijzigRentePercentage(r.id, "vanaf", e.target.value), className: "border border-slate-300 rounded px-2 py-1 font-mono text-xs" }),
         vmH(NumInput, { step: "0.1", value: r.pct, onChange: e => wijzigRentePercentage(r.id, "pct", e.target.value), className: "w-20 " + vmInvoer }),
@@ -6557,7 +6609,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     // --- deposito's ---
     const dForm = vmDepForm;
     const zetDF = (k, v) => setVmDepForm(p => ({ ...p, [k]: v }));
-    const deposito = vmH("div", { className: vmKaart },
+    const deposito = vmH("div", { className: vmKaart + " vm-breekbaar" },
       vmH("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-1" }, "2. Deposito's"),
       vmH("div", { className: vmRij }, vmH("span", null, "Totaal hoofdsom"), vmH("b", null, vmEuro(somBedrag))),
       vmH("div", { className: vmRij }, vmH("span", null, "Opgebouwde rente tot vandaag"), vmH("b", null, vmEuro(somOpgebouwd))),
@@ -6568,7 +6620,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
         const bijna = d.dagen != null && d.dagen <= 90;
         const boekingen = open ? berekenDepositoMetRente(d.item, d.pct).boekingen : [];
         return vmH("div", { key: d.item.id, className: "border-t border-slate-100 py-2" },
-          vmH("button", { type: "button", onClick: () => setVmOpenDep(open ? null : d.item.id), className: "w-full text-left" },
+          vmH("button", { type: "button", onClick: () => setVmOpenDep(open ? null : d.item.id), className: "w-full text-left vm-rij-knop" },
             vmH("div", { className: "flex justify-between font-semibold text-sm" }, vmH("span", null, d.bank), vmH("span", { className: "font-mono" }, vmEuro(d.bedrag))),
             vmH("div", { className: "text-xs text-slate-600 mt-0.5", style: { display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: "12px" } },
               vmH("span", null, "Einddatum: ", vmH("b", null, d.verval ? fmtDate(d.verval) : "onbekend"), bijna && vmH("span", { className: "ml-1 text-amber-800 bg-amber-100 rounded-full px-2" }, d.dagen + " dagen")),
@@ -6702,12 +6754,12 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
             vmH("span", { className: "font-mono" }, vmEuro(Math.abs(Number(m.bedrag))), vmH("button", { type: "button", className: "ml-2 text-rose-600", title: "Verwijderen", onClick: () => vmWijzigReg(sleutel, x => ({ ...x, mutaties: x.mutaties.filter(y => y.id !== m.id) })) }, "✕")))))
       );
     };
-    const beleggen = vmH("div", { className: vmKaart },
+    const beleggen = vmH("div", { className: vmKaart + " vm-breekbaar" },
       vmH("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-1" }, "3. Beleggen"),
       pakketKaart("vrijeBeleggingen", "Vrij beleggen (Hoofkes02)"),
       vmH("p", { className: "text-xs text-slate-400" }, "Op 1 januari vul je de waarde per 1 januari in, plus het totaal gestort en opgenomen in het jaar ervoor. Tussendoor schat de app de waarde met je prognosepercentage. Rendement is de totale waardeontwikkeling (rente, koerswinst, dividend) en houdt rekening met het moment van storten en opnemen.")
     );
-    const pensioen = vmH("div", { className: vmKaart },
+    const pensioen = vmH("div", { className: vmKaart + " vm-breekbaar" },
       vmH("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-1" }, "4. Lijfrente en pensioen"),
       pakketKaart("pensioenDegiro", "Lijfrente (Hoofkes04)"),
       pakketKaart("pensioenBnd", "Pensioen Brand New Day (Vrouw)"),
@@ -6715,9 +6767,225 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     );
 
     return vmH(React.Fragment, null,
-      vmH("section", { className: "space-y-4" },
+      vmH("section", { style: { display: "grid", gap: "16px" } },
         vmH("h2", { className: "font-serif text-xl" }, "Vermogen"),
-        overzicht, controleBlok, beslis, aannames, sparen, deposito, beleggen, pensioen));
+        hero, overzicht, grafiek, controleBlok, beslis, aannames, sparen, deposito, beleggen, pensioen));
+  }
+
+  // ===== Grafieken en rapport =====
+  const VM_KLEUR = { sparen: "#0d9488", deposito: "#2563eb", beleggen: "#7c3aed", reserv: "#f59e0b", overig: "#94a3b8", goed: "#047857", slecht: "#be123c" };
+  const vmK = n => (Math.abs(n) >= 1000 ? (n < 0 ? "-" : "") + new Intl.NumberFormat("nl-NL", { maximumFractionDigits: 0 }).format(Math.round(Math.abs(n) / 1000)) + "k" : String(Math.round(n)));
+  const vmDatumKort = d => d.toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "2-digit" });
+  const vmPunt = (kleur) => vmH("span", { style: { display: "inline-block", width: "10px", height: "10px", borderRadius: "50%", background: kleur, marginRight: "6px", verticalAlign: "middle" } });
+  const vmDelenNamen = [["Vrij sparen", VM_KLEUR.sparen], ["Deposito's", VM_KLEUR.deposito], ["Beleggen", VM_KLEUR.beleggen], ["Reserveringen", VM_KLEUR.reserv]];
+
+  // Vrij vermogen op een reeks momenten, verdeeld naar bestanddeel.
+  function vmVerloopPunten(maandenLijst) {
+    return maandenLijst.map(m => {
+      const r = totaalVermogenOpDatum(m === 0 ? APP_VANDAAG : vmAddMaanden(APP_VANDAAG, m));
+      const delen = [
+        { naam: "Vrij sparen", waarde: Number(r.sparen) || 0, kleur: VM_KLEUR.sparen },
+        { naam: "Deposito's", waarde: Number(r.depositos) || 0, kleur: VM_KLEUR.deposito },
+        { naam: "Beleggen", waarde: Number(r.degiroVrij) || 0, kleur: VM_KLEUR.beleggen },
+        { naam: "Reserveringen", waarde: Number(r.geoormerkt) || 0, kleur: VM_KLEUR.reserv }
+      ];
+      const overig = (Number(r.overigeItems) || 0) + (Number(r.overbrugging) || 0);
+      if (Math.abs(overig) >= 0.5) delen.push({ naam: "Overig", waarde: overig, kleur: VM_KLEUR.overig });
+      return { label: m === 0 ? "Nu" : m + " mnd", delen, totaal: Number(r.vrijBesteedbaar) || 0 };
+    });
+  }
+  // Gestapelde kolommen: vrij vermogen per moment, per bestanddeel gekleurd.
+  function vmGrafiekStapel(punten, hoogte) {
+    const B = 360, H = hoogte || 240, ml = 30, mr = 4, mt = 24, mb = 26;
+    const pos = punten.map(p => p.delen.filter(d => d.waarde > 0).reduce((s, d) => s + d.waarde, 0));
+    const neg = punten.map(p => p.delen.filter(d => d.waarde < 0).reduce((s, d) => s + d.waarde, 0));
+    const maxV = Math.max(1000, ...pos), minV = Math.min(0, ...neg);
+    const raw = (maxV - minV) / 4, mag = Math.pow(10, Math.floor(Math.log10(raw))), nn = raw / mag;
+    const stap = (nn <= 1 ? 1 : nn <= 2 ? 2 : nn <= 5 ? 5 : 10) * mag;
+    const top = Math.ceil(maxV / stap) * stap, bottom = Math.floor(minV / stap) * stap;
+    const y = v => mt + (H - mt - mb) * (1 - (v - bottom) / (top - bottom));
+    const n = punten.length, bw = (B - ml - mr) / n, bb = bw * 0.66;
+    const lijnen = [];
+    for (let v = bottom; v <= top + 1e-6; v += stap) lijnen.push(v);
+    return vmH("svg", { viewBox: "0 0 " + B + " " + H, width: "100%", role: "img", "aria-label": "Vermogensverloop per bestanddeel", style: { display: "block" } },
+      lijnen.map(v => vmH("g", { key: "l" + v },
+        vmH("line", { x1: ml, x2: B - mr, y1: y(v), y2: y(v), stroke: v === 0 ? "#64748b" : "#e2e8f0", strokeWidth: v === 0 ? 1 : 0.7 }),
+        vmH("text", { x: ml - 5, y: y(v) + 3, fontSize: 8.5, textAnchor: "end", fill: "#64748b" }, vmK(v)))),
+      punten.map((p, i) => {
+        const x = ml + i * bw + (bw - bb) / 2;
+        let up = 0, down = 0;
+        const blokken = p.delen.filter(d => Math.abs(d.waarde) >= 0.5).map((d, k) => {
+          let y1, h;
+          if (d.waarde > 0) { y1 = y(up + d.waarde); h = y(up) - y1; up += d.waarde; }
+          else { y1 = y(down); h = y(down + d.waarde) - y(down); down += d.waarde; }
+          return vmH("rect", { key: k, x, y: y1, width: bb, height: Math.max(0, h), fill: d.kleur, opacity: d.waarde < 0 ? 0.55 : 1 }, vmH("title", null, d.naam + ": " + vmEuro(d.waarde)));
+        });
+        return vmH("g", { key: "k" + i },
+          blokken,
+          vmH("text", { x: x + bb / 2, y: y(up) - 5, fontSize: 9, fontWeight: 700, textAnchor: "middle", fill: "#0f172a" }, vmK(p.totaal)),
+          vmH("text", { x: x + bb / 2, y: H - 9, fontSize: 9, textAnchor: "middle", fill: "#475569" }, p.label));
+      }));
+  }
+  // Lijn van het spaargeld per dag, met je minimumsaldo; onder het minimum kleurt de lijn rood.
+  function vmGrafiekLijn(reeks, minimum, uid, hoogte) {
+    const B = 360, H = hoogte || 200, ml = 4, mr = 4, mt = 16, mb = 24;
+    if (!reeks || reeks.length < 2) return null;
+    const t0 = reeks[0].datum.getTime(), t1 = reeks[reeks.length - 1].datum.getTime();
+    const lage = Math.min(minimum, ...reeks.map(p => p.balans)), hoge = Math.max(minimum, ...reeks.map(p => p.balans));
+    const spreid = Math.max(1000, hoge - lage), bodem = lage - spreid * 0.08, plafond = hoge + spreid * 0.08;
+    const x = t => ml + (t - t0) / (t1 - t0) * (B - ml - mr);
+    const y = v => mt + (H - mt - mb) * (1 - (v - bodem) / (plafond - bodem));
+    const stapD = Math.max(1, Math.floor(reeks.length / 160));
+    const pts = reeks.filter((p, i) => i % stapD === 0 || i === reeks.length - 1);
+    const pad = pts.map((p, i) => (i ? "L" : "M") + x(p.datum.getTime()).toFixed(1) + " " + y(p.balans).toFixed(1)).join(" ");
+    const laagste = reeks.reduce((m, p) => (p.balans < m.balans ? p : m), reeks[0]);
+    const yMin = y(minimum);
+    const ticks = [];
+    const c = new Date(reeks[0].datum.getFullYear(), reeks[0].datum.getMonth() + 1, 1);
+    while (c.getTime() <= t1) { if (c.getMonth() % 3 === 0) ticks.push(new Date(c)); c.setMonth(c.getMonth() + 1); }
+    const idBoven = "vmb" + uid, idOnder = "vmo" + uid;
+    return vmH("svg", { viewBox: "0 0 " + B + " " + H, width: "100%", role: "img", "aria-label": "Spaargeld per dag", style: { display: "block" } },
+      vmH("defs", null,
+        vmH("clipPath", { id: idBoven }, vmH("rect", { x: 0, y: 0, width: B, height: Math.max(0, yMin) })),
+        vmH("clipPath", { id: idOnder }, vmH("rect", { x: 0, y: yMin, width: B, height: Math.max(0, H - yMin) }))),
+      vmH("rect", { x: ml, y: yMin, width: B - ml - mr, height: Math.max(0, H - mb - yMin), fill: "#fee2e2", opacity: 0.6 }),
+      vmH("line", { x1: ml, x2: B - mr, y1: yMin, y2: yMin, stroke: VM_KLEUR.slecht, strokeWidth: 1, strokeDasharray: "4 3" }),
+      vmH("text", { x: B - mr, y: yMin - 3, fontSize: 8, textAnchor: "end", fill: VM_KLEUR.slecht }, "minimum " + vmK(minimum)),
+      vmH("path", { d: pad, fill: "none", stroke: VM_KLEUR.sparen, strokeWidth: 2, clipPath: "url(#" + idBoven + ")" }),
+      vmH("path", { d: pad, fill: "none", stroke: VM_KLEUR.slecht, strokeWidth: 2, clipPath: "url(#" + idOnder + ")" }),
+      ticks.map((d, i) => vmH("g", { key: "t" + i },
+        vmH("line", { x1: x(d.getTime()), x2: x(d.getTime()), y1: H - mb, y2: H - mb + 3, stroke: "#94a3b8" }),
+        vmH("text", { x: x(d.getTime()), y: H - 9, fontSize: 8, textAnchor: "middle", fill: "#475569" }, d.toLocaleDateString("nl-NL", { month: "short", year: "2-digit" })))),
+      vmH("circle", { cx: x(laagste.datum.getTime()), cy: y(laagste.balans), r: 3.5, fill: laagste.balans < minimum ? VM_KLEUR.slecht : VM_KLEUR.sparen }),
+      vmH("text", { x: Math.min(B - 50, Math.max(50, x(laagste.datum.getTime()))), y: Math.min(H - mb - 3, y(laagste.balans) + 13), fontSize: 8.5, fontWeight: 700, textAnchor: "middle", fill: "#0f172a" }, "laagste " + vmK(laagste.balans)));
+  }
+  function vmLegenda(delen) {
+    return vmH("div", { style: { display: "flex", flexWrap: "wrap", gap: "4px 14px", fontSize: "12px", marginTop: "6px", color: "#334155" } },
+      delen.map(([naam, kleur]) => vmH("span", { key: naam }, vmPunt(kleur), naam)));
+  }
+
+  React.useEffect(() => { document.body.classList.toggle("print-rapport", actieveTab === "rapport"); }, [actieveTab]);
+  // Rapport: actuele en toekomstige situatie, bedoeld om als PDF af te drukken.
+  function printRapport() {
+    document.title = "Financieel overzicht " + vmIso(APP_VANDAAG);
+    window.print();
+  }
+  function renderRapport() {
+    const jaar = APP_VANDAAG.getFullYear();
+    const punten = vmVerloopPunten([0, 3, 6, 9, 12, 15, 18, 21, 24]);
+    const nu = punten[0], j1 = punten[4], j2 = punten[8];
+    const lijst = vmDepositoLijst();
+    const depoJaren = vmDepositoJaartabel(lijst);
+    const controles = vmControles(totaalVermogenOpDatum(APP_VANDAAG), lijst);
+    const fouten = controles.filter(x => !x.ok);
+    const minimum = Number(spaarBufferMinimum) || 0;
+    const reeks = [];
+    sparenRaboOpDatum(new Date(jaar + 1, 11, 31), reeks);
+    const laagste = reeks.length ? reeks.reduce((m, p) => (p.balans < m.balans ? p : m), reeks[0]) : null;
+    const genoeg = laagste ? !reeks.some(p => p.balans < minimum) : true;
+    const kpi = (titel, waarde, sub, kleur) => vmH("div", { className: "rp-kaart", style: { background: kleur } },
+      vmH("div", { style: { fontSize: "11px", opacity: 0.85, textTransform: "uppercase", letterSpacing: "0.04em" } }, titel),
+      vmH("div", { style: { fontSize: "21px", fontWeight: 700, fontFamily: "ui-monospace,Menlo,monospace", marginTop: "2px" } }, waarde),
+      sub && vmH("div", { style: { fontSize: "11.5px", opacity: 0.9, marginTop: "2px" } }, sub));
+    const delta = (a, b) => (b - a >= 0 ? "+" : "−") + vmEuro(Math.abs(b - a));
+    const tabelDelen = vmH("table", null,
+      vmH("thead", null, vmH("tr", null, vmH("th", null, ""), vmH("th", null, "Nu"), vmH("th", null, "Over 12 mnd"), vmH("th", null, "Over 24 mnd"))),
+      vmH("tbody", null,
+        nu.delen.map((d, i) => vmH("tr", { key: d.naam },
+          vmH("td", null, vmPunt(d.kleur), d.naam),
+          vmH("td", null, vmGetal(d.waarde)),
+          vmH("td", null, vmGetal((j1.delen.find(x => x.naam === d.naam) || { waarde: 0 }).waarde)),
+          vmH("td", null, vmGetal((j2.delen.find(x => x.naam === d.naam) || { waarde: 0 }).waarde)))),
+        vmH("tr", { style: { fontWeight: 700 } }, vmH("td", null, "Totaal vrij vermogen"), vmH("td", null, vmGetal(nu.totaal)), vmH("td", null, vmGetal(j1.totaal)), vmH("td", null, vmGetal(j2.totaal)))));
+    const phasesRij = phases.filter(p => p.start.getFullYear() <= jaar + 9).map((p, i) => {
+      const s = STATUS[p.status] || { label: p.status };
+      return vmH("tr", { key: i },
+        vmH("td", null, vmDatumKort(p.start) + " — " + (p.end ? vmDatumKort(p.end) : "einde")),
+        vmH("td", null, s.label),
+        vmH("td", null, euro(p.man.value)),
+        vmH("td", null, euro(p.vrouw.value)),
+        vmH("td", { style: { fontWeight: 700 } }, euro(p.totaal)));
+    });
+    const einde12 = vmAddMaanden(APP_VANDAAG, 12);
+    const groteRijen = [
+      ...alleMutatieBoekingen.map(b => ({ datum: b.datum, label: b.label, bedrag: Number(b.bedrag) || 0 })),
+      ...overbruggingBoekingen.map(b => ({ datum: new Date(b.jaar, b.maand, b.dag), label: b.omschrijving, bedrag: b.delta })),
+      ...lijfrenteBoekingen.map(b => ({ datum: new Date(b.jaar, b.maand, b.dag), label: b.omschrijving, bedrag: b.delta })),
+      ...vmSparenBeleggenEvents().map(b => ({ datum: b.datum, label: b.omschrijving, bedrag: b.delta }))
+    ].filter(b => b.datum && b.datum > APP_VANDAAG && b.datum <= einde12 && Math.abs(b.bedrag) >= 1).sort((a, b) => a.datum - b.datum);
+    const pakketten = [["vrijeBeleggingen", "Vrij beleggen"], ["pensioenDegiro", "Lijfrente (Hoofkes04)"], ["pensioenBnd", "Pensioen Brand New Day"]];
+    const pct = x => (x ? (x.pct > 0 ? "+" : "") + vmPct(x.pct, 1) : "—");
+    const kopje = t => vmH("h2", null, t);
+    return vmH("div", { className: "rp", id: "rapport-doc" },
+      vmH("div", { className: "no-print", style: { background: "#fffbeb", border: "1px solid #f59e0b", borderRadius: "10px", padding: "12px", marginBottom: "12px", fontSize: "14px" } },
+        vmH("div", { style: { fontWeight: 600, marginBottom: "4px" } }, "Rapport afdrukken of als PDF bewaren"),
+        "Tik op de knop. Kies in het afdrukvenster van je telefoon bij 'Printer' de optie 'Opslaan als PDF' en tik op de PDF-knop.",
+        vmH("div", { style: { marginTop: "8px" } }, vmH("button", { type: "button", onClick: printRapport, className: vmKnopDonker }, "Print / bewaar als PDF"))),
+
+      vmH("section", { className: "rp-pagina" },
+        vmH("div", { className: "rp-kop" },
+          vmH("div", { style: { fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", opacity: 0.8 } }, "Financieel overzicht"),
+          vmH("div", { style: { fontSize: "24px", fontFamily: "Georgia,serif", fontWeight: 600, marginTop: "2px" } }, "Vermogen en inkomen nu en straks"),
+          vmH("div", { style: { fontSize: "13px", opacity: 0.85, marginTop: "4px" } }, "Stand per " + fmtDate(APP_VANDAAG) + " · prognose t/m " + fmtDate(vmAddMaanden(APP_VANDAAG, 24)))),
+        vmH("div", { className: "rp-kpi" },
+          kpi("Vrij vermogen nu", vmEuro(nu.totaal), "sparen, deposito's, beleggen, reserveringen", "#0f172a"),
+          kpi("Over 12 maanden", vmEuro(j1.totaal), delta(nu.totaal, j1.totaal) + " t.o.v. nu", "#1d4ed8"),
+          kpi("Over 24 maanden", vmEuro(j2.totaal), delta(nu.totaal, j2.totaal) + " t.o.v. nu", "#6d28d9"),
+          kpi("Genoeg spaargeld?", genoeg ? "Ja" : "Nee", laagste ? "laagste punt " + vmEuro(laagste.balans) + " op " + fmtDate(laagste.datum) : "", genoeg ? "#047857" : "#be123c")),
+        kopje("Vrij vermogen in de komende 24 maanden"),
+        vmGrafiekStapel(punten, 250),
+        vmLegenda(vmDelenNamen),
+        vmH("div", { style: { marginTop: "10px" } }, tabelDelen),
+        vmH("p", { className: "rp-noot" }, "Rente, vrijval van deposito's, grote inkomsten en uitgaven en de prognose-aannames zijn meegerekend. Pensioenpotten en de woning staan er niet in.")),
+
+      vmH("section", { className: "rp-pagina" },
+        kopje("Heb ik genoeg spaargeld? " + jaar + " en " + (jaar + 1)),
+        vmH("div", { className: "rp-banner", style: { background: genoeg ? "#ecfdf5" : "#fff1f2", color: genoeg ? "#065f46" : "#9f1239", borderColor: genoeg ? "#a7f3d0" : "#fda4af" } },
+          genoeg ? "Ja. Het spaargeld blijft boven je minimum van " + vmEuro(minimum) + "." : "Nee. Het spaargeld komt onder je minimum van " + vmEuro(minimum) + ". Het laagste punt is " + vmEuro(laagste.balans) + " op " + fmtDate(laagste.datum) + "."),
+        vmGrafiekLijn(reeks, minimum, "r", 105),
+        vmH("p", { className: "rp-noot" }, "Alleen spaargeld telt mee. Beleggingen (ongeveer " + vmEuro(nu.delen.find(d => d.naam === "Beleggen").waarde) + ") zijn een noodreserve."),
+        vmH("p", { className: "rp-noot", style: { marginTop: 0 } }, "Rente nu " + vmPct(SPAARRENTE_PCT, 2) + " per jaar, bijgeschreven op 31 december. Verwacht: " + vmSpaarRenteTabel().map(x => "31-12-" + x.jaar + " " + vmEuro(x.bedrag)).join(" · ") + "."),
+        kopje("Deposito's"),
+        vmH("table", null,
+          vmH("thead", null, vmH("tr", null, vmH("th", null, "Bank"), vmH("th", null, "Hoofdsom"), vmH("th", null, "Rente"), vmH("th", null, "Einddatum"), vmH("th", null, "Opgebouwd"), vmH("th", null, "Tot einde"))),
+          vmH("tbody", null,
+            lijst.map(d => vmH("tr", { key: d.item.id }, vmH("td", null, d.bank), vmH("td", null, vmGetal(d.bedrag)), vmH("td", null, vmPct(d.pct, 2)), vmH("td", null, d.verval ? vmDatumKort(d.verval) : "?"), vmH("td", null, vmGetal(d.opgebouwd)), vmH("td", null, vmGetal(d.totaalRente)))),
+            vmH("tr", { style: { fontWeight: 700 } }, vmH("td", null, "Totaal"), vmH("td", null, vmGetal(lijst.reduce((s, d) => s + d.bedrag, 0))), vmH("td", null, ""), vmH("td", null, ""), vmH("td", null, vmGetal(lijst.reduce((s, d) => s + d.opgebouwd, 0))), vmH("td", null, vmGetal(lijst.reduce((s, d) => s + d.totaalRente, 0)))))),
+        vmH("p", { className: "rp-noot" }, "Bedragen in euro. Rente wordt jaarlijks bijgeschreven (rente op rente). Bij de einddatum wordt standaard verlengd: " + vmPct(depoPrognose.kort, 1) + " (tot en met 1 jaar) of " + vmPct(depoPrognose.lang, 1) + " (langer)."),
+        vmH("table", null,
+          vmH("thead", null, vmH("tr", null, vmH("th", null, "Jaar"), vmH("th", null, "Rente verdiend"), vmH("th", null, "Opgebouwd 31-12"), vmH("th", null, "Uitbetaald"))),
+          vmH("tbody", null, depoJaren.slice(0, 5).map(x => vmH("tr", { key: x.y }, vmH("td", null, x.y), vmH("td", null, vmGetal(x.verdiend)), vmH("td", null, vmGetal(x.opgebouwd)), vmH("td", null, vmGetal(x.uitbetaald))))))),
+
+      vmH("section", { className: "rp-pagina" },
+        kopje("Beleggen en pensioen"),
+        vmH("table", null,
+          vmH("thead", null, vmH("tr", null, vmH("th", null, ""), vmH("th", null, "Waarde"), vmH("th", null, "Gestort"), vmH("th", null, "Opgenomen"), vmH("th", null, "Sinds start"), vmH("th", null, "Dit jaar"), vmH("th", null, "Vorig jaar"))),
+          vmH("tbody", null, pakketten.map(([k, naam]) => {
+            const r = vmRendement(k);
+            return vmH("tr", { key: k }, vmH("td", null, naam + (r.geschat ? " *" : "")), vmH("td", null, vmGetal(r.waarde)), vmH("td", null, r.inleg == null ? "—" : vmGetal(r.gestort)), vmH("td", null, r.inleg == null ? "—" : vmGetal(r.opgenomen)), vmH("td", null, pct(r.sinds)), vmH("td", null, pct(r.ditJaar)), vmH("td", null, pct(r.vorigJaar)));
+          }))),
+        vmH("p", { className: "rp-noot" }, "Bedragen in euro. * Waarde geschat vanaf de laatst ingevulde waarde met het prognosepercentage. Rendement is de totale waardeontwikkeling (rente, koerswinst, dividend), rekening houdend met het moment van storten en opnemen."),
+        kopje("Inkomen per fase (netto per maand)"),
+        vmH("table", null,
+          vmH("thead", null, vmH("tr", null, vmH("th", null, "Periode"), vmH("th", null, "Status"), vmH("th", null, "Kostwinner"), vmH("th", null, "Vrouw"), vmH("th", null, "Totaal"))),
+          vmH("tbody", null, phasesRij)),
+        vmH("p", { className: "rp-noot" }, "Fasen t/m " + (jaar + 9) + "; het volledige fasenoverzicht staat op het Dashboard. Vaste lasten en dagelijkse uitgaven nu: " + euro(Math.round(VASTE_LASTEN_BASIS + DAGELIJKSE_UITGAVEN_BASIS)) + " per maand."),
+        (Number(obBedrag) > 0) && vmH("div", { className: "rp-banner", style: { background: "#eff6ff", color: "#1e3a8a", borderColor: "#bfdbfe" } },
+          "Inkomensaanvulling: " + euro(Number(obBedrag)) + " per maand van " + fmtDate(obStartDatum) + " tot " + fmtDate(obEindDatum) + ". Gestort vanuit spaargeld: " + euro(Number(obStorting) || 0) + ". " + (obTekort > 0 ? "Let op: de pot is " + euro(Math.round(obTekort)) + " te klein." : "De pot houdt het vol.")),
+      ),
+
+      vmH("section", { className: "rp-pagina" },
+        kopje("Grote inkomsten en uitgaven, komende 12 maanden"),
+        groteRijen.length === 0 ? vmH("p", { className: "rp-noot" }, "Geen geplande grote posten.") : vmH("table", null,
+          vmH("thead", null, vmH("tr", null, vmH("th", null, "Datum"), vmH("th", null, "Omschrijving"), vmH("th", null, "Bedrag"))),
+          vmH("tbody", null, groteRijen.slice(0, 18).map((b, i) => vmH("tr", { key: i }, vmH("td", null, vmDatumKort(b.datum)), vmH("td", null, b.label), vmH("td", { style: { color: b.bedrag < 0 ? VM_KLEUR.slecht : VM_KLEUR.goed, fontWeight: 600 } }, (b.bedrag < 0 ? "−" : "+") + vmEuro(Math.abs(b.bedrag))))))),
+        kopje("Aannames en controles"),
+        vmH("table", null, vmH("tbody", null,
+          [["Beleggen (prognose)", vmPct(rendementen.degiro_vrij || 0, 1) + " per jaar"], ["Nieuw of verlengd deposito, tot en met 1 jaar", vmPct(depoPrognose.kort, 1)], ["Nieuw of verlengd deposito, langer dan 1 jaar", vmPct(depoPrognose.lang, 1)], ["Spaarrente nu", vmPct(SPAARRENTE_PCT, 2)], ["Minimumsaldo spaargeld", vmEuro(minimum)]].map(([a, b]) => vmH("tr", { key: a }, vmH("td", null, a), vmH("td", null, b))))),
+        fouten.length === 0
+          ? vmH("div", { className: "rp-banner", style: { background: "#ecfdf5", color: "#065f46", borderColor: "#a7f3d0" } }, "✓ Alle " + controles.length + " controles zijn in orde.")
+          : vmH("div", { className: "rp-banner", style: { background: "#fffbeb", color: "#92400e", borderColor: "#fcd34d" } }, vmH("b", null, fouten.length + " van " + controles.length + " controles vragen aandacht:"), vmH("ul", { style: { margin: "4px 0 0", paddingLeft: "18px" } }, fouten.map((x, i) => vmH("li", { key: i }, x.fout)))),
+        vmH("p", { className: "rp-noot" }, "Dit rapport is een prognose op basis van je eigen invoer en aannames. Werkelijke rentes, rendementen, belastingen en uitgaven kunnen afwijken. Het is geen financieel advies en geen garantie. Gemaakt op " + fmtDate(APP_VANDAAG) + ".")));
   }
 
   function renderBeleggingen() {
@@ -6951,7 +7219,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
   }, "peildatum ", fmtDate(PEILDATUM))), /*#__PURE__*/React.createElement("p", {
     className: "mt-2 text-slate-300 text-sm max-w-2xl"
   }, "Bedragen zijn nominaal per peildatum, tenzij een indexatiepercentage is ingevuld. Alle basisbedragen zijn zelf aanpasbaar bij \"Basisgegevens\"." + (actieveTab === "fiscaliteit" ? " Alle aannames staan onderaan bij \"Aannames & beperkingen\". Bij het openen checkt dit bestand automatisch vier fiscale kerncijfers (zie bovenaan) — bij een afwijking wordt er niets automatisch aangepast, dat blijft een bewuste stap." : "")), /*#__PURE__*/React.createElement("div", {
-    className: "mt-4 flex flex-wrap gap-2 items-center"
+    className: "mt-4 flex flex-wrap gap-2 items-center no-print"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: exporteerGegevens,
     className: "text-xs px-3 py-1.5 rounded-full bg-slate-100 text-slate-900 hover:bg-white"
@@ -6985,7 +7253,7 @@ React.createElement("button",{type:"button","data-no-print":"true",onClick:()=>{
   ),
   React.createElement("span",{className:"underline"}, totaalUpdateAantal>0 || overallStatus!=="done" || fiscaalTabelMelding ? "bekijk en update →" : "bekijk →")
 ),
-menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-slate-200 rounded-xl p-3 shadow-sm"},React.createElement("div",{className:"text-xs text-slate-500 mb-2"},"Kies een onderwerp"),React.createElement("select",{defaultValue:"",autoFocus:true,onChange:e=>{const id=e.target.value;if(!id)return;setActieveTab(id);setMenuOpen(false);},className:"w-full bg-white border border-slate-300 rounded-lg px-3 py-3 text-sm text-slate-800"},React.createElement("option",{value:"",disabled:true},"Selecteer een onderwerp…"),React.createElement("option",{value:"dashboard"},"Dashboard actueel"),React.createElement("option",{value:"inkomen"},"Inkomen"),React.createElement("option",{value:"inkomensaanvulling"},"Toevoeging inkomen"),React.createElement("option",{value:"lijfrente"},"Lijfrente en pensioen"),React.createElement("option",{value:"vaste_lasten"},"Vaste lasten en dagelijkse uitgaven"),React.createElement("option",{value:"spaarpot"},"Vermogen"),React.createElement("option",{value:"grote_uitgaven"},"Grote posten en reserveringen"),React.createElement("option",{value:"fiscaliteit"},"Fiscaliteit & AOW"))), actieveTab === "dashboard" && React.createElement(React.Fragment, null, React.createElement("section", null, /*#__PURE__*/React.createElement("h2", {
+menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-slate-200 rounded-xl p-3 shadow-sm"},React.createElement("div",{className:"text-xs text-slate-500 mb-2"},"Kies een onderwerp"),React.createElement("select",{defaultValue:"",autoFocus:true,onChange:e=>{const id=e.target.value;if(!id)return;setActieveTab(id);setMenuOpen(false);},className:"w-full bg-white border border-slate-300 rounded-lg px-3 py-3 text-sm text-slate-800"},React.createElement("option",{value:"",disabled:true},"Selecteer een onderwerp…"),React.createElement("option",{value:"dashboard"},"Dashboard actueel"),React.createElement("option",{value:"inkomen"},"Inkomen"),React.createElement("option",{value:"inkomensaanvulling"},"Toevoeging inkomen"),React.createElement("option",{value:"lijfrente"},"Lijfrente en pensioen"),React.createElement("option",{value:"vaste_lasten"},"Vaste lasten en dagelijkse uitgaven"),React.createElement("option",{value:"spaarpot"},"Vermogen"),React.createElement("option",{value:"grote_uitgaven"},"Grote posten en reserveringen"),React.createElement("option",{value:"fiscaliteit"},"Fiscaliteit & AOW"),React.createElement("option",{value:"rapport"},"Rapport (PDF)"))), actieveTab === "dashboard" && React.createElement(React.Fragment, null, React.createElement("section", null, /*#__PURE__*/React.createElement("h2", {
     className: "font-serif text-xl mb-4"
   }, "Fasenoverzicht — netto huishouden per maand"),
   React.createElement("div", { className: "mb-4 flex flex-wrap gap-2" },
@@ -7296,7 +7564,7 @@ menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-sl
     className: "flex justify-between font-semibold pt-1 border-t border-slate-100"
   }, /*#__PURE__*/React.createElement("span", {
     className: "font-sans"
-  }, "Totaal"), /*#__PURE__*/React.createElement("span", null, euro(Math.round(VASTE_LASTEN_BASIS + DAGELIJKSE_UITGAVEN_BASIS))))))))), actieveTab === "dashboard_detail" && renderAdvies(), actieveTab === "beleggingen" && renderBeleggingen(), actieveTab === "vaste_lasten" && React.createElement(React.Fragment, null, React.createElement("section", null, /*#__PURE__*/React.createElement("h2", {
+  }, "Totaal"), /*#__PURE__*/React.createElement("span", null, euro(Math.round(VASTE_LASTEN_BASIS + DAGELIJKSE_UITGAVEN_BASIS))))))))), actieveTab === "dashboard_detail" && renderAdvies(), actieveTab === "beleggingen" && renderBeleggingen(), actieveTab === "rapport" && renderRapport(), actieveTab === "vaste_lasten" && React.createElement(React.Fragment, null, React.createElement("section", null, /*#__PURE__*/React.createElement("h2", {
     className: "font-serif text-xl mb-4"
   }, "Vaste lasten — per post"), /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-lg border border-slate-200 p-5 space-y-3"
@@ -7931,7 +8199,7 @@ menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-sl
   }, "% per jaar"))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
     className: "text-xs text-slate-500"
   }, "Gestort vanuit spaargeld"), /*#__PURE__*/React.createElement("div", {
-    className: "flex gap-2 mt-1 items-center"
+    className: "flex gap-2 mt-1 items-center flex-wrap"
   }, /*#__PURE__*/React.createElement(NumInput, {
     value: obStorting,
     onChange: e => setObStorting(Number(e.target.value) || 0),
@@ -7939,7 +8207,7 @@ menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-sl
   }), /*#__PURE__*/React.createElement("button", {
     onClick: () => setObStorting(Math.ceil(obBenodigd)),
     title: "Neemt het benodigde bedrag over",
-    className: "text-xs px-3 py-1.5 rounded-full border border-slate-300 bg-white hover:bg-slate-50 whitespace-nowrap"
+    className: "text-xs px-3 py-1.5 rounded-full border border-slate-300 bg-white hover:bg-slate-50"
   }, "Benodigd overnemen")))), /*#__PURE__*/React.createElement("div", {
     className: `rounded p-3 text-sm font-mono space-y-1 ${obTekort > 0 ? "bg-rose-50 border border-rose-200" : "bg-emerald-50 border border-emerald-200"}`
   }, /*#__PURE__*/React.createElement("div", {
@@ -8526,7 +8794,7 @@ menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-sl
     }, "Parttime 24u + ABP"), /*#__PURE__*/React.createElement("option", {
       value: "gestopt"
     }, "Gestopt — alleen ABP")), isAOWJaar && /*#__PURE__*/React.createElement("span", {
-      className: "text-xs text-slate-400 whitespace-nowrap"
+      className: "text-xs text-slate-400"
     }, "AOW ", fmtDate(manAOWDate)));
   })), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-400 mt-1"
@@ -8552,7 +8820,7 @@ menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-sl
       onChange: e => setWerkkeuzeVrouw({ ...werkkeuzeVrouw, [jaar]: e.target.value }),
       className: "flex-1 border border-slate-300 rounded px-2 py-1 text-sm"
     }, /*#__PURE__*/React.createElement("option", { value: "20" }, "20 uur werken"), /*#__PURE__*/React.createElement("option", { value: "16" }, "16 uur werken"), /*#__PURE__*/React.createElement("option", { value: "stoppen" }, "Stoppen")), isPensioenJaar && /*#__PURE__*/React.createElement("span", {
-      className: "text-xs text-slate-400 whitespace-nowrap"
+      className: "text-xs text-slate-400"
     }, "Pensioen ", fmtDate(vrouwAOWDate)));
   })), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-400 mt-1"
