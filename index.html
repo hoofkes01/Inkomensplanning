@@ -804,6 +804,29 @@ const {
   useEffect
 } = React;
 
+// Meldt een opslagprobleem eenmalig per soort in een rode balk bovenaan, in plaats van het stil te negeren.
+const OPSLAG_MELDINGEN = {};
+function meldOpslagprobleem(soort, tekst) {
+  if (OPSLAG_MELDINGEN[soort]) return;
+  OPSLAG_MELDINGEN[soort] = true;
+  const toon = function () {
+    if (!document.body) return;
+    const b = document.createElement("div");
+    b.setAttribute("style", "background:#fee2e2;border:2px solid #dc2626;color:#7f1d1d;padding:10px 14px;font:14px/1.45 -apple-system,Segoe UI,sans-serif;position:relative;z-index:99998");
+    b.textContent = tekst + " ";
+    const x = document.createElement("button");
+    x.type = "button";
+    x.textContent = "Sluiten";
+    x.setAttribute("style", "margin-left:8px;border:1px solid #7f1d1d;background:#fff;color:#7f1d1d;border-radius:6px;padding:2px 8px");
+    x.addEventListener("click", function () {
+      if (b.parentNode) b.parentNode.removeChild(b);
+    });
+    b.appendChild(x);
+    document.body.insertBefore(b, document.body.firstChild);
+  };
+  if (document.body) toon();else document.addEventListener("DOMContentLoaded", toon);
+}
+
 // Bewaart de ingevulde gegevens in de telefoon zelf, zodat alles blijft staan na afsluiten.
 function useOpslag(sleutel, beginwaarde) {
   // Tabblad Inkomen en alle overige ingevoerde gegevens worden lokaal opgeslagen.
@@ -823,6 +846,16 @@ function useOpslag(sleutel, beginwaarde) {
       }
       return beginwaarde;
     } catch (e) {
+      // Onleesbare waarde: het origineel apart bewaren, want de standaardwaarde overschrijft het straks.
+      try {
+        const kapot = window.localStorage.getItem(cloudKey);
+        if (kapot !== null) {
+          window.localStorage.setItem("inkomensplanning__kapot_" + sleutel, kapot);
+          meldOpslagprobleem("lezen", "Let op: opgeslagen gegevens van '" + sleutel + "' waren onleesbaar en staan nu op de standaardwaarde. Het origineel is apart bewaard. Zet je laatste back-upbestand terug als dit niet klopt.");
+        }
+      } catch (e2) {
+        meldOpslagprobleem("beschikbaar", "Let op: de opslag van deze browser is niet beschikbaar. Wijzigingen blijven niet bewaard na afsluiten. Gebruik geen privévenster.");
+      }
       return beginwaarde;
     }
   });
@@ -830,7 +863,9 @@ function useOpslag(sleutel, beginwaarde) {
   useEffect(function () {
     try {
       window.localStorage.setItem(cloudKey, JSON.stringify(waarde));
-    } catch (e) {}
+    } catch (e) {
+      meldOpslagprobleem("schrijven", "Let op: opslaan is mislukt (" + (e && e.name || "onbekende fout") + "). Je laatste wijzigingen staan mogelijk alleen op het scherm. Maak nu een back-upbestand (balk linksonder) en controleer de opslagruimte van je browser.");
+    }
   }, [cloudKey, waarde]);
 
   return [waarde, setWaarde];
@@ -2558,6 +2593,16 @@ function IncomePlanner() {
     }));
   }
   const HARDCODED_FISCAAL = fiscaal;
+  // Controle bij het opstarten: de belangrijkste netto-inkomens moeten een zinnig getal zijn.
+  useEffect(() => {
+    const slecht = ["salarisManNetto", "abpVoorAOWNetto", "abpNaAOWNetto", "lincareNetto"].filter(k => {
+      const n = Number(basis && basis[k]);
+      return !Number.isFinite(n) || n < 0;
+    });
+    if (slecht.length) {
+      meldOpslagprobleem("basis", "Controle bij het opstarten: basisgegevens ongeldig (" + slecht.join(", ") + "). Controleer tabblad Basisgegevens of zet je back-upbestand terug.");
+    }
+  }, []);
   const [cpiVerwerkt, setCpiVerwerkt] = React.useState(false);
   const [dashKnopBezig, setDashKnopBezig] = React.useState({ cpi: false });
   const [cpiCheck, setCpiCheck] = useOpslag("cpiCheck", {
