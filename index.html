@@ -2636,7 +2636,7 @@ function IncomePlanner() {
   // Tabblad Vermogen: horizon voor "over X maanden", prognose voor (verlengde) deposito's,
   // beleggingsregister (start, stortingen/opnames, waarde per 1 januari) en tijdelijke formulieren.
   const [vermogenHorizon, setVermogenHorizon] = useOpslag("vermogenHorizon", 12);
-  const [depoPrognose, setDepoPrognose] = useOpslag("depoPrognose", { kort: 3, lang: 3.3, standaard: "sparen" });
+  const [depoPrognose, setDepoPrognose] = useOpslag("depoPrognose", { kort: 3, lang: 3.3, standaard: "verleng" });
   const [beleggingsRegister, setBeleggingsRegister] = useOpslag("beleggingsRegister", {});
   const [vermogenDetails, setVermogenDetails] = React.useState(false);
   const [vmDepForm, setVmDepForm] = React.useState({ open: false, naam: "", bedrag: "", rente: "", looptijd: "", start: "", uitSparen: true });
@@ -5433,6 +5433,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     lijfrenteBoekingen.forEach(b => voegEventToe(new Date(b.jaar,b.maand,b.dag), b.delta, b.omschrijving));
     vakantiegeldRijen.forEach(b => voegEventToe(new Date(b.jaar,b.maand,b.dag), b.delta, b.omschrijving));
     overbruggingBoekingen.forEach(b => voegEventToe(new Date(b.jaar,b.maand,b.dag), b.delta, b.omschrijving));
+    vmSparenBeleggenEvents().forEach(b => voegEventToe(b.datum, b.delta, b.omschrijving));
 
     // Bestaande inkomens- en lastensystematiek blijft intact: het netto maandverschil
     // wordt op de 22e op de hoofdspaarrekening geboekt.
@@ -5592,6 +5593,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     lijfrenteBoekingen.forEach(b => voegEventToe(new Date(b.jaar, b.maand, b.dag), b.delta, b.omschrijving));
     vakantiegeldRijen.forEach(b => voegEventToe(new Date(b.jaar, b.maand, b.dag), b.delta, b.omschrijving));
     overbruggingBoekingen.forEach(b => voegEventToe(new Date(b.jaar, b.maand, b.dag), b.delta, b.omschrijving));
+    vmSparenBeleggenEvents().forEach(b => voegEventToe(b.datum, b.delta, b.omschrijving));
 
     // Het maandelijkse saldo wordt op de bestaande boekdag (22e) als één exacte mutatie geboekt.
     // Daarmee blijft de bestaande inkomens-/lastenlogica intact, maar wordt de peildatum exact.
@@ -5640,7 +5642,18 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
   function totaalVermogenOpDatum(doelDatum) {
     const sparen = sparenRaboOpDatum(doelDatum);
     const jarenTot = yearsSince(doelDatum);
-    const degiroVrij = basis.degiroVrij * Math.pow(1 + (rendementen.degiro_vrij || 0) / 100, jarenTot);
+    const rBel = (rendementen.degiro_vrij || 0) / 100;
+    const gBel = van => Math.pow(1 + rBel, Math.max(0, (doelDatum - van) / MS_PER_JAAR));
+    // Geplande stortingen/opnames in vrij beleggen (na vandaag) en deposito's die naar beleggen gaan.
+    const geplandBeleggen = vmReg("vrijeBeleggingen").mutaties.reduce((s, m) => {
+      const d = geldigeDatum(m.datum);
+      return d && d > APP_VANDAAG && d <= doelDatum ? s + (Number(m.bedrag) || 0) * gBel(d) : s;
+    }, 0);
+    const depositosNaarBeleggen = VERMOGENS_ITEMS.filter(i => i.deposito && geldigeDatum(i.vervaldatum) && geldigeDatum(i.vervaldatum) <= doelDatum && vrijvalKeuze(i) === "belegging").reduce((s, i) => {
+      const bij = i.renteAlVerwerkt ? Number(i.bedrag) || 0 : berekenDepositoMetRente(i, rendementen[i.id] || 0).waarde;
+      return s + bij * gBel(geldigeDatum(i.vervaldatum));
+    }, 0);
+    const degiroVrij = basis.degiroVrij * Math.pow(1 + rBel, jarenTot) + geplandBeleggen + depositosNaarBeleggen;
     // Alleen deposito's die op de doeldatum nog lópen; vrijgevallen deposito's zitten al in
     // het rekening-courantsaldo en zouden anders dubbel tellen.
     const depositosLopend = VERMOGENS_ITEMS.filter(i => i.deposito && (!i.vervaldatum || new Date(i.vervaldatum) > doelDatum)).reduce((s, i) => s + depositoWaardeOpDatum(i, rendementen[i.id] || 0, doelDatum), 0);
@@ -5648,7 +5661,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     // groeiend met het prognosepercentage voor verlengde deposito's (tot/langer dan 1 jaar).
     const depositosVerlengd = VERMOGENS_ITEMS.filter(i => i.deposito && geldigeDatum(i.vervaldatum) && geldigeDatum(i.vervaldatum) <= doelDatum && vrijvalKeuze(i) === "verleng").reduce((s, i) => {
       const verval = geldigeDatum(i.vervaldatum);
-      const bijVerval = berekenDepositoMetRente(i, rendementen[i.id] || 0).waarde;
+      const bijVerval = i.renteAlVerwerkt ? Number(i.bedrag) || 0 : berekenDepositoMetRente(i, rendementen[i.id] || 0).waarde;
       return s + bijVerval * Math.pow(1 + depoPrognosePct(i) / 100, Math.max(0, (doelDatum - verval) / MS_PER_JAAR));
     }, 0);
     const depositos = depositosLopend + depositosVerlengd;
@@ -6064,11 +6077,13 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     );
   }
 
-  // Wat gebeurt er met een deposito op de einddatum: naar Vrij sparen, verlengen (prognose) of handmatig.
+  // Wat gebeurt er met een deposito op de einddatum: verlengen als nieuw deposito (prognose, standaard),
+  // naar beleggen, naar Vrij sparen, of niets (je voert het vervolg zelf in). Het geld gaat dus niet
+  // meer vanzelf naar het spaarsaldo; dat kies je zelf bij Vermogen.
   function vrijvalKeuze(item) {
     const k = (vrijvalNaar || {})[item.id];
-    if (k === "nieuw" || k === "sparen" || k === "verleng") return k;
-    return depoPrognose.standaard === "verleng" ? "verleng" : "sparen";
+    if (k === "nieuw" || k === "sparen" || k === "verleng" || k === "belegging") return k;
+    return depoPrognose.standaard === "sparen" || depoPrognose.standaard === "belegging" ? depoPrognose.standaard : "verleng";
   }
   // Prognosepercentage voor een verlengd deposito: looptijd tot en met 1 jaar of langer dan 1 jaar.
   function depoPrognosePct(item) {
@@ -6223,6 +6238,12 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     }
     return uit;
   }
+  // Geplande stortingen in (of opnames uit) vrij beleggen die van (naar) Vrij sparen gaan: boekingen op het spaarsaldo.
+  function vmSparenBeleggenEvents() {
+    return vmReg("vrijeBeleggingen").mutaties
+      .filter(m => m.sparen && geldigeDatum(m.datum) && geldigeDatum(m.datum) > PEILDATUM && Number(m.bedrag))
+      .map(m => ({ datum: geldigeDatum(m.datum), delta: -(Number(m.bedrag) || 0), omschrijving: Number(m.bedrag) > 0 ? "Storting beleggen (vanuit sparen)" : "Opname beleggen (naar sparen)" }));
+  }
   // Actuele waarde zelf invullen (optioneel): wordt het nieuwe laatst bekende punt.
   function vmWaardeBijwerken(sleutel, bedrag, datum) {
     const w = Number(bedrag);
@@ -6266,6 +6287,14 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     setStortingsdatum(id, f.start);
     return true;
   }
+  // Keuze bij de einddatum van een deposito.
+  function vmKeuzeSelect(item) {
+    return vmH("select", { value: vrijvalKeuze(item), onChange: e => zetVrijvalNaar(item.id, e.target.value), className: "border border-slate-300 rounded px-1 py-1 text-xs" },
+      vmH("option", { value: "verleng" }, "verlengen (prognose " + vmPct(depoPrognosePct(item), 1) + ")"),
+      vmH("option", { value: "belegging" }, "naar beleggen"),
+      vmH("option", { value: "sparen" }, "naar Vrij sparen"),
+      vmH("option", { value: "nieuw" }, "niets, ik voer het vervolg zelf in"));
+  }
   function vmZetVervaldatum(id, datum) {
     setExtraVermogensItems(prev => prev.map(i => i.id === id ? { ...i, vervaldatum: datum } : i));
   }
@@ -6287,7 +6316,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
         else if (verval.getFullYear() === y) uitbetaald += vmDepositoRente(i, verval);
         // Verlengd deposito: na de einddatum groeit het bedrag met het prognosepercentage.
         if (verval && vrijvalKeuze(i) === "verleng" && verval <= eindY) {
-          const bijVerval = berekenDepositoMetRente(i, rendementen[i.id] || 0).waarde;
+          const bijVerval = i.renteAlVerwerkt ? Number(i.bedrag) || 0 : berekenDepositoMetRente(i, rendementen[i.id] || 0).waarde;
           const r = depoPrognosePct(i) / 100;
           const v = dat => bijVerval * Math.pow(1 + r, Math.max(0, (dat - verval) / MS_PER_JAAR));
           verdiend += v(eindY) - v(eindVorig > verval ? eindVorig : verval);
@@ -6321,6 +6350,18 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     c.push({ ok: n(SPAARRENTE_PCT) > 0, fout: "De spaarrente staat op 0%." });
     c.push({ ok: n(rendementen.degiro_vrij) >= 0 && n(rendementen.degiro_vrij) <= 12, fout: "Het prognosepercentage voor beleggen (" + vmPct(rendementen.degiro_vrij, 1) + ") ligt buiten 0 tot 12%." });
     c.push({ ok: n(depoPrognose.kort) > 0 && n(depoPrognose.kort) <= 8 && n(depoPrognose.lang) > 0 && n(depoPrognose.lang) <= 8, fout: "Een prognosepercentage voor deposito's ligt buiten 0 tot 8%." });
+    // Inkomen niet te berekenen: dan telt de app voor die maand ook de lasten niet mee.
+    const onbekend = [];
+    for (let k = 0; k < 36; k++) {
+      const dm = new Date(APP_VANDAAG.getFullYear(), APP_VANDAAG.getMonth() + k, 22);
+      if (dm > APP_VANDAAG && nettoHuishoudinkomenOpDatum(dm) == null) onbekend.push(dm);
+    }
+    c.push({ ok: onbekend.length === 0, fout: "Voor " + onbekend.length + " maand(en), vanaf " + (onbekend[0] ? fmtDate(onbekend[0]) : "") + ", is het inkomen niet te berekenen (tabblad Inkomen). Voor die maanden telt de app ook de lasten niet mee." });
+    // Overboekingen horen bij Vermogen; als grote post tellen ze dubbel.
+    const intern = /(deposito|belegging|degiro|hoofkes0[234]|brand new day|\bbnd\b|storting.*beleg|beleg.*storting|naar.*beleg|van.*beleg|naar.*spaar|van.*spaar)/i;
+    const dubbel = (mutaties || []).filter(m => m && m.type !== "override" && intern.test(String(m.label || "")));
+    c.push({ ok: dubbel.length === 0, fout: "Grote post(en) die op een overboeking lijken: " + dubbel.map(m => m.label).join(", ") + ". Boek overboekingen naar deposito's of beleggen bij Vermogen, anders telt het geld dubbel." });
+    c.push({ ok: !(Number(obBedrag) > 0 && obTekort > 0), fout: "Inkomensaanvulling: de pot is te klein voor de hele periode (tekort " + vmEuro(obTekort) + "). Zie tabblad Toevoeging inkomen." });
     lijst.forEach(d => {
       const i = d.item;
       const start = geldigeDatum(stortingsdatums[i.id] || i.stortingDatum);
@@ -6381,7 +6422,15 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
           vmH("td", { className: "py-1 font-sans text-left" }, naamMaand(x.y, x.m)),
           vmH("td", { className: "py-1 text-right" }, vmGetal(x.eind)),
           vmH("td", { className: "py-1 text-right " + (x.min < minimum ? "text-rose-700 font-semibold" : "") }, vmGetal(x.min)))))),
-      vmH("p", { className: "text-xs text-slate-500 mt-2" }, "Bedragen in euro. Alleen spaargeld telt mee: je spaarsaldo, maandelijkse inkomsten en uitgaven, grote posten en deposito's die vrijvallen naar sparen. Deposito's die je verlengt tellen niet mee."),
+      vmH("p", { className: "text-xs text-slate-500 mt-2" }, "Bedragen in euro. Alleen spaargeld telt mee: je spaarsaldo, maandelijkse inkomsten en uitgaven, grote posten, de inkomensaanvulling en stortingen die je via Vermogen van of naar sparen boekt. Deposito's tellen pas mee als je ze bij Vermogen op 'naar Vrij sparen' zet."),
+      !genoeg && vmH("div", { className: "mt-2 p-3 bg-slate-50 rounded border border-slate-200 text-sm" },
+        vmH("div", { className: "font-semibold mb-1" }, "Hier los je het mee op (bij Vermogen)"),
+        vmH("div", { className: "text-xs text-slate-600 mb-1" }, "Eerstvolgende einddatums. Zet een deposito op 'naar Vrij sparen' zodat het geld op de einddatum in je spaarsaldo komt."),
+        vmDepositoLijst().slice(0, 4).map(d => vmH("div", { key: d.item.id, className: "flex justify-between items-center gap-2 py-1 border-t border-slate-200" },
+          vmH("span", null, d.bank + " · " + (d.verval ? fmtDate(d.verval) : "onbekend")),
+          vmH("span", { className: "flex items-center gap-2 shrink-0" }, vmH("span", { className: "font-mono" }, vmEuro(d.bedrag + d.totaalRente)),
+            vrijvalKeuze(d.item) === "sparen" ? vmH("span", { className: "text-xs text-emerald-700" }, "naar sparen") : vmH("button", { type: "button", className: vmKnop, onClick: () => zetVrijvalNaar(d.item.id, "sparen") }, "Naar sparen")))),
+        vmH("div", { className: "text-xs text-slate-600 mt-2" }, "Of pas het spaarsaldo aan bij Vermogen. Of leg een storting vanuit beleggen vast als noodreserve.")),
       vmH("p", { className: "text-xs mt-1 " + (!genoeg && beleggen < tekort ? "text-rose-700 font-semibold" : "text-slate-500") },
         "Noodreserve: als alles misgaat zijn er nog beleggingen van ongeveer " + vmEuro(beleggen) + "." + (!genoeg ? (beleggen >= tekort ? " Dat dekt het tekort." : " Dat dekt het tekort niet.") : ""))
     );
@@ -6418,6 +6467,15 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
         vmH("div", { className: "font-semibold mb-1" }, "⚠ " + fouten.length + " van " + controles.length + " controles vragen aandacht"),
         vmH("ul", { style: { listStyle: "disc", paddingLeft: "20px" } }, fouten.map((x, i) => vmH("li", { key: i, style: { marginTop: "4px" } }, x.fout))));
 
+    // --- beslismomenten: deposito's die binnenkort vervallen ---
+    const binnenkort = lijst.filter(d => d.dagen != null && d.dagen >= 0 && d.dagen <= 90);
+    const beslis = binnenkort.length === 0 ? null : vmH("div", { className: vmKaart },
+      vmH("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-1" }, "Deposito's die binnen 90 dagen vervallen"),
+      vmH("p", { className: "text-xs text-slate-500 mb-1" }, "Kies wat er met het geld gebeurt. Standaard wordt het verlengd en komt het niet in je spaarsaldo. Wil je het geld ergens anders voor gebruiken, kies dan 'naar Vrij sparen' of voeg onderaan een nieuw deposito toe."),
+      binnenkort.map(d => vmH("div", { key: d.item.id, className: "py-2 border-t border-slate-100 text-sm" },
+        vmH("div", { className: "flex justify-between" }, vmH("span", { className: "font-semibold" }, d.bank + " · " + fmtDate(d.verval) + " (" + d.dagen + " dagen)"), vmH("span", { className: "font-mono" }, vmEuro(d.bedrag + d.totaalRente))),
+        vmH("div", { className: "mt-1" }, vmKeuzeSelect(d.item)))));
+
     // --- prognose-aannames ---
     const aannames = vmH("div", { className: vmKaart },
       vmH("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-2" }, "Prognose-aannames"),
@@ -6432,13 +6490,13 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
           vmH(NumInput, { step: "0.1", value: waarde, onChange: e => zet(e.target.value), className: "w-20 " + vmInvoer }),
           vmH("span", { className: "text-xs text-slate-500" }, "%/jr")))),
       vmH("div", { className: vmRij },
-        vmH("span", null, "Bij einddatum van een deposito"),
+        vmH("span", null, "Bij einddatum van een deposito (standaard)"),
         vmH("select", {
-          value: depoPrognose.standaard === "verleng" ? "verleng" : "sparen",
+          value: depoPrognose.standaard === "sparen" || depoPrognose.standaard === "belegging" ? depoPrognose.standaard : "verleng",
           onChange: e => setDepoPrognose(p => ({ ...p, standaard: e.target.value })),
           className: "border border-slate-300 rounded px-1 py-1 text-xs"
-        }, vmH("option", { value: "sparen" }, "naar Vrij sparen"), vmH("option", { value: "verleng" }, "verlengen met zelfde looptijd"))),
-      vmH("p", { className: "text-xs text-slate-400 mt-1" }, "Per deposito kun je dit afwijkend instellen. Verlengde deposito's tellen niet mee als beschikbaar spaargeld. De prognose voor pensioenpotten stel je in bij Lijfrente en pensioen.")
+        }, vmH("option", { value: "verleng" }, "verlengen met zelfde looptijd"), vmH("option", { value: "belegging" }, "naar beleggen"), vmH("option", { value: "sparen" }, "naar Vrij sparen"))),
+      vmH("p", { className: "text-xs text-slate-400 mt-1" }, "Het geld van een vervallend deposito gaat dus niet meer vanzelf naar je spaarsaldo; dat kies je per deposito. Per deposito kun je dit afwijkend instellen. Verlengde deposito's en beleggen tellen niet mee als beschikbaar spaargeld. De prognose voor pensioenpotten stel je in bij Lijfrente en pensioen.")
     );
 
     // --- overzicht nu en later ---
@@ -6532,10 +6590,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
             vmH("div", { className: "flex items-center justify-between gap-2" }, vmH("span", null, "Einddatum"),
               vmH("input", { type: "date", value: d.item.vervaldatum || "", onChange: e => vmZetVervaldatum(d.item.id, e.target.value), className: "border border-slate-300 rounded px-2 py-1 font-mono text-xs" })),
             vmH("div", { className: "flex items-center justify-between gap-2" }, vmH("span", null, "Bij einddatum"),
-              vmH("select", { value: vrijvalKeuze(d.item), onChange: e => zetVrijvalNaar(d.item.id, e.target.value), className: "border border-slate-300 rounded px-1 py-1 text-xs" },
-                vmH("option", { value: "sparen" }, "naar Vrij sparen"),
-                vmH("option", { value: "verleng" }, "verlengen (prognose " + vmPct(depoPrognosePct(d.item), 1) + ")"),
-                vmH("option", { value: "nieuw" }, "naar nieuw deposito / beleggen (zelf invoeren)"))),
+              vmKeuzeSelect(d.item)),
             vmH("button", { type: "button", onClick: () => { if (window.confirm("Dit deposito verwijderen?")) verwijderVermogensitem(d.item.id); }, className: "text-xs text-rose-700 underline" }, "Deposito verwijderen")));
       }),
       vmH("div", { className: "text-xs uppercase tracking-wide text-slate-500 mt-3 mb-1" }, "Verwachte rente per jaar"),
@@ -6574,7 +6629,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
       const r = vmRendement(sleutel);
       const f = vmForm && vmForm.sleutel === sleutel ? vmForm : null;
       const zetF = (k, v) => setVmForm(p => ({ ...p, [k]: v }));
-      const opens = (soort, extra) => setVmForm({ sleutel, soort, datum: vmIso(APP_VANDAAG), bedrag: "", waarde: "", jaar: APP_VANDAAG.getFullYear(), gestort: "", opgenomen: "", ...(extra || {}) });
+      const opens = (soort, extra) => setVmForm({ sleutel, soort, datum: vmIso(APP_VANDAAG), bedrag: "", waarde: "", sparen: false, jaar: APP_VANDAAG.getFullYear(), gestort: "", opgenomen: "", ...(extra || {}) });
       const geschatTxt = r.geschat ? " (geschat)" : "";
       const rendRij = (lbl, x, uitleg) => vmH("div", { className: vmRij }, vmH("span", null, lbl),
         x ? vmH("b", { className: vmKleur(x.winst) }, vmTeken(x.winst) + vmEuro(x.winst) + " (" + (x.pct > 0 ? "+" : "") + vmPct(x.pct, 1) + ")") : vmH("span", { className: "text-xs text-slate-500" }, uitleg));
@@ -6623,6 +6678,9 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
           (f.soort === "storting" || f.soort === "opname") && vmH("div", { className: "flex gap-2 items-center flex-wrap" },
             vmH("span", { className: "text-xs text-slate-500" }, "Nieuwe totaalwaarde na deze boeking (aanbevolen):"),
             vmH(NumInput, { placeholder: "totaalwaarde", value: f.waarde, onChange: e => zetF("waarde", e.target.value), className: "w-32 " + vmInvoer })),
+          (f.soort === "storting" || f.soort === "opname") && sleutel === "vrijeBeleggingen" && vmH("label", { className: "flex items-start gap-1 text-xs text-slate-600" },
+            vmH("input", { type: "checkbox", checked: !!f.sparen, onChange: e => zetF("sparen", e.target.checked) }),
+            vmH("span", null, f.soort === "storting" ? "Dit geld komt van Vrij sparen: het spaarsaldo daalt op deze datum." : "Dit geld gaat naar Vrij sparen: het spaarsaldo stijgt op deze datum.", " Alleen voor datums na vandaag; voor een boeking tot en met vandaag pas je het spaarsaldo zelf aan.")),
           vmH("div", { className: "flex gap-2" },
             vmH("button", { type: "button", className: vmKnopDonker, onClick: () => {
               const bedrag = Math.abs(Number(f.bedrag) || 0);
@@ -6631,7 +6689,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
               } else if (f.soort === "jan") {
                 if (f.bedrag !== "" && vmJaarInvoer(sleutel, Number(f.jaar), f.bedrag, f.gestort, f.opgenomen)) setVmForm(null);
               } else if (bedrag > 0 && geldigeDatum(f.datum)) {
-                vmWijzigReg(sleutel, x => ({ ...x, mutaties: [...x.mutaties, { id: "m" + Date.now(), datum: f.datum, bedrag: f.soort === "storting" ? bedrag : -bedrag }] }));
+                vmWijzigReg(sleutel, x => ({ ...x, mutaties: [...x.mutaties, { id: "m" + Date.now(), datum: f.datum, bedrag: f.soort === "storting" ? bedrag : -bedrag, sparen: !!f.sparen && sleutel === "vrijeBeleggingen" }] }));
                 if (f.waarde !== "" && f.waarde != null) vmWaardeBijwerken(sleutel, f.waarde, f.datum);
                 setVmForm(null);
               }
@@ -6640,7 +6698,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
         sorted.length > 0 && vmH("details", { className: "mt-2 text-xs text-slate-600" },
           vmH("summary", { className: "cursor-pointer" }, sorted.length + " storting" + (sorted.length === 1 ? "" : "en") + "/opname" + (sorted.length === 1 ? "" : "s")),
           sorted.map(m => vmH("div", { key: m.id, className: "flex justify-between py-0.5" },
-            vmH("span", null, fmtDate(geldigeDatum(m.datum) || APP_VANDAAG), Number(m.bedrag) >= 0 ? " storting" : " opname"),
+            vmH("span", null, fmtDate(geldigeDatum(m.datum) || APP_VANDAAG), (Number(m.bedrag) >= 0 ? " storting" : " opname") + (m.sparen ? " (via Vrij sparen)" : "")),
             vmH("span", { className: "font-mono" }, vmEuro(Math.abs(Number(m.bedrag))), vmH("button", { type: "button", className: "ml-2 text-rose-600", title: "Verwijderen", onClick: () => vmWijzigReg(sleutel, x => ({ ...x, mutaties: x.mutaties.filter(y => y.id !== m.id) })) }, "✕")))))
       );
     };
@@ -6659,7 +6717,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     return vmH(React.Fragment, null,
       vmH("section", { className: "space-y-4" },
         vmH("h2", { className: "font-serif text-xl" }, "Vermogen"),
-        overzicht, controleBlok, aannames, sparen, deposito, beleggen, pensioen));
+        overzicht, controleBlok, beslis, aannames, sparen, deposito, beleggen, pensioen));
   }
 
   function renderBeleggingen() {
@@ -7912,7 +7970,7 @@ menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-sl
     className: "text-xs uppercase tracking-wide text-slate-500 mb-2 font-sans"
   }, "Beheeradvies — stand van vandaag"), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-500 mb-2"
-  }, obGebruiktUpload ? `Gebaseerd op je upload van ${fmtDate(obUploadDatum)} bij Beleggen — Hoofkes03. Werk dat saldo periodiek bij voor de meest actuele stand.` : "Nog geen (recente) upload bij Beleggen — Hoofkes03 gevonden; dit is een berekende inschatting vanaf de startdatum. Upload het actuele saldo bij Hoofkes03 voor een nauwkeuriger advies."), /*#__PURE__*/React.createElement("div", {
+  }, obGebruiktUpload ? `Gebaseerd op het saldo dat je op ${fmtDate(obUploadDatum)} hebt ingevuld. Werk dat saldo periodiek bij voor de meest actuele stand.` : "Dit is een berekende inschatting vanaf de startdatum. Vul hieronder het actuele saldo van de pot (Hoofkes03) in zodra de aanvulling loopt, voor een nauwkeuriger advies."), React.createElement("div", {className: "flex items-center justify-between gap-2 mb-2 text-sm"}, React.createElement("span", null, "Actueel saldo van de pot (Hoofkes03)"), React.createElement("span", {className: "flex items-center gap-1"}, React.createElement("span", {className: "text-xs text-slate-500"}, "€"), React.createElement(NumInput, {value: (beleggingsOverzicht && beleggingsOverzicht.inkomenspot && beleggingsOverzicht.inkomenspot.totaal) || 0, onChange: e => { const v = Number(e.target.value); if (Number.isFinite(v) && v >= 0) setBeleggingsOverzicht(prev => ({ ...prev, bijgewerkt: vmIso(APP_VANDAAG), inkomenspot: { ...(prev.inkomenspot || {}), totaal: v } })); }, className: "w-28 border border-slate-300 rounded px-2 py-1 font-mono text-sm"}))), /*#__PURE__*/React.createElement("div", {
     className: "font-mono space-y-1"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex justify-between"
@@ -8822,7 +8880,7 @@ menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-sl
     className: "text-sm px-4 py-1.5 rounded-full bg-slate-900 text-white hover:bg-slate-800"
   }, "Toevoegen")), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-400 mt-1"
-  }, "Voeg hier alleen grote incidentele of structurele inkomsten en uitgaven toe. Automatische mutaties worden rechtstreeks in het saldo verwerkt.")), React.createElement("div", {
+  }, "Voeg hier alleen grote incidentele of structurele inkomsten en uitgaven toe. Automatische mutaties worden rechtstreeks in het saldo verwerkt.")), false && React.createElement("div", {
     className: "pt-3 border-t border-slate-200"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-xs uppercase tracking-wide text-slate-500 mb-2"
