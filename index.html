@@ -6536,7 +6536,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
   function vmKeuzeSelect(item) {
     return vmH("select", { value: vrijvalKeuze(item), onChange: e => zetVrijvalNaar(item.id, e.target.value), style: { maxWidth: "100%" }, className: "border border-slate-300 rounded px-1 py-1 text-xs" },
       vmH("option", { value: "sparen" }, "hoofdsom en rente naar Vrij sparen"),
-      vmH("option", { value: "verleng" }, "verlengen (rente bij einde naar sparen)"),
+      vmH("option", { value: "verleng" }, "verlengen, vervolg tegen prognoserente " + vmPct(depoPrognosePct(item), 1)),
       vmH("option", { value: "belegging" }, "hoofdsom naar beleggen, rente sparen"),
       vmH("option", { value: "nieuw" }, "nieuw deposito, rente naar sparen"));
   }
@@ -6747,7 +6747,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
           value: depoPrognose.standaard === "verleng" || depoPrognose.standaard === "belegging" ? depoPrognose.standaard : "sparen",
           onChange: e => setDepoPrognose(p => ({ ...p, standaard: e.target.value })),
           className: "border border-slate-300 rounded px-1 py-1 text-xs"
-        }, vmH("option", { value: "sparen" }, "hoofdsom en rente naar Vrij sparen"), vmH("option", { value: "verleng" }, "verlengen (rente bij einde naar sparen)"), vmH("option", { value: "belegging" }, "hoofdsom naar beleggen, rente sparen"))),
+        }, vmH("option", { value: "sparen" }, "hoofdsom en rente naar Vrij sparen"), vmH("option", { value: "verleng" }, "verlengen, vervolg tegen prognoserente"), vmH("option", { value: "belegging" }, "hoofdsom naar beleggen, rente sparen"))),
       vmH("p", { className: "text-xs text-slate-400 mt-1" }, "Standaard gaan hoofdsom en rente van een deposito op de einddatum naar je spaarsaldo: de deposito's nemen geleidelijk af en het spaargeld neemt toe. Kies je voor een nieuw deposito, dan leg je dat hieronder vast: het spaargeld daalt en de deposito's stijgen. De percentages gelden voor verlengde deposito's. Per deposito kun je het anders instellen. De prognose voor pensioenpotten stel je in bij Lijfrente en pensioen.")
     );
 
@@ -7764,7 +7764,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     className: "font-mono text-xs uppercase tracking-widest bg-slate-700/60 border border-slate-500 rounded-full px-3 py-1"
   }, "peildatum ", fmtDate(PEILDATUM)), /*#__PURE__*/React.createElement("span", {
     className: "w-full text-xs text-slate-400 no-print"
-  }, "App-versie ", "17-10-2026 · 16:40")), /*#__PURE__*/React.createElement("p", {
+  }, "App-versie ", "17-10-2026 · 17:00")), /*#__PURE__*/React.createElement("p", {
     className: "mt-2 text-slate-300 text-sm max-w-2xl"
   }, "Bedragen zijn nominaal per peildatum, tenzij een indexatiepercentage is ingevuld. Alle basisbedragen zijn zelf aanpasbaar bij \"Basisgegevens\"." + (actieveTab === "fiscaliteit" ? " Alle aannames staan onderaan bij \"Aannames & beperkingen\". Bij het openen checkt dit bestand automatisch vier fiscale kerncijfers (zie bovenaan) — bij een afwijking wordt er niets automatisch aangepast, dat blijft een bewuste stap." : "")), /*#__PURE__*/React.createElement("div", {
     className: "mt-4 flex flex-wrap gap-2 items-center no-print"
