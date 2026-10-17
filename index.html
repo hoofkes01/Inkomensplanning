@@ -1619,7 +1619,7 @@ function IncomePlanner() {
   // Staat de ingevulde ABP-opgave (bruto/netto) al op de situatie per 1-1-2027? Dan zit de
   // verhoging (10%) en de overgangscompensatie er al in en rekent de app die niet nog eens extra.
   const [abpOpgaveInclusief2027, setAbpOpgaveInclusief2027] = useOpslag("abpOpgaveInclusief2027", true);
-  const abpOpgaveIncl = abpOpgaveInclusief2027 === true || abpOpgaveInclusief2027 === "true" || abpOpgaveInclusief2027 === 1 || abpOpgaveInclusief2027 === "1";
+  const abpOpgaveIncl = true; // De ingevulde ABP-bedragen bevatten de verhoging en overgangscompensatie al.
   const abp2027Pct = abpOpgaveIncl ? 0 : ((abp2027PctHandmatig === null || abp2027PctHandmatig === "" || abp2027PctHandmatig === undefined)
     ? abpVerhoging2027.totaal
     : (Number(abp2027PctHandmatig) || 0));
@@ -9005,8 +9005,7 @@ menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-sl
       className: "w-32 border border-slate-300 rounded px-2 py-1 font-mono text-right"
     })
   ),
-  /*#__PURE__*/React.createElement("div", { className: "flex justify-between" }, /*#__PURE__*/React.createElement("span", null, "Pensioengrondslag 2027 (compensatie)"), /*#__PURE__*/React.createElement("strong", null, euro(Math.round(abpCompensatie2027Berekend.grondslag)))),
-  /*#__PURE__*/React.createElement("div", { className: "flex justify-between" }, /*#__PURE__*/React.createElement("span", null, "Voorlopige compensatie in pensioenpot"), /*#__PURE__*/React.createElement("strong", null, euro(Math.round(abpCompensatie2027Berekend.pot)))), /*#__PURE__*/React.createElement("div", { className: "flex justify-between" }, /*#__PURE__*/React.createElement("span", null, "Voorlopige extra ABP-uitkering"), /*#__PURE__*/React.createElement("strong", null, euro(Math.round(abpCompensatie2027Berekend.brutoMaand)), "/mnd bruto")), /*#__PURE__*/React.createElement("p", { className: "text-xs text-slate-500 pt-2" }, `Voorlopige ABP-berekening op basis van leeftijd 60 jaar en 3 maanden op 1-1-2027 (${formatIndex1(ABP_COMPENSATIE_PCT_60*100)}% compensatie, geïnterpoleerd uit de officiële ABP-tabel tussen 60 en 61 jaar). ${abpCompensatie2027Berekend.pensioengevendIsOverride ? "Pensioengevend salaris is je eigen invoer hierboven." : "Pensioengevend salaris is een schatting (jaarsalaris + 17,05% IKB) — vul hierboven het echte bedrag in (van je salarisstrook/UPO) voor een preciezere uitkomst."} Definitieve compensatie wordt in 2027 vastgesteld door ABP zelf.`))), React.createElement("section", null, /*#__PURE__*/React.createElement("h2", {
+)), React.createElement("section", null, /*#__PURE__*/React.createElement("h2", {
     className: "font-serif text-xl mb-4"
   }, "Rabobank Pensioenfonds — overgang 1-1-2027"), /*#__PURE__*/React.createElement("div", { className: "bg-white rounded-lg border border-slate-200 p-5 space-y-2 text-sm" }, /*#__PURE__*/React.createElement("p", { className: "text-xs text-slate-600" }, "Vrouw ontvangt al Rabobank-pensioen. Voor de planning nemen we vanaf 1-1-2027 voorlopig 10% verhoging aan wegens de overgang. Dat is als bruto maandbedrag ingevuld (€60,80 bij €608 bruto). Je kunt dit later rechtstreeks vervangen door het definitieve bruto bedrag van het Rabobank Pensioenfonds."))), React.createElement("section", null, /*#__PURE__*/React.createElement("h2", { className: "font-serif text-xl mb-4" }, "Aanpasbare parameters"), /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-lg border border-slate-200 p-5 grid grid-cols-1 sm:grid-cols-2 gap-5"
@@ -9170,13 +9169,6 @@ menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-sl
       : `Volgens de ABP-verdeling bij ${abpDekkingsgraad}%: extra verhoging ${formatIndex1(abpVerhoging2027.extra)}% + tegemoetkoming ${formatIndex1(abpVerhoging2027.tegemoetkoming)}% = ${formatIndex1(abpVerhoging2027.totaal)}% (fondsgemiddelden; je persoonlijke deel stelt ABP zelf vast).`;
     return `${uitleg} Jouw opgave: bruto ${euro(Math.round(b0))} / netto ${euro(Math.round(Number(basis.abpVoorAOWNetto) || 0))} per maand. Per 1-1-2027: bruto ${euro(Math.round(b1))} / netto circa ${euro(Math.round(nt(b1, D_2027)))} (zonder de compensatie, die apart wordt berekend).`;
   })()),
-  React.createElement("label", {
-    className: "flex items-start gap-2 text-sm mt-2 mb-2"
-  }, React.createElement("input", {
-    type: "checkbox", checked: abpOpgaveIncl,
-    onChange: e => setAbpOpgaveInclusief2027(e.target.checked),
-    className: "mt-1"
-  }), React.createElement("span", null, "Mijn ingevulde ABP-bruto/netto per 1-1-2027 is compleet (verhoging en overgangscompensatie zitten erin). Dan telt de app geen extra 10% en geen aparte compensatie mee.")),
   React.createElement("label", {
     className: "text-xs uppercase tracking-wide text-slate-500"
   }, "ABP — handmatig percentage (leeg = automatisch)"), React.createElement("div", {
