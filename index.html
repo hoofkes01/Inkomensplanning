@@ -6912,6 +6912,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
         reg.start
           ? vmH(React.Fragment, null,
             vmH("div", { className: vmRij + " mt-2" }, vmH("span", null, "Startwaarde (" + fmtDate(geldigeDatum(reg.start.datum) || APP_VANDAAG) + ")"), vmH("b", null, vmEuro(reg.start.waarde))),
+            reg.bekend && geldigeDatum(reg.bekend.datum) ? vmH("div", { className: vmRij, style: { background: "#ecfdf5", borderRadius: "6px", padding: "2px 6px" } }, vmH("span", null, "Laatst ingevulde waarde (" + fmtDate(geldigeDatum(reg.bekend.datum)) + ")"), vmH("b", null, vmEuro(reg.bekend.waarde))) : null,
             vmH("div", { className: vmRij }, vmH("span", null, "Gestort sinds start"), vmH("b", null, vmEuro(r.gestort))),
             vmH("div", { className: vmRij }, vmH("span", null, "Opgenomen sinds start"), vmH("b", null, vmEuro(r.opgenomen))),
             rendRij("Winst/verlies sinds start" + geschatTxt, r.sinds, "nog te kort om te berekenen"),
@@ -7787,7 +7788,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     className: "font-mono text-xs uppercase tracking-widest bg-slate-700/60 border border-slate-500 rounded-full px-3 py-1"
   }, "peildatum ", fmtDate(PEILDATUM)), /*#__PURE__*/React.createElement("span", {
     className: "w-full text-xs text-slate-400 no-print"
-  }, "App-versie ", "17-10-2026 · 19:20")), /*#__PURE__*/React.createElement("p", {
+  }, "App-versie ", "17-10-2026 · 19:40")), /*#__PURE__*/React.createElement("p", {
     className: "mt-2 text-slate-300 text-sm max-w-2xl"
   }, "Bedragen zijn nominaal per peildatum, tenzij een indexatiepercentage is ingevuld. Alle basisbedragen zijn zelf aanpasbaar bij \"Basisgegevens\"." + (actieveTab === "fiscaliteit" ? " Alle aannames staan onderaan bij \"Aannames & beperkingen\". Bij het openen checkt dit bestand automatisch vier fiscale kerncijfers (zie bovenaan) — bij een afwijking wordt er niets automatisch aangepast, dat blijft een bewuste stap." : "")), /*#__PURE__*/React.createElement("div", {
     className: "mt-4 flex flex-wrap gap-2 items-center no-print"
