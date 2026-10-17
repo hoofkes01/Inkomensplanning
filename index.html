@@ -6630,7 +6630,9 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     const reeks = vmReeksBeschikbaar(reeksRuw);
     const minimum = Number(spaarBufferMinimum) || 0;
     if (!reeks.length) return null;
-    const kortNu = (Number(totaalVermogenOpDatum(APP_VANDAAG).sparen) || 0) + (kortDepoMeetellen ? vmKortBeschikbaar(APP_VANDAAG) : 0);
+    const direct = Number(totaalVermogenOpDatum(APP_VANDAAG).sparen) || 0;
+    const binnen3 = kortDepoMeetellen ? vmKortBeschikbaar(APP_VANDAAG) : 0;
+    const kortNu = direct + binnen3;
     const kortDepos = vmKortDepositos();
     const laagste = reeks.reduce((m, p) => (p.balans < m.balans ? p : m), reeks[0]);
     const eersteTekort = reeks.find(p => p.balans < minimum);
@@ -6652,6 +6654,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
           ? "Ja. Het " + (kortDepoMeetellen ? "beschikbare geld" : "spaargeld") + " blijft tot en met december " + (jaar + 1) + " boven je minimum van " + vmEuro(minimum) + "."
           : "Nee. Vanaf " + fmtDate(eersteTekort.datum) + " komt het " + (kortDepoMeetellen ? "beschikbare geld" : "spaargeld") + " onder je minimum van " + vmEuro(minimum) + "."),
       vmH("div", { className: vmRij + " mt-2" }, vmH("span", null, "Beschikbaar op korte termijn"), vmH("b", null, vmEuro(kortNu))),
+      vmH("p", { className: "text-xs text-slate-500 -mt-1 mb-1" }, "direct opneembaar " + vmEuro(direct) + (kortDepoMeetellen ? " + binnen 3 maanden beschikbaar " + vmEuro(binnen3) : "")),
       vmH("p", { className: "text-xs text-slate-500" }, kortDepoMeetellen
         ? "Spaargeld plus deposito's die binnen 3 maanden aflopen (" + (kortDepos.length ? kortDepos.map(i => String(i.label || "").replace(/^Deposito\s+/i, "").replace(/^Raisin\s+/i, "") + " " + fmtDate(geldigeDatum(i.vervaldatum))).join(", ") : "geen") + "), inclusief opgebouwde rente."
         : "Alleen spaargeld; deposito's tellen pas mee na hun einddatum."),
@@ -7765,7 +7768,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     className: "font-mono text-xs uppercase tracking-widest bg-slate-700/60 border border-slate-500 rounded-full px-3 py-1"
   }, "peildatum ", fmtDate(PEILDATUM)), /*#__PURE__*/React.createElement("span", {
     className: "w-full text-xs text-slate-400 no-print"
-  }, "App-versie ", "17-10-2026 · 15:30")), /*#__PURE__*/React.createElement("p", {
+  }, "App-versie ", "17-10-2026 · 15:55")), /*#__PURE__*/React.createElement("p", {
     className: "mt-2 text-slate-300 text-sm max-w-2xl"
   }, "Bedragen zijn nominaal per peildatum, tenzij een indexatiepercentage is ingevuld. Alle basisbedragen zijn zelf aanpasbaar bij \"Basisgegevens\"." + (actieveTab === "fiscaliteit" ? " Alle aannames staan onderaan bij \"Aannames & beperkingen\". Bij het openen checkt dit bestand automatisch vier fiscale kerncijfers (zie bovenaan) — bij een afwijking wordt er niets automatisch aangepast, dat blijft een bewuste stap." : "")), /*#__PURE__*/React.createElement("div", {
     className: "mt-4 flex flex-wrap gap-2 items-center no-print"
