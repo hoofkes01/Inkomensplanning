@@ -7064,12 +7064,31 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     // Elke regel krijgt waar mogelijk een specificatie: de afzonderlijke boekingen die erachter zitten.
     const voeg = (label, v, items) => { if (Math.abs(v) >= 0.5) lijnen.push({ label, v, items: items || [] }); };
     const soort = (s, f) => periode.filter(e => e.soort === s && (!f || f(e)));
+    // Elke maand op de 22e komt het bedrag van elke reservering erbij; opnames uit een pot gaan eraf.
+    const bouwResItems = () => {
+      const resItems = [];
+      const potten = reserveringsPosten.filter(post => post.id !== "vl_res_rente"); // zelfde selectie als het vrij vermogen
+    potten.forEach(post => {
+      const naamKort = String(post.naam || "").replace(/^Reservering\s*/i, "");
+      let c = new Date(PEILDATUM.getFullYear(), PEILDATUM.getMonth(), 22);
+      for (let i = 0; i < 120 && c <= tot; i++) {
+        if (c > APP_VANDAAG) resItems.push({ datum: c, omschrijving: "Reservering " + naamKort, delta: Number(post.bedrag) || 0 });
+        c = new Date(c.getFullYear(), c.getMonth() + 1, 22);
+      }
+    });
+    (potOnttrekkingen || []).forEach(o => {
+      const d = geldigeDatum(o.datum);
+      const post = potten.find(x => x.id === o.potId);
+      if (post && d && d > APP_VANDAAG && d <= tot) resItems.push({ datum: d, omschrijving: "Opname " + String(post.naam || "").replace(/^Reservering\s*/i, ""), delta: Number(o.bedrag) || 0 });
+    });
+      return resItems;
+    };
     let begin, eind, noot = null, tweeSpaar = false;
     if (naam === "Totaal") {
       begin = eerste.begin; eind = laatste.eind;
       voeg("Maandsaldo (inkomen min lasten)", som("maandsaldo")); voeg("Grote posten", som("grootIn") + som("grootUit"), soort("eigen"));
       voeg("Vakantiegeld, lijfrente, aanvulling", som("aanvulling"), soort("aanvulling")); voeg("Rente spaargeld", som("renteSpaar"), soort("rentespaar")); voeg("Rente deposito's", som("renteDepo"), soort("rentedepo"));
-      voeg("Beleggen: stortingen buiten sparen", som("extBel")); voeg("Beleggen: groei", som("groei")); voeg("Reserveringen en overig", som("rest"));
+      voeg("Beleggen: stortingen buiten sparen", som("extBel")); voeg("Beleggen: groei", som("groei")); voeg("Reserveringen en overig", som("rest"), bouwResItems());
       noot = "Verschuivingen tussen spaargeld, deposito's en beleggen (zoals de vrijval van een deposito) veranderen het totaal niet en staan hier niet in.";
     } else if (naam.indexOf("Vrij sparen") === 0) {
       begin = eerste.spBegin; eind = laatste.spEind;
@@ -7088,7 +7107,9 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
       noot = "Overig zijn je andere vermogensposten (geen deposito, spaargeld of beleggen) en de pot voor je inkomensaanvulling.";
     } else {
       begin = eerste.rvBegin; eind = laatste.rvEind;
-      noot = "Reserveringen groeien met wat je maandelijks apart zet.";
+      const resItems = bouwResItems();
+      voeg("Reserveringen", resItems.reduce((s, e) => s + e.delta, 0), resItems);
+      noot = "Elke maand op de 22e wordt het bedrag van elke reservering apart gezet. Het komt uit je maandsaldo en blijft meetellen in het vrij vermogen.";
     }
     const uitleg = lijnen.reduce((x, l) => x + l.v, 0);
     if (Math.abs((eind - begin) - uitleg) >= 0.5) voeg(naam.indexOf("Reserveringen") === 0 ? "Maandelijks apart gezet" : naam.indexOf("Overig") === 0 ? "Pot inkomensaanvulling en overige posten" : "Overig", (eind - begin) - uitleg);
@@ -7792,7 +7813,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     className: "font-mono text-xs uppercase tracking-widest bg-slate-700/60 border border-slate-500 rounded-full px-3 py-1"
   }, "peildatum ", fmtDate(PEILDATUM)), /*#__PURE__*/React.createElement("span", {
     className: "w-full text-xs text-slate-400 no-print"
-  }, "App-versie ", "17-10-2026 · 20:00")), /*#__PURE__*/React.createElement("p", {
+  }, "App-versie ", "17-10-2026 · 23:15")), /*#__PURE__*/React.createElement("p", {
     className: "mt-2 text-slate-300 text-sm max-w-2xl"
   }, "Bedragen zijn nominaal per peildatum, tenzij een indexatiepercentage is ingevuld. Alle basisbedragen zijn zelf aanpasbaar bij \"Basisgegevens\"." + (actieveTab === "fiscaliteit" ? " Alle aannames staan onderaan bij \"Aannames & beperkingen\". Bij het openen checkt dit bestand automatisch vier fiscale kerncijfers (zie bovenaan) — bij een afwijking wordt er niets automatisch aangepast, dat blijft een bewuste stap." : "")), /*#__PURE__*/React.createElement("div", {
     className: "mt-4 flex flex-wrap gap-2 items-center no-print"
