@@ -1295,7 +1295,10 @@ function zoekFondsHistorie(fondsenObj, naam) {
 // datumveld dat nog leeg is of half is ingevuld.
 function geldigeDatum(waarde) {
   if (!waarde) return null;
-  const d = waarde instanceof Date ? waarde : new Date(waarde);
+  // Een datum zonder tijd ("2026-10-17") is een kalenderdag in lokale tijd. Anders telt een datum van vandaag
+  // in Nederland (UTC+1/+2) als "later dan vandaag" en wordt een net ingevulde waarde genegeerd.
+  const m = typeof waarde === "string" && /^(\d{4})-(\d{2})-(\d{2})$/.exec(waarde);
+  const d = m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : waarde instanceof Date ? waarde : new Date(waarde);
   return isNaN(d.getTime()) ? null : d;
 }
 function yearsSince(d) {
@@ -6949,7 +6952,16 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
             vmH("button", { type: "button", className: vmKnopDonker, onClick: () => {
               const bedrag = Math.abs(Number(f.bedrag) || 0);
               if (f.soort === "waarde") {
-                if (vmWaardeBijwerken(sleutel, f.bedrag, f.datum)) setVmForm(null);
+                if (vmWaardeBijwerken(sleutel, f.bedrag, f.datum)) {
+                  // Het punt met de nieuwste datum is leidend. Is er een nieuwer punt, dan telt deze waarde niet voor vandaag.
+                  const gekozen = geldigeDatum(f.datum);
+                  const nieuwer = [];
+                  if (reg.start && geldigeDatum(reg.start.datum) && geldigeDatum(reg.start.datum) <= APP_VANDAAG) nieuwer.push(geldigeDatum(reg.start.datum));
+                  Object.keys(reg.jaarStart || {}).forEach(j => { const d = new Date(Number(j), 0, 1); if (d <= APP_VANDAAG) nieuwer.push(d); });
+                  const nieuwste = nieuwer.sort((a, c) => c - a)[0];
+                  if (gekozen && nieuwste && nieuwste > gekozen) window.alert("Opgeslagen, maar let op: je hebt een nieuwere waarde staan (" + fmtDate(nieuwste) + "). Die blijft leidend voor het saldo van vandaag. Kies bij 'Actuele waarde' de datum van vandaag.");
+                  setVmForm(null);
+                }
               } else if (f.soort === "jan") {
                 if (f.bedrag !== "" && vmJaarInvoer(sleutel, Number(f.jaar), f.bedrag, f.gestort, f.opgenomen)) {
                   // Een waarde per 1 januari die ouder is dan de laatst bekende waarde wijzigt het saldo van vandaag niet.
@@ -7775,7 +7787,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     className: "font-mono text-xs uppercase tracking-widest bg-slate-700/60 border border-slate-500 rounded-full px-3 py-1"
   }, "peildatum ", fmtDate(PEILDATUM)), /*#__PURE__*/React.createElement("span", {
     className: "w-full text-xs text-slate-400 no-print"
-  }, "App-versie ", "17-10-2026 · 18:35")), /*#__PURE__*/React.createElement("p", {
+  }, "App-versie ", "17-10-2026 · 19:20")), /*#__PURE__*/React.createElement("p", {
     className: "mt-2 text-slate-300 text-sm max-w-2xl"
   }, "Bedragen zijn nominaal per peildatum, tenzij een indexatiepercentage is ingevuld. Alle basisbedragen zijn zelf aanpasbaar bij \"Basisgegevens\"." + (actieveTab === "fiscaliteit" ? " Alle aannames staan onderaan bij \"Aannames & beperkingen\". Bij het openen checkt dit bestand automatisch vier fiscale kerncijfers (zie bovenaan) — bij een afwijking wordt er niets automatisch aangepast, dat blijft een bewuste stap." : "")), /*#__PURE__*/React.createElement("div", {
     className: "mt-4 flex flex-wrap gap-2 items-center no-print"
