@@ -6990,7 +6990,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
       const mutAlle = mut.reduce((s, m) => { const d = geldigeDatum(m.datum); return d && d > d0 && d <= d1 ? s + (Number(m.bedrag) || 0) : s; }, 0);
       const depoBel = VERMOGENS_ITEMS.filter(i => i.deposito && geldigeDatum(i.vervaldatum) && geldigeDatum(i.vervaldatum) > d0 && geldigeDatum(i.vervaldatum) <= d1 && vrijvalKeuze(i) === "belegging").reduce((s, i) => s + (Number(i.bedrag) || 0), 0);
       const r = {
-        label: maanden[k] + " mnd",
+        label: maanden[k] + " mnd", d0, d1,
         begin: pt[k - 1].totaal, eind: pt[k].totaal,
         maandsaldo: som("maandsaldo"),
         grootIn: som("eigen", e => e.delta > 0), grootUit: som("eigen", e => e.delta < 0),
@@ -7026,13 +7026,13 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     let begin, eind, noot = null, tweeSpaar = false;
     if (naam === "Totaal") {
       begin = eerste.begin; eind = laatste.eind;
-      voeg("Maandsaldo (inkomen min lasten)", som("maandsaldo")); voeg("Grote inkomsten", som("grootIn"), soort("eigen", e => e.delta > 0)); voeg("Grote uitgaven", som("grootUit"), soort("eigen", e => e.delta < 0));
+      voeg("Maandsaldo (inkomen min lasten)", som("maandsaldo")); voeg("Grote posten", som("grootIn") + som("grootUit"), soort("eigen"));
       voeg("Vakantiegeld, lijfrente, aanvulling", som("aanvulling"), soort("aanvulling")); voeg("Rente spaargeld", som("renteSpaar"), soort("rentespaar")); voeg("Rente deposito's", som("renteDepo"), soort("rentedepo"));
       voeg("Beleggen: stortingen buiten sparen", som("extBel")); voeg("Beleggen: groei", som("groei")); voeg("Reserveringen en overig", som("rest"));
       noot = "Verschuivingen tussen spaargeld, deposito's en beleggen (zoals de vrijval van een deposito) veranderen het totaal niet en staan hier niet in.";
     } else if (naam.indexOf("Vrij sparen") === 0) {
       begin = eerste.spBegin; eind = laatste.spEind;
-      voeg("Maandsaldo (inkomen min lasten)", som("maandsaldo")); voeg("Grote inkomsten", som("grootIn"), soort("eigen", e => e.delta > 0)); voeg("Grote uitgaven", som("grootUit"), soort("eigen", e => e.delta < 0));
+      voeg("Maandsaldo (inkomen min lasten)", som("maandsaldo")); voeg("Grote posten", som("grootIn") + som("grootUit"), soort("eigen"));
       voeg("Vakantiegeld, lijfrente, aanvulling", som("aanvulling"), soort("aanvulling")); voeg("Rente spaargeld", som("renteSpaar"), soort("rentespaar")); voeg("Rente deposito's", som("renteDepo"), soort("rentedepo"));
       voeg("Hoofdsom deposito's vrijgevallen", som("vrijval"), soort("vrijval")); voeg("Naar beleggen (storting/opname)", som("naarBeleggen"), soort("beleggen")); voeg("Naar nieuw deposito", som("naarDepo"), soort("verschuiving"));
     } else if (naam.indexOf("Deposito") === 0) {
@@ -7061,11 +7061,25 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
       });
       return [...m.values()].map(g => ({ ...g, omschrijving: g.omschrijving + (g.n > 1 ? " (" + g.n + "×)" : "") }));
     };
-    const blok = l => [
-      rij(l.label, l.v, false),
-      groepeer(l.items).sort((a, b) => a.datum - b.datum).slice(0, 14).map((e, i) => vmH("div", { key: l.label + i, style: { display: "flex", justifyContent: "space-between", gap: 12, padding: "2px 0 2px 14px", fontSize: 12.5, color: "#475569" } },
-        vmH("span", null, vmDatumKort(e.datum) + " · " + e.omschrijving), vmH("span", { className: "font-mono", style: { whiteSpace: "nowrap" } }, vmTeken(e.delta) + vmGetal(e.delta)))),
-      groepeer(l.items).length > 14 ? vmH("div", { key: l.label + "meer", style: { padding: "2px 0 4px 14px", fontSize: 12, color: "#64748b" } }, "… en " + (groepeer(l.items).length - 14) + " andere boekingen") : null
+    // Geen categorieën als "grote inkomsten": elke post staat apart met omschrijving, datum en bedrag.
+    const losse = lijnen.filter(l => !l.items.length);
+    const metItems = lijnen.filter(l => l.items.length);
+    let posten = [];
+    metItems.forEach(l => groepeer(l.items).forEach(g => posten.push({ ...g, groep: l.label })));
+    posten.sort((a, b) => a.datum - b.datum);
+    let rest = null;
+    if (posten.length > 30) {
+      const grootste = posten.slice().sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)).slice(0, 30);
+      const overig = posten.filter(p => grootste.indexOf(p) < 0);
+      rest = { n: overig.length, v: overig.reduce((s, p) => s + p.delta, 0) };
+      posten = grootste.sort((a, b) => a.datum - b.datum);
+    }
+    const blok = () => [
+      losse.map(l => rij(l.label, l.v, false)),
+      posten.length ? vmH("div", { key: "kop", style: { marginTop: 10, fontWeight: 600, fontSize: 13, color: "#334155" } }, "Wat er binnenkomt en wat er wordt betaald") : null,
+      posten.map((e, i) => vmH("div", { key: "p" + i, style: { display: "flex", justifyContent: "space-between", gap: 12, padding: "5px 0", borderTop: "1px solid #f1f5f9", fontSize: 13.5 } },
+        vmH("span", null, vmDatumKort(e.datum) + " · " + e.omschrijving), vmH("span", { className: "font-mono", style: Object.assign({ whiteSpace: "nowrap" }, kleur(e.delta)) }, vmTeken(e.delta) + vmGetal(e.delta)))),
+      rest ? vmH("div", { key: "rest", style: { display: "flex", justifyContent: "space-between", gap: 12, padding: "5px 0", borderTop: "1px solid #f1f5f9", fontSize: 13, color: "#64748b" } }, vmH("span", null, "Overige kleinere posten (" + rest.n + ")"), vmH("span", { className: "font-mono" }, vmTeken(rest.v) + vmGetal(rest.v))) : null
     ];
     const paneel = vmH("div", { onClick: () => setVmDetail(null), style: { position: "fixed", inset: 0, background: "rgba(15,23,42,.5)", zIndex: 60, display: "flex", alignItems: "flex-end", justifyContent: "center" }, className: "no-print" },
       vmH("div", { onClick: e => e.stopPropagation(), style: { background: "#fff", width: "100%", maxWidth: 520, maxHeight: "88vh", overflowY: "auto", borderRadius: "16px 16px 0 0", padding: 16, fontSize: 14 } },
@@ -7074,7 +7088,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
           vmH("button", { type: "button", onClick: () => setVmDetail(null), style: { fontSize: 20, padding: "0 8px" }, "aria-label": "Sluiten" }, "✕")),
         vmH("div", { style: { color: "#64748b", fontSize: 12, marginBottom: 8 } }, "Ten opzichte van nu, over " + maanden + " maanden"),
         rij("Saldo nu", begin, true),
-        lijnen.map(blok),
+        blok(),
         rij("Saldo over " + maanden + " mnd", eind, true),
         noot ? vmH("p", { style: { color: "#64748b", fontSize: 12, marginTop: 10 } }, noot) : null));
     // Via een portal, zodat het scherm altijd over de hele telefoon staat.
@@ -7299,6 +7313,23 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
         const K = an.kwartalen;
         const pm = n => (Math.abs(n) < 0.5 ? "–" : (n > 0 ? "+" : "−") + vmGetal(Math.abs(n)));
         const kl = n => (Math.abs(n) < 0.5 ? null : { color: n < 0 ? VM_KLEUR.slecht : VM_KLEUR.goed });
+        // Grote posten staan per post in de tabel, niet als totaal "grote inkomsten" of "grote uitgaven".
+        const postGroepen = (() => {
+          const m = new Map();
+          an.log.filter(e => e.soort === "eigen").forEach(e => {
+            const sl = String(e.omschrijving).replace(/\s*\(\d+\/\d+\)\s*$/, "");
+            const g = m.get(sl) || { naam: sl, eerste: e.datum, perK: K.map(() => 0), totaal: 0 };
+            K.forEach((q, i) => { if (e.datum > q.d0 && e.datum <= q.d1) { g.perK[i] += e.delta; g.totaal += e.delta; } });
+            if (e.datum < g.eerste) g.eerste = e.datum;
+            m.set(sl, g);
+          });
+          const alle = [...m.values()].filter(g => Math.abs(g.totaal) >= 0.5);
+          const groot = alle.filter(g => Math.abs(g.totaal) >= 500).sort((a, b) => a.eerste - b.eerste);
+          const klein = alle.filter(g => Math.abs(g.totaal) < 500);
+          if (klein.length) groot.push({ naam: "Overige kleinere posten", perK: K.map((_, i) => klein.reduce((s, g) => s + g.perK[i], 0)), totaal: 0 });
+          return groot;
+        })();
+        const postRijen = () => postGroepen.map(g => vmH("tr", { key: "post" + g.naam }, vmH("td", null, g.naam), K.map((q, i) => vmH("td", { key: i, style: kl(g.perK[i]) }, pm(g.perK[i])))));
         const regel = (naam, sleutel, vet) => vmH("tr", { key: naam, style: vet ? { fontWeight: 700 } : null }, vmH("td", null, naam), K.map((q, i) => vmH("td", { key: i, style: kl(q[sleutel]) }, pm(q[sleutel]))));
         const samen = (q, items) => items.map(([n, k]) => ({ n, v: q[k] })).filter(x => Math.abs(x.v) >= 500).sort((a, b) => Math.abs(b.v) - Math.abs(a.v)).slice(0, 3).map(x => x.n + " " + pm(x.v)).join(", ");
         const tot = (m, sleutel) => K.slice(0, m / 3).reduce((s, q) => s + q[sleutel], 0);
@@ -7321,7 +7352,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
             vmH("thead", null, vmH("tr", null, vmH("th", null, "Vrij vermogen"), K.map(q => vmH("th", { key: q.label }, q.label)))),
             vmH("tbody", null,
               vmH("tr", { style: { fontWeight: 700 } }, vmH("td", null, "Vorig saldo"), K.map((q, i) => vmH("td", { key: i }, vmGetal(q.begin)))),
-              regel("Maandsaldo", "maandsaldo"), regel("Grote inkomsten", "grootIn"), regel("Grote uitgaven", "grootUit"),
+              regel("Maandsaldo", "maandsaldo"), postRijen(),
               regel("Vakantiegeld, lijfrente, aanvulling", "aanvulling"),
               regel("Rente spaargeld", "renteSpaar"), regel("Rente deposito's", "renteDepo"),
               regel("Beleggen: stortingen buiten sparen", "extBel"), regel("Beleggen: groei", "groei"),
@@ -7334,7 +7365,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
             vmH("thead", null, vmH("tr", null, vmH("th", null, "Spaargeld"), K.map(q => vmH("th", { key: q.label }, q.label)))),
             vmH("tbody", null,
               vmH("tr", { style: { fontWeight: 700 } }, vmH("td", null, "Vorig saldo"), K.map((q, i) => vmH("td", { key: i }, vmGetal(q.spBegin)))),
-              regel("Maandsaldo", "maandsaldo"), regel("Grote inkomsten", "grootIn"), regel("Grote uitgaven", "grootUit"),
+              regel("Maandsaldo", "maandsaldo"), postRijen(),
               regel("Vakantiegeld, lijfrente, aanvulling", "aanvulling"),
               regel("Rente spaargeld", "renteSpaar"), regel("Rente deposito's", "renteDepo"),
               regel("Hoofdsom deposito's vrijgevallen", "vrijval"),
