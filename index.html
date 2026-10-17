@@ -4078,6 +4078,7 @@ function nettoMarginaal(bestaandBrutoJaar, extraBrutoJaar, naAOW, datum, metExtr
   }
   const [cpiPrognose, setCpiPrognose] = useOpslag("cpiPrognose", 3);
   const [vmDetail, setVmDetail] = React.useState(null);
+  const [kortDepoMeetellen, setKortDepoMeetellen] = useOpslag("kortDepoMeetellen", true);
   const [nieuweBron, setNieuweBron] = useOpslag("nieuweBronFormulier", { naam: "", persoon: "man", soort: "werk", bedrag: "", indexType: "vast", index: "", caoTot: "", start: "", eind: "" });
   function voegBronToe() {
     const nb = nieuweBron || {};
@@ -6340,6 +6341,21 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     const s = geldigeDatum(stortingsdatums[item.id] || item.stortingDatum);
     return !s || s <= d;
   }
+  // Beschikbaar op korte termijn: deposito's die binnen 3 maanden aflopen tellen (hoofdsom plus opgebouwde rente)
+  // al mee bij het spaargeld, ook al blijven het deposito's. Na de einddatum zit het geld in het spaarsaldo zelf.
+  function vmKortDepositos() {
+    const grens = vmAddMaanden(APP_VANDAAG, 3);
+    return VERMOGENS_ITEMS.filter(i => i.deposito && vmDepositoGestart(i, APP_VANDAAG) && geldigeDatum(i.vervaldatum) && geldigeDatum(i.vervaldatum) > APP_VANDAAG && geldigeDatum(i.vervaldatum) <= grens);
+  }
+  function vmKortBeschikbaar(d) {
+    return vmKortDepositos().reduce((s, i) => (geldigeDatum(i.vervaldatum) > d ? s + (Number(i.bedrag) || 0) + vmDepositoOpgebouwd(i, d) : s), 0);
+  }
+  function vmReeksBeschikbaar(reeks) {
+    if (!kortDepoMeetellen) return reeks;
+    const lijst = vmKortDepositos();
+    if (!lijst.length) return reeks;
+    return reeks.map(p => ({ datum: p.datum, balans: p.balans + lijst.reduce((s, i) => (geldigeDatum(i.vervaldatum) > p.datum ? s + (Number(i.bedrag) || 0) + vmDepositoOpgebouwd(i, p.datum) : s), 0) }));
+  }
   function vmDepositoLijst() {
     return depositosActief.map(i => {
       const verval = geldigeDatum(i.vervaldatum);
@@ -6607,10 +6623,13 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
   function renderGenoegGeld() {
     const jaar = APP_VANDAAG.getFullYear();
     const eind = new Date(jaar + 1, 11, 31);
-    const reeks = [];
-    sparenRaboOpDatum(eind, reeks);
+    const reeksRuw = [];
+    sparenRaboOpDatum(eind, reeksRuw);
+    const reeks = vmReeksBeschikbaar(reeksRuw);
     const minimum = Number(spaarBufferMinimum) || 0;
     if (!reeks.length) return null;
+    const kortNu = (Number(totaalVermogenOpDatum(APP_VANDAAG).sparen) || 0) + (kortDepoMeetellen ? vmKortBeschikbaar(APP_VANDAAG) : 0);
+    const kortDepos = vmKortDepositos();
     const laagste = reeks.reduce((m, p) => (p.balans < m.balans ? p : m), reeks[0]);
     const eersteTekort = reeks.find(p => p.balans < minimum);
     const maanden = [];
@@ -6628,15 +6647,20 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
       vmH("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-2" }, "Heb ik genoeg geld? " + jaar + " en " + (jaar + 1)),
       vmH("div", { className: "rounded-lg p-3 text-sm font-semibold " + (genoeg ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-rose-50 text-rose-800 border border-rose-300") },
         genoeg
-          ? "Ja. Het spaargeld blijft tot en met december " + (jaar + 1) + " boven je minimum van " + vmEuro(minimum) + "."
-          : "Nee. Vanaf " + fmtDate(eersteTekort.datum) + " komt het spaargeld onder je minimum van " + vmEuro(minimum) + "."),
+          ? "Ja. Het " + (kortDepoMeetellen ? "beschikbare geld" : "spaargeld") + " blijft tot en met december " + (jaar + 1) + " boven je minimum van " + vmEuro(minimum) + "."
+          : "Nee. Vanaf " + fmtDate(eersteTekort.datum) + " komt het " + (kortDepoMeetellen ? "beschikbare geld" : "spaargeld") + " onder je minimum van " + vmEuro(minimum) + "."),
+      vmH("div", { className: vmRij + " mt-2" }, vmH("span", null, "Beschikbaar op korte termijn"), vmH("b", null, vmEuro(kortNu))),
+      vmH("p", { className: "text-xs text-slate-500" }, kortDepoMeetellen
+        ? "Spaargeld plus deposito's die binnen 3 maanden aflopen (" + (kortDepos.length ? kortDepos.map(i => String(i.label || "").replace(/^Deposito\s+/i, "").replace(/^Raisin\s+/i, "") + " " + fmtDate(geldigeDatum(i.vervaldatum))).join(", ") : "geen") + "), inclusief opgebouwde rente."
+        : "Alleen spaargeld; deposito's tellen pas mee na hun einddatum."),
+      vmH("label", { className: "flex items-center gap-2 text-sm mb-1" }, vmH("input", { type: "checkbox", checked: !!kortDepoMeetellen, onChange: e => setKortDepoMeetellen(e.target.checked) }), "Deposito's die binnen 3 maanden aflopen tellen mee als beschikbaar"),
       vmH("div", { className: vmRij + " mt-2" }, vmH("span", null, "Laagste punt"), vmH("b", { className: laagste.balans < minimum ? "text-rose-700" : "" }, vmEuro(laagste.balans) + " op " + fmtDate(laagste.datum))),
       !genoeg && vmH("div", { className: vmRij }, vmH("span", null, "Tekort t.o.v. je minimum"), vmH("b", { className: "text-rose-700" }, vmEuro(tekort))),
       vmH("div", { className: vmRij + " items-center" }, vmH("span", null, "Minimumsaldo"),
         vmH("span", { className: "flex items-center gap-1" }, vmH("span", { className: "text-xs text-slate-500" }, "€"),
           vmH(NumInput, { value: spaarBufferMinimum, onChange: e => setSpaarBufferMinimum(Number(e.target.value) || 0), className: "w-24 " + vmInvoer }))),
       vmH("div", { style: { marginTop: "10px" } }, vmGrafiekLijn(reeks, minimum, "g")),
-      vmH("p", { className: "text-xs text-slate-500 mb-1" }, "Het spaargeld per dag. Rood is onder je minimum."),
+      vmH("p", { className: "text-xs text-slate-500 mb-1" }, kortDepoMeetellen ? "Beschikbaar geld per dag (spaargeld plus deposito's die binnen 3 maanden aflopen). Rood is onder je minimum." : "Het spaargeld per dag. Rood is onder je minimum."),
       vmH("table", { className: "w-full font-mono mt-2", style: { fontSize: "13px" } },
         vmH("thead", null, vmH("tr", { className: "text-xs text-slate-500 font-sans" },
           vmH("th", { className: "text-left font-normal py-1" }, "Maand"),
@@ -7229,8 +7253,9 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     const controles = vmControles(nuTotaal, lijst);
     const fouten = controles.filter(x => !x.ok);
     const minimum = Number(spaarBufferMinimum) || 0;
-    const reeks = [];
-    sparenRaboOpDatum(new Date(jaar + 1, 11, 31), reeks);
+    const reeksRuw = [];
+    sparenRaboOpDatum(new Date(jaar + 1, 11, 31), reeksRuw);
+    const reeks = vmReeksBeschikbaar(reeksRuw);
     const laagste = reeks.length ? reeks.reduce((m, p) => (p.balans < m.balans ? p : m), reeks[0]) : null;
     const genoeg = laagste ? !reeks.some(p => p.balans < minimum) : true;
     const maanden = [];
