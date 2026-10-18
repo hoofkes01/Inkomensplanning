@@ -4083,6 +4083,7 @@ function nettoMarginaal(bestaandBrutoJaar, extraBrutoJaar, naAOW, datum, metExtr
   }
   const [cpiPrognose, setCpiPrognose] = useOpslag("cpiPrognose", 3);
   const [vmDetail, setVmDetail] = React.useState(null);
+  const [adviesParams, setAdviesParams] = useOpslag("adviesParams", { euribor: 3.2, euriborDatum: "2026-10-16", drempel: 15000, def: 20, neu: 30, off: 50 });
   const [kortDepoMeetellen, setKortDepoMeetellen] = useOpslag("kortDepoMeetellen", true);
   const [nieuweBron, setNieuweBron] = useOpslag("nieuweBronFormulier", { naam: "", persoon: "man", soort: "werk", bedrag: "", indexType: "vast", index: "", caoTot: "", start: "", eind: "" });
   function voegBronToe() {
@@ -6695,6 +6696,221 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     );
   }
 
+
+  // ===== Beleggingsadvies =====
+  // Gecontroleerd op 18-10-2026 via fondsdata-sites (extraETF, finanzen, finect). Controleer de ISIN altijd ook in DEGIRO.
+  const ADVIES_FONDSEN = [
+    { cat: "def", hoofd: true, naam: "iShares Core € Corp Bond UCITS ETF (Dist)", isin: "IE00B3F81R35", ter: "0,09%", soort: "Euro bedrijfsobligaties, uitkerend" },
+    { cat: "def", hoofd: false, naam: "iShares € Govt Bond 1-3yr UCITS ETF (Dist)", isin: "IE00B14X4Q57", ter: "0,15%", soort: "Euro staatsobligaties 1-3 jaar, uitkerend; rendement dicht bij de rente" },
+    { cat: "neu", hoofd: true, naam: "Vanguard LifeStrategy 60% Equity UCITS ETF (EUR) Acc", isin: "IE00BMVB5P51", ter: "0,25%", soort: "60% aandelen, 40% obligaties, kapitaliserend" },
+    { cat: "neu", hoofd: false, naam: "Vanguard LifeStrategy 40% Equity UCITS ETF (EUR) Acc", isin: "IE00BMVB5M21", ter: "0,25%", soort: "40% aandelen, 60% obligaties, kapitaliserend" },
+    { cat: "off", hoofd: true, naam: "Vanguard FTSE All-World UCITS ETF USD Acc", isin: "IE00BK5BQT80", ter: "0,14% (eerder 0,19%)", soort: "Wereldwijd aandelen incl. opkomende landen, kapitaliserend" },
+    { cat: "off", hoofd: false, naam: "iShares Core MSCI World UCITS ETF USD Acc", isin: "IE00B4L5Y983", ter: "0,20%", soort: "Ontwikkelde landen aandelen, kapitaliserend" },
+    { cat: "off", hoofd: false, naam: "Vanguard LifeStrategy 80% Equity UCITS ETF (EUR) Acc", isin: "IE00BMVB5R75", ter: "0,25%", soort: "80% aandelen, 20% obligaties, kapitaliserend" }
+  ];
+  // Portefeuille volgens DEGIRO (schermafbeelding van 18-10-2026); zelf bij te werken in het tabblad.
+  const ADVIES_STANDAARD_PF = [
+    { naam: "Amundi Core MSCI World UCITS ETF Acc", waarde: 10092.67 },
+    { naam: "Amundi Core Stoxx Europe 600 UCITS ETF A", waarde: 10436.25 },
+    { naam: "iShares Core MSCI EM IMI UCITS ETF USD Acc", waarde: 4837.56 },
+    { naam: "iShares Edge MSCI Wld Val Fctr UCITS ETF USD A", waarde: 6982.00 },
+    { naam: "iShares MSCI World Small Cap UCITS ETF USD (Acc)", waarde: 6541.29 },
+    { naam: "VanEck Semiconductor UCITS ETF USD A", waarde: 14955.36 }
+  ];
+  const ADVIES_CAT = { def: "Defensief", neu: "Neutraal", off: "Offensief" };
+  const ADVIES_KLEUR = { def: "#0d9488", neu: "#2563eb", off: "#7c3aed" };
+  // Eenvoudige indeling van je bestaande fondsen op naam; niet herkend = offensief.
+  function adviesCategorie(naam) {
+    const n = String(naam || "").toLowerCase();
+    if (/obligat|bond|govt|treasury|corp|money|overnight|geldmarkt|ultrashort/.test(n)) return "def";
+    if (/min(imum)?\s*vol|low vol|lifestrategy\s*(20|40|60)|multi.?asset|dividend|quality/.test(n)) return "neu";
+    return "off";
+  }
+  // Marktbeeld op 18-10-2026 uit openbare bronnen (geen prognose). Vraag om een update als je het beeld wilt verversen.
+  const ADVIES_MARKT = {
+    datum: "18-10-2026",
+    punten: [
+      "Rente: de ECB verhoogde de depositorente op 10 september naar 2,50% (geldig vanaf 16 september). Het volgende besluit is op 29 oktober; economen verwachten dan geen verandering en mogelijk een verhoging in december. De Euribor 12 maanden staat rond 3,2%. Bij stijgende rente dalen de koersen van langlopende obligaties; kortlopende zijn veiliger. (Raisin, Reuters-peiling, euribor-rates.eu)",
+      "Inflatie: 3,4% in september in Nederland (CBS). Sparen en defensief beleggen tegen een rente rond 3% levert daardoor weinig reëel rendement op.",
+      "Aandelen: de MSCI World stond op 16 oktober op circa 4.908 dollar, ruim 10% hoger dan begin dit jaar en dicht bij het hoogste niveau van de afgelopen 52 weken (circa 5.040). De Amerikaanse markt is ongeveer 69% van de index en de waardering is hoog; strategen noemden eerder een flinke kans op een correctie. (Investing.com, beurs.nl, MarketScreener, Reuters)",
+      "Halfgeleiders: de sector draait een sterke winstcyclus door AI-investeringen, maar wordt tegen veeleisende waarderingen verhandeld en is cyclisch, met soms forse correcties. (VanEck, Test-Aankoop)"
+    ]
+  };
+  // Alle berekeningen van het beleggingsadvies, voor het tabblad en het rapport.
+  function adviesBerekening() {
+    const P = adviesParams || {};
+    const euribor = Number(P.euribor) || 0, drempel = Number(P.drempel) || 0;
+    const doel = { def: Number(P.def) || 0, neu: Number(P.neu) || 0, off: Number(P.off) || 0 };
+    const somDoel = doel.def + doel.neu + doel.off;
+    const nu = totaalVermogenOpDatum(APP_VANDAAG);
+    const spaarNu = Number(nu.sparen) || 0;
+    const ruimteNu = Math.max(0, spaarNu - drempel);
+    // Verloop van het direct opneembare spaargeld, zonder deposito's die nog lopen.
+    const reeks = [];
+    sparenRaboOpDatum(vmAddMaanden(APP_VANDAAG, 12), reeks);
+    const laatsteDag = reeks.length ? reeks[reeks.length - 1].datum : APP_VANDAAG;
+    const maandEinden = [];
+    for (let k = 0; k <= 12; k++) {
+      const d = k === 0 ? APP_VANDAAG : new Date(APP_VANDAAG.getFullYear(), APP_VANDAAG.getMonth() + k + 1, 0);
+      if (d > laatsteDag) break;
+      const rest = reeks.filter(p => p.datum >= d);
+      if (!rest.length) continue;
+      const stand = rest[0].balans, laagsteDaarna = Math.min(...rest.map(p => p.balans));
+      maandEinden.push({ d, stand, meer: Math.max(0, stand - drempel), blijvend: Math.max(0, laagsteDaarna - drempel) });
+    }
+    const laagsteKomend = reeks.length ? reeks.reduce((m, p) => (p.balans < m.balans ? p : m), reeks[0]) : null;
+    const tekortKomend = laagsteKomend ? Math.max(0, drempel - laagsteKomend.balans) : 0;
+    // Onder de drempel komen is geen optie: alleen wat blijvend boven de drempel blijft, is te beleggen.
+    const blijvendNu = maandEinden.length ? maandEinden[0].blijvend : 0;
+    const koopBasis = Math.min(ruimteNu, blijvendNu);
+    // Totale beleggingsportefeuille: vrij beleggen (DEGIRO) plus de pensioenpotten.
+    const pf = Array.isArray(P.portefeuille) ? P.portefeuille : ADVIES_STANDAARD_PF;
+    const pensDeel = sleutel => {
+      const o = beleggingsOverzicht && beleggingsOverzicht[sleutel];
+      const lijst = ((o && o.posities) || []).filter(x => Number(x.waarde) > 0).map(x => ({ naam: x.naam, waarde: Number(x.waarde) }));
+      const totaal = Number(o && o.totaal) || 0;
+      const som = lijst.reduce((s, x) => s + x.waarde, 0);
+      if (!lijst.length || som <= 0) return totaal > 0 ? [{ naam: sleutel === "pensioenBnd" ? "BND (indeling onbekend)" : "Pensioenpot (indeling onbekend)", waarde: totaal }] : [];
+      return lijst.map(x => ({ ...x, waarde: x.waarde / som * (totaal || som) }));
+    };
+    const delen = [
+      { id: "vrij", titel: "Vrij beleggen", posities: pf.filter(x => Number(x.waarde) > 0).map(x => ({ naam: x.naam, waarde: Number(x.waarde) })) },
+      { id: "man", titel: "Pensioenpot man", posities: pensDeel("pensioenDegiro") },
+      { id: "vrouw", titel: "Pensioenpot vrouw", posities: pensDeel("pensioenBnd") }
+    ].map(d => {
+      const som = { def: 0, neu: 0, off: 0 };
+      d.posities.forEach(x => { som[adviesCategorie(x.naam)] += x.waarde; });
+      return { ...d, som, totaal: som.def + som.neu + som.off };
+    });
+    const huidig = { def: 0, neu: 0, off: 0 };
+    delen.forEach(d => { ["def", "neu", "off"].forEach(c => { huidig[c] += d.som[c]; }); });
+    const totaalNu = huidig.def + huidig.neu + huidig.off;
+    const vrijWaarde = delen[0].totaal;
+    const behoefte = { def: 0, neu: 0, off: 0 };
+    ["def", "neu", "off"].forEach(c => { behoefte[c] = Math.max(0, (somDoel > 0 ? doel[c] / somDoel : 0) * (totaalNu + koopBasis) - huidig[c]); });
+    const somBeh = behoefte.def + behoefte.neu + behoefte.off;
+    const koop = {};
+    ["def", "neu", "off"].forEach(c => { koop[c] = somBeh > 0 ? Math.round(koopBasis * behoefte[c] / somBeh / 10) * 10 : 0; });
+    // Waarnemingen over de totale portefeuille.
+    const alle = [];
+    delen.forEach(d => d.posities.forEach(x => alle.push(x)));
+    const perFonds = {};
+    alle.forEach(x => { perFonds[x.naam] = (perFonds[x.naam] || 0) + x.waarde; });
+    const grootste = Object.keys(perFonds).filter(n => !/onbekend/i.test(n)).map(n => ({ naam: n, waarde: perFonds[n] })).sort((a, c) => c.waarde - a.waarde);
+    const thema = alle.filter(x => /semiconductor|robotics|automation|banks/i.test(x.naam)).reduce((s, x) => s + x.waarde, 0);
+    const semis = alle.filter(x => /semiconductor/i.test(x.naam)).reduce((s, x) => s + x.waarde, 0);
+    const pct = (a, b2) => (b2 > 0 ? Math.round(a / b2 * 100) : 0);
+    const waarnemingen = [];
+    if (totaalNu > 0) {
+      const off = pct(huidig.off, totaalNu);
+      waarnemingen.push("Je totale beleggingsportefeuille is " + vmEuro(totaalNu) + ", waarvan " + off + "% offensief, " + pct(huidig.neu, totaalNu) + "% neutraal en " + pct(huidig.def, totaalNu) + "% defensief (doel " + pct(doel.off, somDoel) + "/" + pct(doel.neu, somDoel) + "/" + pct(doel.def, somDoel) + "% offensief/neutraal/defensief).");
+      if (grootste[0] && grootste[0].waarde / totaalNu > 0.15) waarnemingen.push("Grootste positie: " + grootste[0].naam + " is " + pct(grootste[0].waarde, totaalNu) + "% van je totale portefeuille (" + vmEuro(grootste[0].waarde) + "). Dat is veel voor één fonds.");
+      if (semis > 0 && semis / totaalNu > 0.1) waarnemingen.push("Halfgeleiders zijn " + pct(semis, totaalNu) + "% van je totale portefeuille (" + vmEuro(semis) + ") en zitten in vrij beleggen én in de pensioenpot. De sector is cyclisch en hoog gewaardeerd; voeg hier niet bij en overweeg het gewicht naar 10 tot 15% terug te brengen.");
+      if (thema / totaalNu > 0.2) waarnemingen.push("Thematische fondsen (halfgeleiders, robotica, banken) vormen samen " + pct(thema, totaalNu) + "% van je portefeuille. Breed gespreide wereldfondsen geven meer spreiding.");
+      if (huidig.def === 0) waarnemingen.push("Je hebt geen defensief deel in je beleggingen. Dat past bij een lange horizon; je spaargeld en deposito's vormen nu je buffer.");
+    }
+    return { P, euribor, drempel, doel, somDoel, nu, spaarNu, ruimteNu, blijvendNu, koopBasis, koop, somBeh, behoefte, maandEinden, laagsteKomend, tekortKomend, pf, delen, huidig, totaalNu, vrijWaarde, waarnemingen, pct };
+  }
+  function renderBeleggingsadvies() {
+    const H = React.createElement;
+    const A = adviesBerekening();
+    const { P, euribor, drempel, doel, somDoel, nu, spaarNu, ruimteNu, blijvendNu, koopBasis, koop, somBeh, maandEinden, laagsteKomend, tekortKomend, pf, delen, huidig, totaalNu, waarnemingen, pct } = A;
+    const zet = (k, v) => setAdviesParams(prev => ({ ...(prev || {}), [k]: v }));
+    const zetPf = lijst => zet("portefeuille", lijst);
+    const kaart = "bg-white rounded-lg border border-slate-200 p-4 mb-3";
+    const inv = (label, waarde, onChange, eenheid, step) => H("label", { className: "flex items-center justify-between gap-3 py-1.5 text-sm" }, H("span", null, label),
+      H("span", { className: "flex items-center gap-1" }, H(NumInput, { step: step || "1", value: waarde, onChange: e => onChange(e.target.value === "" ? "" : Number(e.target.value)), className: "w-24 border border-slate-300 rounded px-2 py-1.5 font-mono text-sm text-right" }), H("span", { className: "text-xs text-slate-500" }, eenheid)));
+    const rendement = {
+      def: "verwacht rendement ongeveer " + vmPct(euribor + 1, 1) + " (Euribor + 1%)",
+      neu: "verwacht rendement " + vmPct(euribor + 2, 1) + " tot " + vmPct(euribor + 3, 1) + " (Euribor + 2 tot 3%)",
+      off: "verwacht rendement boven " + vmPct(euribor + 3, 1) + " (boven Euribor + 3%)"
+    };
+    const adviesKleur = koopBasis > 0 ? "bg-emerald-50 text-emerald-900 border border-emerald-200" : "bg-slate-50 text-slate-700 border border-slate-200";
+    const hoofd = c => ADVIES_FONDSEN.find(f => f.cat === c && f.hoofd);
+    const tweede = c => ADVIES_FONDSEN.find(f => f.cat === c && !f.hoofd);
+    return H("section", null,
+      H("h2", { className: "font-serif text-xl mb-4" }, "Beleggingsadvies"),
+      H("div", { className: kaart },
+        H("div", { className: "rounded-lg p-3 text-sm font-semibold " + adviesKleur },
+          koopBasis > 0
+            ? "Je direct opneembare spaargeld is " + vmEuro(spaarNu) + " en blijft de komende 12 maanden boven je drempel van " + vmEuro(drempel) + " voor " + vmEuro(blijvendNu) + ". Advies: belegg ongeveer " + vmEuro(Math.round(koopBasis / 10) * 10) + "."
+            : ruimteNu > 0
+              ? "Je direct opneembare spaargeld is " + vmEuro(spaarNu) + ", maar zakt binnen 12 maanden weer onder je drempel van " + vmEuro(drempel) + ". Nu niets beleggen."
+              : "Je direct opneembare spaargeld is " + vmEuro(spaarNu) + " en ligt onder je drempel van " + vmEuro(drempel) + ". Nu geen advies om te beleggen."),
+        tekortKomend > 0 && laagsteKomend ? H("p", { className: "text-xs text-rose-700 mt-2 font-semibold" }, "Let op: volgens de prognose zakt je spaargeld onder je drempel. Laagste punt " + vmEuro(laagsteKomend.balans) + " op " + fmtDate(laagsteKomend.datum) + ", dat is " + vmEuro(tekortKomend) + " onder " + vmEuro(drempel) + ". Dat is geen optie: dek dit af (bijvoorbeeld door een deposito eerder te laten vrijvallen of uitgaven te verschuiven) voordat je belegt.") : null,
+        H("p", { className: "text-xs text-slate-500 mt-2" }, "Onder " + vmEuro(drempel) + " vrij opneembaar spaargeld komen is geen optie, dus alleen wat blijvend boven die grens blijft telt. Deposito's tellen pas mee zodra ze vrijvallen. Afwegen tegen deposito's doe je zelf.")),
+      koopBasis > 0 && H("div", { className: kaart },
+        H("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-2" }, "Wat je kunt kopen"),
+        ["def", "neu", "off"].filter(c => koop[c] > 0).map(c => {
+          const h = hoofd(c), t2 = tweede(c);
+          const regels = c === "def" ? [[h, Math.round(koop[c] / 2 / 10) * 10], [t2, koop[c] - Math.round(koop[c] / 2 / 10) * 10]] : [[h, koop[c]]];
+          return H("div", { key: c, className: "py-2 border-t border-slate-100" },
+            H("div", { className: "flex justify-between items-baseline gap-2" }, H("span", { className: "font-semibold", style: { color: ADVIES_KLEUR[c] } }, ADVIES_CAT[c]), H("span", { className: "font-mono font-semibold" }, vmEuro(koop[c]))),
+            regels.map(([f, bedrag]) => H("div", { key: f.isin, className: "mt-1" },
+              H("div", { className: "text-sm" }, f.naam + " · " + vmEuro(bedrag)),
+              H("div", { className: "text-xs font-mono text-slate-700" }, "ISIN " + f.isin + " · TER " + f.ter),
+              H("div", { className: "text-xs text-slate-500" }, f.soort))),
+            c === "def" ? H("div", { className: "text-xs text-slate-500 mt-1" }, "Verdeeld over een kortlopend en een langer fonds, omdat de rente nog stijgt.") : null,
+            c === "off" ? H("div", { className: "text-xs text-slate-500 mt-1" }, "Spreid dit over 3 maandelijkse aankopen van ongeveer " + vmEuro(Math.round(koop[c] / 3 / 10) * 10) + ": de markt staat hoog en de waardering is veeleisend.") : null);
+        }),
+        somBeh === 0 ? H("p", { className: "text-sm text-slate-600" }, "Je totale portefeuille zit al op of boven de doelverdeling; zet het bedrag naar eigen inzicht in.") : null,
+        H("p", { className: "text-xs text-slate-500 mt-2" }, "Zoek in DEGIRO op de ISIN. Het bedrag per categorie is zo verdeeld dat je totale portefeuille (vrij beleggen plus pensioenpotten) dichter bij je doelverdeling komt.")),
+      H("div", { className: kaart },
+        H("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-1" }, "Advies over je totale portefeuille"),
+        waarnemingen.map((w, i) => H("p", { key: i, className: "text-sm py-1 border-t border-slate-100" }, w)),
+        waarnemingen.length === 0 ? H("p", { className: "text-sm text-slate-500" }, "Geen portefeuille ingevuld.") : null),
+      H("div", { className: kaart },
+        H("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-1" }, "Marktbeeld, stand " + ADVIES_MARKT.datum),
+        ADVIES_MARKT.punten.map((x, i) => H("p", { key: i, className: "text-sm py-1 border-t border-slate-100" }, x)),
+        H("p", { className: "text-xs text-slate-500 mt-1" }, "Samenvatting van openbare bronnen, geen prognose. Vraag om een update als je het beeld wilt verversen.")),
+      H("div", { className: kaart },
+        H("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-1" }, "Uitgangspunten"),
+        inv("Euribor 12 maanden", euribor, v => zet("euribor", v), "%", "0.01"),
+        H("p", { className: "text-xs text-slate-500" }, "Stand " + P.euriborDatum + ": 3,2% (euribor-rates.eu, global-rates.com). Pas aan als het verandert."),
+        inv("Drempel direct opneembaar spaargeld", drempel, v => zet("drempel", v), "€"),
+        H("div", { className: "text-xs uppercase tracking-wide text-slate-500 mt-3 mb-1" }, "Doelverdeling totale portefeuille (in %)"),
+        inv("Defensief", P.def, v => zet("def", v), "%"), inv("Neutraal", P.neu, v => zet("neu", v), "%"), inv("Offensief", P.off, v => zet("off", v), "%"),
+        somDoel !== 100 ? H("p", { className: "text-xs text-amber-700" }, "Let op: de percentages tellen op tot " + somDoel + "%. De app rekent ze om naar 100%.") : null),
+      H("div", { className: kaart },
+        H("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-1" }, "Wat verstaan we onder defensief, neutraal en offensief"),
+        ["def", "neu", "off"].map(c => H("div", { key: c, className: "py-1 text-sm" }, H("b", { style: { color: ADVIES_KLEUR[c] } }, ADVIES_CAT[c] + ": "), rendement[c])),
+        H("p", { className: "text-xs text-slate-500 mt-1" }, "Dit zijn aannames op basis van je eigen indeling en de Euribor, geen garantie op rendement.")),
+      H("div", { className: kaart },
+        H("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-1" }, "Je beleggingen nu: " + vmEuro(totaalNu)),
+        delen.map(d => H("div", { key: d.id, className: "flex justify-between gap-3 py-1.5 border-t border-slate-100 text-sm" }, H("span", null, d.titel), H("span", { className: "font-mono" }, vmEuro(d.totaal)))),
+        ["def", "neu", "off"].map(c => H("div", { key: c, className: "flex justify-between gap-3 py-1.5 border-t border-slate-100 text-sm" },
+          H("span", null, H("span", { style: { display: "inline-block", width: 10, height: 10, borderRadius: 5, background: ADVIES_KLEUR[c], marginRight: 6 } }), ADVIES_CAT[c]),
+          H("span", { className: "font-mono" }, vmEuro(huidig[c]) + " (" + pct(huidig[c], totaalNu) + "%) · doel " + pct(doel[c], somDoel) + "%"))),
+        H("p", { className: "text-xs text-slate-500 mt-1" }, "De indeling volgt de naam van het fonds (obligaties = defensief, minimum volatility = neutraal, de rest = offensief). De pensioenpotten komen uit je beleggingsoverzicht.")),
+      H("div", { className: kaart },
+        H("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-1" }, "Je fondsen vrij beleggen (stand DEGIRO 18-10-2026, zelf bij te werken)"),
+        pf.map((x, i) => H("div", { key: i, className: "py-1.5 border-t border-slate-100 text-sm" },
+          H("div", { className: "flex justify-between gap-2" }, H("span", null, x.naam), H("span", { className: "text-xs", style: { color: ADVIES_KLEUR[adviesCategorie(x.naam)] } }, ADVIES_CAT[adviesCategorie(x.naam)])),
+          H("div", { className: "flex items-center gap-2 mt-1" }, H(NumInput, { step: "0.01", value: x.waarde, onChange: e => zetPf(pf.map((y, j) => (j === i ? { ...y, waarde: Number(e.target.value) || 0 } : y))), className: "w-32 border border-slate-300 rounded px-2 py-1 font-mono text-sm text-right" }), H("span", { className: "text-xs text-slate-500" }, "€"),
+            H("button", { type: "button", onClick: () => zetPf(pf.filter((y, j) => j !== i)), className: "text-xs text-rose-700 underline ml-auto" }, "verwijderen")))),
+        H("button", { type: "button", className: vmKnop + " mt-2", onClick: () => { const naam = window.prompt("Naam van het fonds (bijv. de naam in DEGIRO)"); if (!naam) return; const w = Number(String(window.prompt("Waarde in euro") || "").replace(/\./g, "").replace(",", ".")); if (Number.isFinite(w) && w > 0) zetPf([...pf, { naam: naam.trim(), waarde: w }]); } }, "+ Fonds toevoegen"),
+        H("p", { className: "text-xs text-slate-500 mt-2" }, "Na een aankoop voeg je het fonds toe of verhoog je de waarde. De waarde bij Vermogen > Beleggen (nu " + vmEuro(Number(nu.degiroVrij) || 0) + ") pas je daar apart aan met 'Actuele waarde'.")),
+      H("div", { className: kaart },
+        H("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-1" }, "Komende maanden: ruimte boven je drempel"),
+        H("table", { className: "w-full font-mono", style: { fontSize: "13px" } },
+          H("thead", null, H("tr", { className: "text-xs text-slate-500 font-sans" }, H("th", { className: "text-left font-normal py-1" }, "Einde maand"), H("th", { className: "text-right font-normal py-1" }, "Spaargeld"), H("th", { className: "text-right font-normal py-1" }, "Boven drempel"), H("th", { className: "text-right font-normal py-1" }, "Blijvend"))),
+          H("tbody", null, maandEinden.map((m, i) => H("tr", { key: i, className: "border-t border-slate-100" },
+            H("td", { className: "py-1 font-sans text-left" }, i === 0 ? "nu" : m.d.toLocaleDateString("nl-NL", { month: "short", year: "2-digit" })),
+            H("td", { className: "py-1 text-right" }, vmGetal(m.stand)),
+            H("td", { className: "py-1 text-right " + (m.meer > 0 ? "text-emerald-700 font-semibold" : "") }, m.meer > 0 ? vmGetal(m.meer) : "–"),
+            H("td", { className: "py-1 text-right" }, m.blijvend > 0 ? vmGetal(m.blijvend) : "–"))))),
+        H("p", { className: "text-xs text-slate-500 mt-2" }, "Boven drempel is het meerdere op dat moment. Blijvend is wat daarna binnen 12 maanden niet meer onder de drempel zakt: dat kun je veilig beleggen.")),
+      H("div", { className: kaart },
+        H("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-1" }, "Fondsen"),
+        ["def", "neu", "off"].map(c => H("div", { key: c, className: "py-2 border-t border-slate-100" },
+          H("div", { className: "font-semibold text-sm", style: { color: ADVIES_KLEUR[c] } }, ADVIES_CAT[c]),
+          ADVIES_FONDSEN.filter(f => f.cat === c).map(f => H("div", { key: f.isin, className: "mt-1" },
+            H("div", { className: "text-sm" }, f.naam + (f.hoofd ? " (hoofdkeuze)" : "")),
+            H("div", { className: "text-xs font-mono text-slate-700" }, "ISIN " + f.isin + " · TER " + f.ter),
+            H("div", { className: "text-xs text-slate-500" }, f.soort))))),
+        H("p", { className: "text-xs text-slate-500 mt-2" }, "ISIN's en kosten zijn op 18-10-2026 gecontroleerd bij fondsdata-sites. Controleer in DEGIRO of het fonds op jouw beurs beschikbaar is en wat de kosten zijn. Dit is een rekenhulp op basis van je eigen uitgangspunten, geen persoonlijk beleggingsadvies.")));
+  }
+
   function renderVermogenOverzicht() {
     const horizon = Number(vermogenHorizon) || 12;
     const nu = totaalVermogenOpDatum(APP_VANDAAG);
@@ -6763,6 +6979,9 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
       vmGrafiekStapel(verloopPunten, 240),
       vmLegenda(vmDelenNamen.concat(Math.abs(overig(nu)) >= 0.5 ? [["Overig", VM_KLEUR.overig]] : [])),
       vmH("p", { className: "text-xs text-slate-500 mt-2" }, "Elke kolom is het vrij vermogen op dat moment, met de prognose-aannames hieronder. De cijfers boven de kolommen zijn het totaal."));
+    const adviesRuimte = adviesBerekening().koopBasis;
+    const adviesBanner = adviesRuimte > 0 ? vmH("div", { className: "rounded-lg p-3 text-sm bg-emerald-50 text-emerald-900", style: { border: "1px solid #a7f3d0" } },
+      "Beleggingsadvies: je kunt ongeveer " + vmEuro(Math.round(adviesRuimte / 10) * 10) + " beleggen en blijft boven je drempel voor direct opneembaar spaargeld. ", vmH("button", { type: "button", className: "underline font-semibold", onClick: () => setActieveTab("beleggingsadvies") }, "Bekijk wat je kunt kopen")) : null;
     const overzicht = vmH("div", { className: vmKaart },
       vmH("table", { className: "w-full font-mono", style: { fontSize: "13px" } },
         vmH("thead", null, vmH("tr", { className: "text-xs text-slate-500 font-sans" },
@@ -6999,7 +7218,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     return vmH(React.Fragment, null,
       vmH("section", { style: { display: "grid", gap: "16px" } },
         vmH("h2", { className: "font-serif text-xl" }, "Vermogen"),
-        hero, overzicht, grafiek, controleBlok, beslis, aannames, sparen, deposito, beleggen, pensioen));
+        hero, adviesBanner, overzicht, grafiek, controleBlok, beslis, aannames, sparen, deposito, beleggen, pensioen));
   }
 
   // ===== Grafieken en rapport =====
@@ -7525,6 +7744,39 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
           vmH("tbody", null, pakketten.flatMap(([k, naam]) => vmReg(k).mutaties.map(m => ({ k, naam, m }))).sort((a, b) => String(a.m.datum).localeCompare(String(b.m.datum))).map((x, i) => vmH("tr", { key: i },
             vmH("td", null, vmDatumKort(geldigeDatum(x.m.datum) || APP_VANDAAG)), vmH("td", null, x.naam), vmH("td", null, Number(x.m.bedrag) >= 0 ? "storting" + (x.m.sparen ? " (van sparen)" : "") : "opname" + (x.m.sparen ? " (naar sparen)" : "")), vmH("td", { style: kleurBedrag(Number(x.m.bedrag)) }, (Number(x.m.bedrag) >= 0 ? "+" : "−") + vmGetal(Math.abs(Number(x.m.bedrag))))))))),
 
+      // 5b. Beleggingsadvies
+      (() => {
+        const A = adviesBerekening();
+        const H = vmH;
+        const cat = ["def", "neu", "off"];
+        return H("section", { className: "rp-pagina" },
+          kop("Beleggingsadvies", "Direct opneembaar spaargeld, koopadvies en totale portefeuille"),
+          banner(A.koopBasis > 0
+            ? "Je kunt ongeveer " + vmEuro(Math.round(A.koopBasis / 10) * 10) + " beleggen en blijft boven je drempel van " + vmEuro(A.drempel) + " voor direct opneembaar spaargeld."
+            : "Nu niets beleggen: je direct opneembare spaargeld is " + vmEuro(A.spaarNu) + " en blijft niet (blijvend) boven je drempel van " + vmEuro(A.drempel) + ".",
+            A.koopBasis > 0 ? { background: "#ecfdf5", borderColor: "#a7f3d0", color: "#065f46" } : { background: "#f8fafc", borderColor: "#cbd5e1", color: "#334155" }),
+          A.tekortKomend > 0 && A.laagsteKomend ? noot("Let op: volgens de prognose komt het spaargeld onder je drempel (laagste punt " + vmEuro(A.laagsteKomend.balans) + " op " + fmtDate(A.laagsteKomend.datum) + ", " + vmEuro(A.tekortKomend) + " onder " + vmEuro(A.drempel) + "). Onder de drempel komen is geen optie.") : null,
+          A.koopBasis > 0 ? H("table", { className: "rp-tabel" },
+            H("thead", null, H("tr", null, H("th", null, "Categorie"), H("th", null, "Bedrag"), H("th", { style: { textAlign: "left" } }, "Fonds"), H("th", { style: { textAlign: "left" } }, "ISIN"))),
+            H("tbody", null, cat.filter(c => A.koop[c] > 0).map(c => {
+              const f = ADVIES_FONDSEN.find(x => x.cat === c && x.hoofd), f2 = ADVIES_FONDSEN.find(x => x.cat === c && !x.hoofd);
+              const halve = Math.round(A.koop[c] / 2 / 10) * 10;
+              const regels = c === "def" ? [[f, halve], [f2, A.koop[c] - halve]] : [[f, A.koop[c]]];
+              return regels.map(([x, b2]) => H("tr", { key: c + x.isin }, H("td", { style: { textAlign: "left" } }, ADVIES_CAT[c]), H("td", null, vmGetal(b2)), H("td", { style: { textAlign: "left" } }, x.naam), H("td", { style: { textAlign: "left", fontFamily: "monospace" } }, x.isin)));
+            }))) : null,
+          A.koopBasis > 0 && A.koop.off > 0 ? noot("Offensief: spreid de aankoop over 3 maandelijkse tranches van circa " + vmEuro(Math.round(A.koop.off / 3 / 10) * 10) + ". Defensief is verdeeld over een kortlopend en een langer fonds omdat de rente nog stijgt.") : null,
+          H("div", { className: "rp-pagekop" }, H("h2", null, "Totale beleggingsportefeuille")),
+          H("table", { className: "rp-tabel" },
+            H("thead", null, H("tr", null, H("th", { style: { textAlign: "left" } }, "Onderdeel"), H("th", null, "Waarde"), H("th", null, "Defensief"), H("th", null, "Neutraal"), H("th", null, "Offensief"))),
+            H("tbody", null, A.delen.map(d => H("tr", { key: d.id }, H("td", { style: { textAlign: "left" } }, d.titel), H("td", null, vmGetal(d.totaal)), H("td", null, vmGetal(d.som.def)), H("td", null, vmGetal(d.som.neu)), H("td", null, vmGetal(d.som.off)))),
+              H("tr", { style: { fontWeight: 700 } }, H("td", { style: { textAlign: "left" } }, "Totaal"), H("td", null, vmGetal(A.totaalNu)), cat.map(c => H("td", { key: c }, vmGetal(A.huidig[c]) + " (" + A.pct(A.huidig[c], A.totaalNu) + "%)"))),
+              H("tr", null, H("td", { style: { textAlign: "left" } }, "Doelverdeling"), H("td", null, ""), cat.map(c => H("td", { key: c }, A.pct(A.doel[c], A.somDoel) + "%"))))),
+          H("ul", { className: "rp-lijst" }, A.waarnemingen.map((w, i) => H("li", { key: i }, w))),
+          H("div", { className: "rp-pagekop rp-nieuwepagina" }, H("h2", null, "Marktbeeld, stand " + ADVIES_MARKT.datum)),
+          H("ul", { className: "rp-lijst" }, ADVIES_MARKT.punten.map((x, i) => H("li", { key: i }, x))),
+          noot("Defensief = Euribor + 1% (" + vmPct(A.euribor + 1, 1) + "), neutraal = Euribor + 2 tot 3% (" + vmPct(A.euribor + 2, 1) + " tot " + vmPct(A.euribor + 3, 1) + "), offensief = daarboven. ISIN's en kosten zijn op 18-10-2026 gecontroleerd bij fondsdata-sites; controleer ze in DEGIRO. Rekenhulp op basis van je eigen uitgangspunten en geen persoonlijk beleggingsadvies."));
+      })(),
+
       // 6. Inkomen en lasten
       vmH("section", { className: "rp-pagina" },
         kop("Inkomen per fase", "Netto per maand, tot 5 jaar na de AOW · AOW vrouw " + fmtDate(aowVrouw) + " · AOW man " + fmtDate(aowMan)),
@@ -7815,7 +8067,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     className: "font-mono text-xs uppercase tracking-widest bg-slate-700/60 border border-slate-500 rounded-full px-3 py-1"
   }, "peildatum ", fmtDate(PEILDATUM)), /*#__PURE__*/React.createElement("span", {
     className: "w-full text-xs text-slate-400 no-print"
-  }, "App-versie ", "17-10-2026 · 23:40")), /*#__PURE__*/React.createElement("p", {
+  }, "App-versie ", "18-10-2026 · 11:15")), /*#__PURE__*/React.createElement("p", {
     className: "mt-2 text-slate-300 text-sm max-w-2xl"
   }, "Bedragen zijn nominaal per peildatum, tenzij een indexatiepercentage is ingevuld. Alle basisbedragen zijn zelf aanpasbaar bij \"Basisgegevens\"." + (actieveTab === "fiscaliteit" ? " Alle aannames staan onderaan bij \"Aannames & beperkingen\". Bij het openen checkt dit bestand automatisch vier fiscale kerncijfers (zie bovenaan) — bij een afwijking wordt er niets automatisch aangepast, dat blijft een bewuste stap." : "")), /*#__PURE__*/React.createElement("div", {
     className: "mt-4 flex flex-wrap gap-2 items-center no-print"
@@ -7852,7 +8104,7 @@ React.createElement("button",{type:"button","data-no-print":"true",onClick:()=>{
   ),
   React.createElement("span",{className:"underline"}, totaalUpdateAantal>0 || overallStatus!=="done" || fiscaalTabelMelding ? "bekijk en update →" : "bekijk →")
 ),
-menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-slate-200 rounded-xl p-3 shadow-sm"},React.createElement("div",{className:"text-xs text-slate-500 mb-2"},"Kies een onderwerp"),React.createElement("select",{defaultValue:"",autoFocus:true,onChange:e=>{const id=e.target.value;if(!id)return;setActieveTab(id);setMenuOpen(false);},className:"w-full bg-white border border-slate-300 rounded-lg px-3 py-3 text-sm text-slate-800"},React.createElement("option",{value:"",disabled:true},"Selecteer een onderwerp…"),React.createElement("option",{value:"dashboard"},"Dashboard actueel"),React.createElement("option",{value:"inkomen"},"Inkomen"),React.createElement("option",{value:"inkomensaanvulling"},"Toevoeging inkomen"),React.createElement("option",{value:"lijfrente"},"Lijfrente en pensioen"),React.createElement("option",{value:"vaste_lasten"},"Vaste lasten en dagelijkse uitgaven"),React.createElement("option",{value:"spaarpot"},"Vermogen"),React.createElement("option",{value:"grote_uitgaven"},"Grote posten en reserveringen"),React.createElement("option",{value:"fiscaliteit"},"Fiscaliteit & AOW"),React.createElement("option",{value:"rapport"},"Rapport (PDF)"))), actieveTab === "dashboard" && React.createElement(React.Fragment, null, React.createElement("section", null, /*#__PURE__*/React.createElement("h2", {
+menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-slate-200 rounded-xl p-3 shadow-sm"},React.createElement("div",{className:"text-xs text-slate-500 mb-2"},"Kies een onderwerp"),React.createElement("select",{defaultValue:"",autoFocus:true,onChange:e=>{const id=e.target.value;if(!id)return;setActieveTab(id);setMenuOpen(false);},className:"w-full bg-white border border-slate-300 rounded-lg px-3 py-3 text-sm text-slate-800"},React.createElement("option",{value:"",disabled:true},"Selecteer een onderwerp…"),React.createElement("option",{value:"dashboard"},"Dashboard actueel"),React.createElement("option",{value:"inkomen"},"Inkomen"),React.createElement("option",{value:"inkomensaanvulling"},"Toevoeging inkomen"),React.createElement("option",{value:"lijfrente"},"Lijfrente en pensioen"),React.createElement("option",{value:"vaste_lasten"},"Vaste lasten en dagelijkse uitgaven"),React.createElement("option",{value:"spaarpot"},"Vermogen"),React.createElement("option",{value:"grote_uitgaven"},"Grote posten en reserveringen"),React.createElement("option",{value:"fiscaliteit"},"Fiscaliteit & AOW"),React.createElement("option",{value:"beleggingsadvies"},"Beleggingsadvies"),React.createElement("option",{value:"rapport"},"Rapport (PDF)"))), actieveTab === "dashboard" && React.createElement(React.Fragment, null, React.createElement("section", null, /*#__PURE__*/React.createElement("h2", {
     className: "font-serif text-xl mb-4"
   }, "Fasenoverzicht — netto huishouden per maand"),
   React.createElement("div", { className: "mb-4 flex flex-wrap gap-2" },
@@ -8163,7 +8415,7 @@ menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-sl
     className: "flex justify-between font-semibold pt-1 border-t border-slate-100"
   }, /*#__PURE__*/React.createElement("span", {
     className: "font-sans"
-  }, "Totaal"), /*#__PURE__*/React.createElement("span", null, euro(Math.round(VASTE_LASTEN_BASIS + DAGELIJKSE_UITGAVEN_BASIS))))))))), actieveTab === "dashboard_detail" && renderAdvies(), actieveTab === "beleggingen" && renderBeleggingen(), actieveTab === "rapport" && renderRapport(), actieveTab === "vaste_lasten" && React.createElement(React.Fragment, null, React.createElement("section", null, /*#__PURE__*/React.createElement("h2", {
+  }, "Totaal"), /*#__PURE__*/React.createElement("span", null, euro(Math.round(VASTE_LASTEN_BASIS + DAGELIJKSE_UITGAVEN_BASIS))))))))), actieveTab === "dashboard_detail" && renderAdvies(), actieveTab === "beleggingen" && renderBeleggingen(), actieveTab === "rapport" && renderRapport(), actieveTab === "beleggingsadvies" && renderBeleggingsadvies(), actieveTab === "vaste_lasten" && React.createElement(React.Fragment, null, React.createElement("section", null, /*#__PURE__*/React.createElement("h2", {
     className: "font-serif text-xl mb-4"
   }, "Vaste lasten — per post"), /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-lg border border-slate-200 p-5 space-y-3"
