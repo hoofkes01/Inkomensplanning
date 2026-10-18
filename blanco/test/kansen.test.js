@@ -22,6 +22,19 @@ const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undef
   ok("rapport heeft kansensectie", t.length > 50);
   ok("lasten: energie genoemd", /Gas, elektriciteit/.test(t));
   ok("rente: spaarrekening zonder rente of verschil gemeld", /rente/i.test(t));
+  ok("verzekeringen samengevoegd", /Verzekeringen doorlopen/.test(t));
+  ok("zorgverzekering-moment genoemd", /Zorgverzekering/.test(t));
+  ok("reserveren genoemd", /Reserveren voor grote uitgaven/.test(t) || /reserveer/i.test(t), (t.match(/Reserveren voor grote uitgaven.{0,300}/) || [""])[0]);
+  ok("Raisin genoemd", /Raisin/.test(t));
+  // marktrente invullen op dashboard
+  await page.click('[data-knop="menu"]'); await page.click('[data-menu="dashboard"]'); await page.waitForTimeout(150);
+  if (await page.locator("[role=dialog]").count()) await page.keyboard.press("Escape");
+  await page.locator('[data-blok="marktrente"] summary').click();
+  await page.fill('[data-veld="markt-spaar"]', "3,5"); await page.fill('[data-veld="markt-depo"]', "3,8");
+  await page.click('[data-knop="menu"]'); await page.click('[data-menu="rapport"]'); await page.waitForTimeout(200);
+  if (await page.locator("[role=dialog]").count()) await page.keyboard.press("Escape");
+  const t2 = await page.textContent('[data-rp="kansen"]');
+  ok("marktrente geeft berekend voordeel", /lagere rente dan je beste spaarrekening/.test(t2) && /marktrente die je invulde/.test(t2), (t2.match(/Meer rente op spaargeld.{0,500}/) || [""])[0]);
   ok("geen pageerror", pe.length === 0, pe.join("|"));
   await browser.close(); console.log(fouten ? "FOUTEN" : "Alles OK");
 })();

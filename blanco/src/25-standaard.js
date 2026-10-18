@@ -23,7 +23,7 @@ var STANDAARD = {
     gebruik: { hypotheek: false, deposito: false, beleggen: false, aanvulling: false, pensioen: false }
   },
   // Marktcijfers en aannames: standaardwaarden zijn voorbeelden. Zolang 'stand' leeg is, meldt de app dat ze nog niet zijn bijgewerkt.
-  inst: { cpi: 2.5, cpiIjk: "", cpiStand: "", spaarrente: 2, spaarrenteStand: "", rendBeleggen: 4, rendPot: 4, rendPotTijdens: 3, indexSchijven: 2, indexAOW: 2, dagInkomen: 25, dagLasten: 1, kortMee: true, kortMaanden: 3, backupDatum: "", cijfersDatum: "", cijfersFout: null },
+  inst: { cpi: 2.5, cpiIjk: "", cpiStand: "", spaarrente: 2, spaarrenteStand: "", rendBeleggen: 4, rendPot: 4, rendPotTijdens: 3, indexSchijven: 2, indexAOW: 2, dagInkomen: 25, dagLasten: 1, kortMee: true, kortMaanden: 3, backupDatum: "", cijfersDatum: "", cijfersFout: null, marktSpaar: "", marktDepo: "", marktDatum: "" },
   bronnen: [],
   werkJaren: { A: {}, B: {} },
   aanv: { naam: "Inkomensaanvulling", maand: "", opnameVanaf: "", totType: "aow", totPersoon: "A", einde: "", bron: "sparen", startsaldo: "", rendement: 3, kosten: 0, opnameAan: true, mutaties: [] },
