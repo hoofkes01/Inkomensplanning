@@ -64,6 +64,7 @@ const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undef
   for (let i = 0; i < 6 && await page.locator("[role=dialog]").count(); i++) {
     if (await page.locator(`${dlg}[data-toeslagvragen]`).count()) {
       ok("toeslagenstap vraagt actief naar zorgtoeslag, kindgebonden budget en kinderopvangtoeslag", await page.locator(`${dlg}[data-toeslagvraag="zorgtoeslag"]`).count() === 1 && await page.locator(`${dlg}[data-toeslagvraag="kgb"]`).count() === 1 && await page.locator(`${dlg}[data-toeslagvraag="kopvang"]`).count() === 1);
+      ok("onderzoeksmelding per toeslag in de intake", await page.locator(`${dlg}[data-onderzoek="zorgtoeslag"]`).count() === 1);
       await volgende(); ok("onbeantwoorde toeslagvraag blokkeert", /Beantwoord de vraag over/.test(await tekst()));
       ok("huurtoeslag staat al als ja (zelf ingevoerd)", await page.isChecked(`${dlg}[data-toeslag-antwoord="huurtoeslag-ja"]`));
       for (const k of ["zorgtoeslag", "kgb", "kopvang"]) await page.check(`${dlg}[data-toeslag-antwoord="${k}-nee"]`);

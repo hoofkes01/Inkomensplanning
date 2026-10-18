@@ -410,7 +410,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 })();
 </script>
 <script>
-var APP_VERSIE = "18-10-2026 · 18:53";
+var APP_VERSIE = "18-10-2026 · 18:59";
 /* ===== Basis: hulpfuncties, opslag, invoervelden ===== */
 var h = React.createElement;
 var useState = React.useState, useEffect = React.useEffect, useMemo = React.useMemo, useRef = React.useRef, useContext = React.useContext;
@@ -2197,8 +2197,10 @@ function aandachtspunten(c) {
   if (S.inst.cijfersFout) pt("fout", "Het bijwerken van de cijfers is op " + fmtDatum(S.inst.cijfersFout.datum) + " mislukt: " + S.inst.cijfersFout.tekst + " Je rekent nu met oudere cijfers. Probeer het opnieuw of kies een cijferbestand.", "dashboard");
   else if ((S.cijfers || {}).versie && dagenTussen(geldigeDatum(S.cijfers.versie), nu) > 45) pt("waarschuw", "Het cijferbestand is van " + fmtDatum(S.cijfers.versie) + ": er zijn nog geen nieuwere cijfers beschikbaar. Controleer of er een nieuwe versie van de app is.", "dashboard");
   toeslagWaarschuwingen(c).forEach(function (t) { pt("waarschuw", t, "inkomen"); });
-  var open = (S.intake.dashboard || {}).klaar ? toeslagKandidaten(c).kandidaten.filter(function (k) { return !k.antwoord; }) : [];
-  if (open.length) pt("waarschuw", "Mogelijk recht op: " + open.map(function (k) { return k.label.toLowerCase(); }).join(", ") + ". Beantwoord de toeslagenvragen bij Inkomen.", "inkomen");
+  // Per toeslag een melding zolang de gebruiker niet heeft aangegeven of hij hem al ontvangt of heeft onderzocht.
+  if ((S.intake.dashboard || {}).klaar) toeslagKandidaten(c).kandidaten.forEach(function (k) {
+    if (k.antwoord === "" || k.antwoord === "onbekend") pt("waarschuw", "Onderzoek of je " + k.label.toLowerCase() + " kunt krijgen. " + k.reden + " Doe de proefberekening op toeslagen.nl en beantwoord de vraag bij Inkomen.", "inkomen");
+  });
   if (klaar >= 1) {
     var stale = actualiseerStappen(c).filter(function (x) { var l = actualiseerLeeftijd(c, x.id); return x.id !== "cijfers" && (l == null || l > (x.dagen || 31)); });
     if (stale.length) pt("info", "Actualiseren: " + stale.map(function (x) { return x.titel.toLowerCase(); }).slice(0, 4).join(", ") + (stale.length > 4 ? " en meer" : "") + " zijn niet recent bijgewerkt of nog niet gecontroleerd.", "dashboard");
@@ -2604,6 +2606,7 @@ function ToeslagenVraag() {
       return h("div", { key: k.code, className: "kaart", style: { background: "#f8fafc" }, "data-toeslagvraag": k.code },
         h("b", null, "Ontvang je " + k.label.toLowerCase() + "?"),
         h("p", { className: "klein" }, k.reden),
+        (k.antwoord === "" || k.antwoord === "onbekend") ? h("p", { className: "oranje", "data-onderzoek": k.code }, h("b", null, "Onderzoek of je " + k.label.toLowerCase() + " kunt krijgen. "), "Doe de proefberekening op ", h("a", { href: "https://toeslagen.nl", target: "_blank", rel: "noopener", style: { color: "inherit", textDecoration: "underline" } }, "toeslagen.nl"), ".") : null,
         [["ja", "Ja"], ["nee", "Nee"], ["onbekend", "Weet ik niet"]].map(function (o) {
           return h("label", { key: o[0], className: "vink" }, h("input", { type: "radio", name: rn + k.code, checked: k.antwoord === o[0], onChange: function () { antwoord(k.code, o[0]); }, "data-toeslag-antwoord": k.code + "-" + o[0] }), h("span", null, o[1]));
         }),

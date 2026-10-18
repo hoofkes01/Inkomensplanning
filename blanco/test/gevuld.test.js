@@ -56,6 +56,7 @@ const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undef
     ok(`[${breedte}] indexeren: zorgtoeslag 120 -> 123,60`, zt.netto === 123.6 && !!zt.bijgewerkt, JSON.stringify([zt.netto, zt.bijgewerkt]));
     await page.click('[data-knop="menu"]'); await page.click('[data-menu="dashboard"]');
     ok(`[${breedte}] toeslagcontrole: inkomen boven zorgtoeslaggrens wordt gemeld`, /inkomensgrens voor zorgtoeslag/.test(await page.textContent("#aandacht")), (await page.textContent("#aandacht")).slice(0, 80));
+    ok(`[${breedte}] melding per toeslag: onderzoek of je kindgebonden budget kunt krijgen`, /Onderzoek of je kindgebonden budget kunt krijgen/.test(await page.textContent("#aandacht")));
     // Mislukte actualisatie wordt gemeld en onthouden
     await page.route("**/cijfers.json*", r => r.abort());
     await page.click('[data-knop="menu"]'); await page.click('[data-menu="dashboard"]');

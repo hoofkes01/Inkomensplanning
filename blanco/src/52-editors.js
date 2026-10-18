@@ -315,6 +315,7 @@ function ToeslagenVraag() {
       return h("div", { key: k.code, className: "kaart", style: { background: "#f8fafc" }, "data-toeslagvraag": k.code },
         h("b", null, "Ontvang je " + k.label.toLowerCase() + "?"),
         h("p", { className: "klein" }, k.reden),
+        (k.antwoord === "" || k.antwoord === "onbekend") ? h("p", { className: "oranje", "data-onderzoek": k.code }, h("b", null, "Onderzoek of je " + k.label.toLowerCase() + " kunt krijgen. "), "Doe de proefberekening op ", h("a", { href: "https://toeslagen.nl", target: "_blank", rel: "noopener", style: { color: "inherit", textDecoration: "underline" } }, "toeslagen.nl"), ".") : null,
         [["ja", "Ja"], ["nee", "Nee"], ["onbekend", "Weet ik niet"]].map(function (o) {
           return h("label", { key: o[0], className: "vink" }, h("input", { type: "radio", name: rn + k.code, checked: k.antwoord === o[0], onChange: function () { antwoord(k.code, o[0]); }, "data-toeslag-antwoord": k.code + "-" + o[0] }), h("span", null, o[1]));
         }),

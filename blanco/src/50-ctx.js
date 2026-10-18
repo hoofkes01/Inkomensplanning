@@ -89,8 +89,10 @@ function aandachtspunten(c) {
   if (S.inst.cijfersFout) pt("fout", "Het bijwerken van de cijfers is op " + fmtDatum(S.inst.cijfersFout.datum) + " mislukt: " + S.inst.cijfersFout.tekst + " Je rekent nu met oudere cijfers. Probeer het opnieuw of kies een cijferbestand.", "dashboard");
   else if ((S.cijfers || {}).versie && dagenTussen(geldigeDatum(S.cijfers.versie), nu) > 45) pt("waarschuw", "Het cijferbestand is van " + fmtDatum(S.cijfers.versie) + ": er zijn nog geen nieuwere cijfers beschikbaar. Controleer of er een nieuwe versie van de app is.", "dashboard");
   toeslagWaarschuwingen(c).forEach(function (t) { pt("waarschuw", t, "inkomen"); });
-  var open = (S.intake.dashboard || {}).klaar ? toeslagKandidaten(c).kandidaten.filter(function (k) { return !k.antwoord; }) : [];
-  if (open.length) pt("waarschuw", "Mogelijk recht op: " + open.map(function (k) { return k.label.toLowerCase(); }).join(", ") + ". Beantwoord de toeslagenvragen bij Inkomen.", "inkomen");
+  // Per toeslag een melding zolang de gebruiker niet heeft aangegeven of hij hem al ontvangt of heeft onderzocht.
+  if ((S.intake.dashboard || {}).klaar) toeslagKandidaten(c).kandidaten.forEach(function (k) {
+    if (k.antwoord === "" || k.antwoord === "onbekend") pt("waarschuw", "Onderzoek of je " + k.label.toLowerCase() + " kunt krijgen. " + k.reden + " Doe de proefberekening op toeslagen.nl en beantwoord de vraag bij Inkomen.", "inkomen");
+  });
   if (klaar >= 1) {
     var stale = actualiseerStappen(c).filter(function (x) { var l = actualiseerLeeftijd(c, x.id); return x.id !== "cijfers" && (l == null || l > (x.dagen || 31)); });
     if (stale.length) pt("info", "Actualiseren: " + stale.map(function (x) { return x.titel.toLowerCase(); }).slice(0, 4).join(", ") + (stale.length > 4 ? " en meer" : "") + " zijn niet recent bijgewerkt of nog niet gecontroleerd.", "dashboard");
