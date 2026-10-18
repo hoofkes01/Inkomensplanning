@@ -112,7 +112,7 @@ ok("kinderbijslag juli 2026 (kas): kind van 17 krijgt het kwartaal nog (12-17), 
 ok("kinderbijslag gemiddeld per maand (kind 8): 362,35/3", Math.abs(kb("2027-02-01", false) - 362.35 / 3) < 0.01, kb("2027-02-01", false));
 ok("laatste kwartaal kind geboren 15-05-2008 eindigt 30-06-2026", c.fmtDatum(c.kinderbijslagLaatsteKwartaalEind("2008-05-15")) === "30-06-2026", c.fmtDatum(c.kinderbijslagLaatsteKwartaalEind("2008-05-15")));
 ok("BSO-einde kind geboren 10-03-2018: 1-8-2030", c.fmtDatum(c.bsoEindeDatum("2018-03-10")) === "01-08-2030", c.fmtDatum(c.bsoEindeDatum("2018-03-10")));
-SK.profiel.kinderbijslagAuto = false;
+SK.profiel.kinderbijslagModus = "geen";
 ok("kinderbijslag uit: niets automatisch", c.persoonMaand(c.maakModel(SK, c.geldigeDatum("2026-10-18")), "A", c.geldigeDatum("2027-01-01"), true).netto === 0);
 
 // Dubbele kinderbijslag bij een kind met beperking (3 tot en met 17 jaar)

@@ -120,8 +120,38 @@ function GezinVelden() {
         h(Vink, { label: "Dit kind studeert", value: !!k.studerend, onChange: function (v) { wijzigKind(k.id, { studerend: v }); } }),
         h(Vink, { label: "Dit kind heeft een beperking met intensieve zorg", hint: "Bijvoorbeeld met een Wlz-indicatie of positief CIZ-advies en minstens 4 nachten per week thuis. De app rekent dan dubbele kinderbijslag (3 tot en met 17 jaar) en biedt extra toeslagen en kosten aan. Controleer de voorwaarden bij de SVB.", value: !!k.beperking, onChange: function (v) { wijzigKind(k.id, { beperking: v }); }, naam: "beperking" + (i + 1) }));
     }),
-    kids.length ? h(Vink, { label: "Kinderbijslag automatisch berekenen", hint: "De app rekent per kind met de bedragen van de SVB en stopt het kwartaal waarin je kind 18 wordt. Vink uit als je het bedrag zelf wilt invullen.", value: p.kinderbijslagAuto !== false, onChange: function (v) { c.zet("profiel", { kinderbijslagAuto: v }); } }) : null,
+    kids.length ? h(KinderbijslagKeuze, null) : null,
     h(Vink, { label: "We hebben een huisdier", value: !!l.huisdier, onChange: function (v) { c.zetPad("profiel", ["leef"], Object.assign({}, l, { huisdier: v })); } }));
+}
+// Kinderbijslag: de app rekent hem uit met de geboortedatum van elk kind; de gebruiker bevestigt, vult zelf in of geeft aan dat er geen is.
+function KinderbijslagKeuze() {
+  var c = useC(), m = c.m, p = c.S.profiel, L = c.lijst("bronnen"), kids = p.kids || [], LL = lijstL(p);
+  var rn = useState(function () { return "kb" + nieuwId(); })[0];
+  if (!kids.length) return null;
+  var modus = LL.kbModus;
+  var rijen = kids.map(function (k, i) {
+    var g = geldigeDatum(k.geboorte), l = kinderbijslagLaatsteKwartaalEind(k.geboorte);
+    return ["Kind " + (i + 1) + (k.beperking ? " (dubbel)" : ""), g ? leeftijdJaren(g, m.peil) + " jaar" : "–", g ? eur(kinderbijslagKwartaal(m, k.geboorte, kwartaalStart(m.peil), k.beperking)) : "–", l ? fmtMaand(l) : "–"];
+  });
+  var totaal = kids.reduce(function (s, k) { return s + kinderbijslagKwartaal(m, k.geboorte, kwartaalStart(m.peil), k.beperking); }, 0);
+  var manueel = p.kinderbijslagModus === "zelf" ? L.items.filter(function (b) { return b.code === "kinderbijslag"; })[0] : null;
+  function kies(v) {
+    c.zet("profiel", { kinderbijslagModus: v, kinderbijslagAuto: v === "auto" });
+    var bestaand = L.items.filter(function (b) { return b.code === "kinderbijslag"; });
+    if (v === "zelf" && !bestaand.length) L.voeg(nieuweBron("A", bronCat("kinderbijslag"), m));
+    if (v !== "zelf") bestaand.forEach(function (b) { L.wis(b.id); });
+  }
+  return h("div", { className: "kaart", style: { background: "#f8fafc" }, "data-kinderbijslag": "1" },
+    h("b", null, "Kinderbijslag"),
+    modus === "auto" ? h("div", null,
+      h(Tabel, { kop: ["Kind", "Leeftijd", "Per kwartaal", "Laatste kwartaal"], get: [1, 2], rijen: rijen.concat([{ klasse: "totaal", cellen: ["Samen", "", eur(totaal), ""] }]) }),
+      h("p", { className: "klein" }, "Bedragen van de SVB per kind, achteraf betaald (januari, april, juli, oktober). Gemiddeld circa " + eur(totaal / 3) + " per maand. Het bedrag stijgt in het kwartaal waarin je kind 6 en 12 wordt en stopt als je kind op de eerste dag van een kwartaal 18 is.")) : null,
+    [["auto", "Bereken de kinderbijslag automatisch (aanbevolen)"], ["zelf", "Ik vul het bedrag zelf in"], ["geen", "Ik ontvang geen kinderbijslag"]].map(function (o) {
+      return h("label", { key: o[0], className: "vink" }, h("input", { type: "radio", name: rn, checked: modus === o[0], onChange: function () { kies(o[0]); }, "data-kb-modus": o[0] }), h("span", null, o[1]));
+    }),
+    manueel ? h("div", null,
+      h(BedragVeld, { label: "Bedrag per betaling (kinderbijslag)", value: manueel.netto, onChange: function (v) { L.wijzig(manueel.id, { netto: v, bruto: "" }); }, naam: "kb-bedrag" }),
+      h(KeuzeVeld, { label: "Hoe vaak ontvangen", value: manueel.freq || "kwartaal", opties: FREQ_KEUZES, onChange: function (v) { L.wijzig(manueel.id, { freq: v }); } })) : null);
 }
 function foutenKinderen(c) {
   var uit = [], nu = c.m.nu;
@@ -260,6 +290,7 @@ function BronnenEditor(p) {
 }
 function foutenToeslagen(c) {
   var kd = toeslagKandidaten(c), uit = [];
+  if (lijstL(c.S.profiel).kbZelf) { var kbb = c.S.bronnen.filter(function (b) { return b.code === "kinderbijslag"; })[0]; if (!kbb || kbb.netto === "" || getal(kbb.netto) <= 0) uit.push("Vul het bedrag van je kinderbijslag in (of kies automatisch berekenen)."); }
   kd.kandidaten.forEach(function (k) {
     if (!k.antwoord) uit.push("Beantwoord de vraag over " + k.label.toLowerCase() + " (of kies 'Weet ik niet').");
     else if (k.antwoord === "ja") { var b = c.S.bronnen.filter(function (x) { return x.code === k.code; })[0]; if (!b || b.netto === "" || getal(b.netto) <= 0) uit.push("Vul het bedrag in van je " + k.label.toLowerCase() + ".") }
@@ -275,8 +306,9 @@ function ToeslagenVraag() {
     if (w === "ja" && !bestaand.length && cat) L.voeg(nieuweBron("A", cat, m));
     if (w !== "ja" && bestaand.length) bestaand.forEach(function (b) { L.wis(b.id); });
   }
-  if (!kd.kandidaten.length && !kd.geen.length) return h("p", null, "Op basis van je gegevens zijn er geen toeslagen om naar te vragen.");
+  if (!kd.kandidaten.length && !kd.geen.length) return h("div", null, h(KinderbijslagKeuze, null), h("p", null, "Op basis van je gegevens zijn er geen toeslagen om naar te vragen."));
   return h("div", { "data-toeslagvragen": "1" },
+    h(KinderbijslagKeuze, null),
     kd.kandidaten.length ? h(Uitleg, null, "Op basis van je woning, inkomen, vermogen en gezin kun je mogelijk recht hebben op de toeslagen hieronder. De app rekent het bedrag niet uit; vul het bedrag van je beschikking in. Weet je het niet, kijk dan op toeslagen.nl voor een proefberekening.") : null,
     kd.kandidaten.map(function (k) {
       var b = c.S.bronnen.filter(function (x) { return x.code === k.code; })[0];

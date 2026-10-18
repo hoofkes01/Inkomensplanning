@@ -176,11 +176,7 @@ function ToeslagenActualiseer() {
   return h("div", null,
     tw.map(function (t, i) { return h("div", { key: i, className: "kaart waarschuw", "data-toeslag-controle": "1" }, t); }),
     h(ToeslagenVraag, null),
-    L2.kbAuto ? h("div", { className: "kaart", style: { background: "#f8fafc" } },
-      h("b", null, "Kinderbijslag (automatisch)"),
-      h(Tabel, { kop: ["Kind", "Per kwartaal"], get: [1], rijen: (m.profiel.kids || []).map(function (k, i) { return ["Kind " + (i + 1) + (k.beperking ? " (dubbel)" : ""), eur(kinderbijslagKwartaal(m, k.geboorte, kwartaalStart(m.peil), k.beperking))]; }) }),
-      h("p", { className: "klein" }, "De SVB past de bedragen in januari en juli aan. Druk op 'Cijfers bijwerken' voor de nieuwste bedragen."),
-      h(CijfersKnop, null)) : null,
+    h("div", { className: "kaart", style: { background: "#f8fafc" } }, h("p", { className: "klein" }, "De SVB past de kinderbijslag in januari en juli aan. Druk op 'Cijfers bijwerken' voor de nieuwste bedragen."), h(CijfersKnop, null)),
     toeslagen.length ? h("div", { className: "kaart", style: { background: "#f8fafc" } }, h("b", null, "Toeslagen en vergoedingen"),
       h(Uitleg, null, "Controleer je bedragen op je laatste beschikking van de Belastingdienst, DUO of je gemeente en pas aan wat veranderd is."),
       toeslagen.map(function (b) {

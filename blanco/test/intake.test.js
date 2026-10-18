@@ -33,7 +33,8 @@ const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undef
   await page.selectOption(`${dlg}[data-veld="auto-eigen"]`, "0"); await page.selectOption(`${dlg}[data-veld="auto-lease"]`, "0"); await volgende();
   await v("kinderen", "1");
   await volgende(); ok("geboortedatum kind is verplicht", /geboortedatum van kind 1/.test(await tekst()));
-  await v("kind-geboorte1", "10-03-2018"); await page.check(`${dlg}[data-kind="1"] input[type=checkbox] >> nth=0`);
+  await v("kind-geboorte1", "10-03-2018");
+  ok("kinderbijslag is meteen zichtbaar bij het kind (362 per kwartaal)", /Kinderbijslag/.test(await tekst()) && /€ 362/.test(await tekst()) && await page.locator(`${dlg}[data-kb-modus="auto"]`).isChecked()); await page.check(`${dlg}[data-kind="1"] input[type=checkbox] >> nth=0`);
   ok("beperking-vink aanwezig bij het kind", await page.locator(`${dlg}[data-vink="beperking1"]`).count() === 1);
   await volgende(); // kinderopvang
   await volgende();
