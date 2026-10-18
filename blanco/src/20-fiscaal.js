@@ -17,6 +17,7 @@ var FISCAAL_PER_JAAR = {
       max_jaaruitkering_tijdelijke_lijfrente_5_20jr: 27192,
       aow_bruto_gehuwd_pm: 1139.39, aow_vakantiegeld_gehuwd_pm: 74.85,
       aow_bruto_alleen_pm: 1662.16, aow_vakantiegeld_alleen_pm: 104.78,
+      kinderbijslag_0_5: 298.40, kinderbijslag_6_11: 362.35, kinderbijslag_12_17: 426.29,
       box3_tarief: 36, box3_vrij_pp: 59357, box3_sparen_pct: 1.28, box3_beleggen_pct: 6.00, box3_schuld_pct: 2.70
     }
   },
@@ -35,6 +36,7 @@ var FISCAAL_PER_JAAR = {
       max_jaaruitkering_tijdelijke_lijfrente_5_20jr: 27192,
       aow_bruto_gehuwd_pm: 1139.39, aow_vakantiegeld_gehuwd_pm: 74.85,
       aow_bruto_alleen_pm: 1662.16, aow_vakantiegeld_alleen_pm: 104.78,
+      kinderbijslag_0_5: 298.40, kinderbijslag_6_11: 362.35, kinderbijslag_12_17: 426.29,
       box3_tarief: 36, box3_vrij_pp: 59357, box3_sparen_pct: 1.28, box3_beleggen_pct: 6.00, box3_schuld_pct: 2.70
     }
   }
@@ -45,7 +47,7 @@ var FISCAAL_LAATSTE_JAAR = FISCAAL_JAREN[FISCAAL_JAREN.length - 1];
 // percentage; andere jaren gebruiken de eigen aanname (instelling 'indexSchijven').
 var FISCAAL_INDEXATIE_BIJZONDER = { 2028: { pct: 0.3, toelichting: "beperkte correctie, aanname circa 0,3%" } };
 var FISCAAL_BEDRAGVELDEN = ["schijf1_max", "schijf2_max", "algemene_heffingskorting_max", "ahk_afbouwgrens", "ouderenkorting_max", "ouderenkorting_afbouwgrens", "ahk_na_aow_max", "arbeidskorting_max", "arbeidskorting_afbouwgrens", "zvw_max_bijdrage_inkomen", "max_jaaruitkering_tijdelijke_lijfrente_5_20jr", "box3_vrij_pp"];
-var FISCAAL_AOWVELDEN = ["aow_bruto_gehuwd_pm", "aow_vakantiegeld_gehuwd_pm", "aow_bruto_alleen_pm", "aow_vakantiegeld_alleen_pm"];
+var FISCAAL_AOWVELDEN = ["aow_bruto_gehuwd_pm", "aow_vakantiegeld_gehuwd_pm", "aow_bruto_alleen_pm", "aow_vakantiegeld_alleen_pm", "kinderbijslag_0_5", "kinderbijslag_6_11", "kinderbijslag_12_17"];
 var FISCAAL_LABELS = {
   schijf1_max: ["Einde eerste schijf (€ per jaar)", "b"], schijf2_max: ["Einde tweede schijf (€ per jaar)", "b"],
   tarief1: ["Tarief eerste schijf voor AOW (%)", "p"], tarief1_aow: ["Tarief eerste schijf vanaf AOW (%)", "p"], tarief2: ["Tarief tweede schijf (%)", "p"], tarief3: ["Tarief derde schijf (%)", "p"],
@@ -57,6 +59,7 @@ var FISCAAL_LABELS = {
   max_jaaruitkering_tijdelijke_lijfrente_5_20jr: ["Maximale jaaruitkering tijdelijke lijfrente (5 tot 20 jaar)", "b"],
   aow_bruto_gehuwd_pm: ["AOW bruto per maand, per persoon (met partner)", "b"], aow_vakantiegeld_gehuwd_pm: ["AOW-vakantiegeld per maand, per persoon (met partner)", "b"],
   aow_bruto_alleen_pm: ["AOW bruto per maand (alleenstaand)", "b"], aow_vakantiegeld_alleen_pm: ["AOW-vakantiegeld per maand (alleenstaand)", "b"],
+  kinderbijslag_0_5: ["Kinderbijslag per kwartaal, kind van 0 tot en met 5 jaar", "b"], kinderbijslag_6_11: ["Kinderbijslag per kwartaal, kind van 6 tot en met 11 jaar", "b"], kinderbijslag_12_17: ["Kinderbijslag per kwartaal, kind van 12 tot en met 17 jaar", "b"],
   box3_tarief: ["Box 3: tarief (%)", "p"], box3_vrij_pp: ["Box 3: heffingsvrij vermogen per persoon", "b"], box3_sparen_pct: ["Box 3: fictief rendement sparen (%)", "p"], box3_beleggen_pct: ["Box 3: fictief rendement beleggen (%)", "p"], box3_schuld_pct: ["Box 3: rente op schulden (%)", "p"]
 };
 

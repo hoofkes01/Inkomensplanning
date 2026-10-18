@@ -18,7 +18,7 @@ function actieveMenus(profiel) {
 var STANDAARD = {
   profiel: {
     type: "", partner: false, fiscalePartners: true, naamA: "Persoon A", naamB: "Persoon B", geboorteA: "", geboorteB: "", aowA: "", aowB: "", peildatum: "", akkoordAnoniem: false,
-    werk: { A: [], B: [] },
+    werk: { A: [], B: [] }, kids: [], kinderbijslagAuto: true,
     leef: { woning: "", woningGeen: "", woz: "", auto: "", eigen: "", lease: "", deel: false, kinderen: 0, opvang: false, studerend: false, huisdier: false },
     gebruik: { hypotheek: false, deposito: false, beleggen: false, aanvulling: false, pensioen: false }
   },
@@ -69,7 +69,7 @@ var BRON_CAT = [
   { code: "zorgtoeslag", label: "Zorgtoeslag", soort: "toeslag", freq: "maand", wanneer: function () { return true; } },
   { code: "kgb", label: "Kindgebonden budget", soort: "toeslag", freq: "maand", wanneer: function (L) { return L.kinderen > 0; } },
   { code: "kopvang", label: "Kinderopvangtoeslag", soort: "toeslag", freq: "maand", wanneer: function (L) { return L.kinderen > 0 && L.opvang; } },
-  { code: "kinderbijslag", label: "Kinderbijslag", soort: "toeslag", freq: "kwartaal", wanneer: function (L) { return L.kinderen > 0; } },
+  { code: "kinderbijslag", label: "Kinderbijslag", soort: "toeslag", freq: "kwartaal", wanneer: function (L) { return L.kinderen > 0 && !L.kbAuto; } },
   { code: "kinderalim_ontv", label: "Kinderalimentatie (ontvangen)", soort: "toeslag", freq: "maand", wanneer: function (L) { return L.kinderen > 0; } },
   { code: "partneralim_ontv", label: "Partneralimentatie (ontvangen, belast)", soort: "overig", freq: "maand", wanneer: function () { return true; } },
   { code: "verhuur", label: "Huurinkomsten uit verhuur", soort: "overig", freq: "maand", wanneer: function () { return true; } },
@@ -141,7 +141,12 @@ function aantalAutos(l, soort) {
 function lijstL(profiel) {
   var l = profiel.leef || {};
   var eigen = aantalAutos(l, "eigen"), lease = aantalAutos(l, "lease");
-  return { woning: l.woning, eigen: eigen, lease: lease, auto: eigen + lease > 0, deel: !!l.deel, geenAuto: eigen + lease === 0, kinderen: Number(l.kinderen) || 0, opvang: !!l.opvang, studerend: !!l.studerend, huisdier: !!l.huisdier, partner: !!profiel.partner };
+  var kids = (profiel.kids || []).filter(function (k) { return k; });
+  var n = kids.length ? kids.length : (Number(l.kinderen) || 0);
+  return { woning: l.woning, eigen: eigen, lease: lease, auto: eigen + lease > 0, deel: !!l.deel, geenAuto: eigen + lease === 0, kinderen: n,
+    opvang: kids.length ? kids.some(function (k) { return k.opvang; }) : !!l.opvang, studerend: kids.length ? kids.some(function (k) { return k.studerend; }) : !!l.studerend,
+    kbAuto: profiel.kinderbijslagAuto !== false && kids.some(function (k) { return !!geldigeDatum(k.geboorte); }),
+    huisdier: !!l.huisdier, partner: !!profiel.partner };
 }
 // De auto's van het huishouden, elk met een eigen id en naam (voor lasten per auto).
 function autosVan(L) {

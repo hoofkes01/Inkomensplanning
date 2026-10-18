@@ -1,7 +1,7 @@
 // Voorbeeldhuishouden (verzonnen) voor tests.
 const c = require("./laad.js");
 const S = JSON.parse(JSON.stringify(c.STANDAARD));
-S.profiel.type = "man+vrouw"; S.profiel.partner = true; S.profiel.akkoordAnoniem = true; S.profiel.naamA = "Man"; S.profiel.naamB = "Vrouw"; S.profiel.werk = { A: ["loon"], B: ["loon", "pensioen"] }; S.profiel.leef = { woning: "koop", woz: 400000, woningGeen: "", auto: "", eigen: 2, lease: 1, deel: true, kinderen: 1, opvang: false, studerend: true, huisdier: false }; S.profiel.geboorteA = "1966-09-15"; S.profiel.geboorteB = "1964-11-09"; S.profiel.peildatum = "2026-10-18";
+S.profiel.type = "man+vrouw"; S.profiel.partner = true; S.profiel.akkoordAnoniem = true; S.profiel.naamA = "Man"; S.profiel.naamB = "Vrouw"; S.profiel.werk = { A: ["loon"], B: ["loon", "pensioen"] }; S.profiel.kids = [{ id: "kd1", geboorte: "2018-03-10", opvang: true, studerend: false }, { id: "kd2", geboorte: "2009-05-15", opvang: false, studerend: true }]; S.profiel.kinderbijslagAuto = true; S.profiel.leef = { woning: "koop", woz: 400000, woningGeen: "", auto: "", eigen: 2, lease: 1, deel: true, kinderen: 2, opvang: false, studerend: true, huisdier: false }; S.profiel.geboorteA = "1966-09-15"; S.profiel.geboorteB = "1964-11-09"; S.profiel.peildatum = "2026-10-18";
 S.profiel.gebruik = { hypotheek: true, deposito: true, beleggen: true, aanvulling: true, pensioen: true };
 S.inst.cpiStand = "2026-10-10"; S.inst.spaarrenteStand = "2026-10-15"; S.inst.cijfersDatum = "2026-10-15";
 S.advies.pfDatum = "2026-10-10"; S.advies.wachtTot = 55000; S.advies.behoudAan = true;
@@ -10,8 +10,7 @@ S.bronnen = [
   { id: "b2", persoon: "B", code: "loon", naam: "Loon (dienstverband)", soort: "loon", bruto: 3000, netto: 2300, start: "", einde: "", werktijd: 100, index: "cpi", indexPct: "", wijzigDatum: "", wijzigBruto: "", wijzigNetto: "" },
   { id: "b3", persoon: "A", code: "pensioen", naam: "Pensioen van een pensioenfonds of verzekeraar", soort: "pensioen", bruto: 1500, netto: "", start: "2033-12-15", einde: "", werktijd: "", index: "vast", indexPct: 1, wijzigDatum: "2035-01-01", wijzigBruto: 1700, wijzigNetto: "" },
   { id: "b4", persoon: "B", code: "pensioen", naam: "Pensioen van een pensioenfonds of verzekeraar", soort: "pensioen", bruto: 900, netto: 800, start: "2032-02-09", einde: "", werktijd: "", index: "geen", indexPct: "", wijzigDatum: "", wijzigBruto: "", wijzigNetto: "" }
-  ,{ id: "b5", persoon: "A", code: "zorgtoeslag", naam: "Zorgtoeslag", soort: "toeslag", bruto: "", netto: 120, freq: "maand", eersteMaand: 1, start: "", einde: "", index: "geen", indexPct: "" },
-  { id: "b6", persoon: "A", code: "kinderbijslag", naam: "Kinderbijslag", soort: "toeslag", bruto: "", netto: 300, freq: "kwartaal", eersteMaand: 1, start: "", einde: "2030-01-01", index: "geen", indexPct: "" }
+  ,{ id: "b5", persoon: "A", code: "zorgtoeslag", naam: "Zorgtoeslag", soort: "toeslag", bruto: "", netto: 120, freq: "maand", eersteMaand: 1, start: "", einde: "", index: "geen", indexPct: "" }
 ];
 S.werkJaren = { A: { 2027: false }, B: {} };
 S.aanv = { naam: "Inkomensaanvulling", maand: 1500, opnameVanaf: "2027-01-01", totType: "aow", totPersoon: "A", einde: "", bron: "beleggen", startsaldo: "", rendement: 3, kosten: 0, opnameAan: true, mutaties: [{ id: "m1", datum: "2027-06-01", bedrag: 5000 }] };

@@ -31,7 +31,9 @@ const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undef
   await page.check(`${dlg}[data-woning="huur"]`); await volgende();
   await volgende(); ok("auto-aantal is verplicht", /aantal eigen auto/.test(await tekst()));
   await page.selectOption(`${dlg}[data-veld="auto-eigen"]`, "0"); await page.selectOption(`${dlg}[data-veld="auto-lease"]`, "0"); await volgende();
-  await v("kinderen", "1"); await page.check(`${dlg}input[type=checkbox] >> nth=0`); await volgende(); // kinderopvang
+  await v("kinderen", "1");
+  await volgende(); ok("geboortedatum kind is verplicht", /geboortedatum van kind 1/.test(await tekst()));
+  await v("kind-geboorte1", "10-03-2018"); await page.check(`${dlg}[data-kind="1"] input[type=checkbox] >> nth=0`); await volgende(); // kinderopvang
   await volgende();
   ok("buffer is verplicht", /minimale buffer/i.test(await tekst()));
   await v("minimum", "12.500"); await volgende();
@@ -45,7 +47,7 @@ const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undef
   await page.click('[data-menu="inkomen"]'); await page.waitForSelector("[role=dialog]");
   // Inkomen: huurtoeslag aanwezig voor Man 1, niet voor Man 2; loon voor Man 1
   const opties = await page.locator(`${dlg}[data-veld="bron-soort-kies"] option`).allTextContents();
-  ok("huurtoeslag en kinderbijslag worden aangeboden", opties.some(o => /Huurtoeslag/.test(o)) && opties.some(o => /Kinderbijslag/.test(o)) && opties.some(o => /Kinderopvangtoeslag/.test(o)), opties.join("|"));
+  ok("huurtoeslag en kinderbijslag worden aangeboden", opties.some(o => /Huurtoeslag/.test(o)) && !opties.some(o => /Kinderbijslag/.test(o)) && opties.some(o => /Kinderopvangtoeslag/.test(o)), opties.join("|"));
   await page.selectOption(`${dlg}[data-veld="bron-soort-kies"]`, "loon"); await page.click(`${dlg}[data-knop="voeg-bron"]`);
   await v("bron-bruto", "4000"); await v("bron-netto", "2900");
   await page.selectOption(`${dlg}[data-veld="bron-soort-kies"]`, "huurtoeslag"); await page.click(`${dlg}[data-knop="voeg-bron"]`);
@@ -56,6 +58,7 @@ const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undef
   await page.click('[data-knop="intake-overslaan"]'); // overslaan Man 2
   await page.waitForSelector(`${dlg}[data-intake-stap="werken"]`).catch(() => {});
   if (await page.locator("[role=dialog]").count()) { while (await page.locator("[role=dialog]").count()) { await page.click('[data-knop="intake-volgende"]'); await page.waitForTimeout(100); } }
+  ok("kinderbijslag wordt automatisch berekend (6 tot 11 jaar: € 362)", /Kinderbijslag \(automatisch\)/.test(await page.textContent("main")) && /€ 362/.test(await page.textContent("main")));
   ok("Inkomen toont netto inkomen en toeslag", /€ 2\.900/.test(await page.textContent("main")) && /€ 150/.test(await page.textContent("main")));
   // Lasten: huurlasten, geen koop- of autolasten
   await page.click('[data-knop="menu"]'); await page.click('[data-menu="lasten"]'); await page.waitForSelector("[role=dialog]");

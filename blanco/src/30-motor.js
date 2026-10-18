@@ -124,6 +124,41 @@ function potSaldoOp(m, pot, d) {
   return iT === 0 ? pl.kapitaalStart - pl.maand * t : Math.max(0, pl.kapitaalStart * f - pl.maand * (f - 1) / iT);
 }
 
+/* ---------- Kinderbijslag (SVB): per kind, per kwartaal, achteraf betaald ---------- */
+function kwartaalStart(d) { return new Date(d.getFullYear(), Math.floor(d.getMonth() / 3) * 3, 1); }
+function kwartaalEind(d) { var q = kwartaalStart(d); return new Date(q.getFullYear(), q.getMonth() + 3, 0); }
+// Bedrag voor het kwartaal dat op qStart begint: stopt als het kind op de eerste dag 18 is; leeftijdsgroep naar de leeftijd aan het einde van het kwartaal.
+function kinderbijslagKwartaal(m, geboorte, qStart) {
+  var g = geldigeDatum(geboorte); if (!g) return 0;
+  var qEind = kwartaalEind(qStart);
+  if (g > qEind) return 0;
+  if (leeftijdJaren(g, qStart) >= 18) return 0;
+  var a = leeftijdJaren(g, qEind), f = fx(m, qEind);
+  return getal(a >= 12 ? f.kinderbijslag_12_17 : a >= 6 ? f.kinderbijslag_6_11 : f.kinderbijslag_0_5);
+}
+function kinderbijslagMaand(m, d, kas) {
+  var kids = (m.profiel.kids || []), L = lijstL(m.profiel);
+  if (!L.kbAuto) return 0;
+  var kb = 0;
+  kids.forEach(function (k) {
+    if (kas) { if (d.getMonth() % 3 === 0) kb += kinderbijslagKwartaal(m, k.geboorte, new Date(d.getFullYear(), d.getMonth() - 3, 1)); }
+    else kb += kinderbijslagKwartaal(m, k.geboorte, kwartaalStart(d)) / 3;
+  });
+  return kb;
+}
+// Laatste kwartaal met kinderbijslag voor dit kind (einddatum van dat kwartaal).
+function kinderbijslagLaatsteKwartaalEind(geboorte) {
+  var g = geldigeDatum(geboorte); if (!g) return null;
+  var d18 = plusJaren(g, 18), q = kwartaalStart(d18);
+  if (d18.getTime() === q.getTime()) q = new Date(q.getFullYear(), q.getMonth() - 3, 1);
+  return kwartaalEind(q);
+}
+// Einde voortgezet onderwijs-start: kinderopvang (BSO) loopt tot ongeveer 1 augustus van het jaar waarin het kind naar de middelbare school gaat.
+function bsoEindeDatum(geboorte) {
+  var g = geldigeDatum(geboorte); if (!g) return null;
+  return new Date(g.getFullYear() + 12 + (g.getMonth() >= 9 ? 1 : 0), 7, 1);
+}
+
 /* ---------- Inkomen per persoon en huishouden ---------- */
 function bronBedrag(m, b, d) {
   var wijzig = geldigeDatum(b.wijzigDatum);
@@ -162,6 +197,10 @@ function persoonMaand(m, pid, d, kas) {
     }
     lijst.push({ naam: b.naam || SOORT_NAAM[b.soort], soort: b.soort, bruto: v.bruto, netto: v.netto });
   });
+  if (pid === "A") {
+    var kbm = kinderbijslagMaand(m, d, kas);
+    if (kbm > 0) { lijst.push({ naam: "Kinderbijslag (automatisch)", soort: "toeslag", bruto: kbm, netto: kbm, vrij: true }); vrijNetto += kbm; }
+  }
   if (na) lijst.push({ naam: "AOW", soort: "aow", bruto: aowBrutoMaand(m, d), netto: null });
   m.potten.forEach(function (pt) {
     if (pt.persoon !== pid) return;

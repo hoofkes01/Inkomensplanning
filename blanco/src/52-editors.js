@@ -98,14 +98,46 @@ function AutoVelden() {
     h(Uitleg, null, "Kies 'Geen' bij beide als je geen auto hebt. Per auto vraagt de app later naar verzekering, belasting, brandstof en onderhoud (eigen auto) of de leasetermijn (leaseauto)."));
 }
 function GezinVelden() {
-  var c = useC(), l = c.S.profiel.leef || {};
-  function z(patch) { c.zetPad("profiel", ["leef"], Object.assign({}, l, patch)); }
+  var c = useC(), p = c.S.profiel, l = p.leef || {}, kids = p.kids || [];
+  function zetKids(nieuw) {
+    var patch = { kids: nieuw, leef: Object.assign({}, l, { kinderen: nieuw.length, opvang: nieuw.some(function (k) { return k.opvang; }), studerend: nieuw.some(function (k) { return k.studerend; }) }) };
+    c.zet("profiel", patch);
+  }
+  function zetAantal(n) {
+    n = Math.max(0, Math.min(12, Math.round(getal(n))));
+    var nieuw = kids.slice(0, n);
+    while (nieuw.length < n) nieuw.push({ id: nieuwId(), geboorte: "", opvang: false, studerend: false });
+    zetKids(nieuw);
+  }
+  function wijzigKind(id, patch) { zetKids(kids.map(function (k) { return k.id === id ? Object.assign({}, k, patch) : k; })); }
   return h("div", null,
-    h(BedragVeld, { label: "Aantal kinderen dat (deels) van je afhankelijk is", hint: "0 als er geen zijn. Kinderen die thuis wonen of voor wie je betaalt.", value: l.kinderen, onChange: function (v) { z({ kinderen: Math.max(0, Math.round(getal(v))) }); }, naam: "kinderen", max: 15 }),
-    getal(l.kinderen) > 0 ? h("div", null,
-      h(Vink, { label: "Kinderopvang of buitenschoolse opvang", value: !!l.opvang, onChange: function (v) { z({ opvang: v }); } }),
-      h(Vink, { label: "Een of meer kinderen studeren", value: !!l.studerend, onChange: function (v) { z({ studerend: v }); } })) : null,
-    h(Vink, { label: "We hebben een huisdier", value: !!l.huisdier, onChange: function (v) { z({ huisdier: v }); } }));
+    h(BedragVeld, { label: "Aantal kinderen dat (deels) van je afhankelijk is", hint: "0 als er geen zijn. De geboortedatum van elk kind bepaalt de kinderbijslag en de duur van de kinderopvang. Alleen de datum, geen naam.", value: kids.length, onChange: zetAantal, naam: "kinderen", max: 12 }),
+    kids.map(function (k, i) {
+      return h("div", { key: k.id, className: "kaart", style: { background: "#f8fafc" }, "data-kind": i + 1 },
+        h("b", null, "Kind " + (i + 1)),
+        h(DatumVeld, { label: "Geboortedatum kind " + (i + 1), value: k.geboorte, onChange: function (v) { wijzigKind(k.id, { geboorte: v }); }, naam: "kind-geboorte" + (i + 1) }),
+        h(Vink, { label: "Dit kind gaat naar kinderopvang of buitenschoolse opvang", value: !!k.opvang, onChange: function (v) { wijzigKind(k.id, { opvang: v }); } }),
+        h(Vink, { label: "Dit kind studeert", value: !!k.studerend, onChange: function (v) { wijzigKind(k.id, { studerend: v }); } }));
+    }),
+    kids.length ? h(Vink, { label: "Kinderbijslag automatisch berekenen", hint: "De app rekent per kind met de bedragen van de SVB en stopt het kwartaal waarin je kind 18 wordt. Vink uit als je het bedrag zelf wilt invullen.", value: p.kinderbijslagAuto !== false, onChange: function (v) { c.zet("profiel", { kinderbijslagAuto: v }); } }) : null,
+    h(Vink, { label: "We hebben een huisdier", value: !!l.huisdier, onChange: function (v) { c.zetPad("profiel", ["leef"], Object.assign({}, l, { huisdier: v })); } }));
+}
+function foutenKinderen(c) {
+  var uit = [], nu = c.m.nu;
+  (c.S.profiel.kids || []).forEach(function (k, i) {
+    var d = geldigeDatum(k.geboorte);
+    if (!d) uit.push("Vul de geboortedatum van kind " + (i + 1) + " in.");
+    else if (d > nu) uit.push("De geboortedatum van kind " + (i + 1) + " ligt in de toekomst.");
+    else if (leeftijdJaren(d, nu) > 30) uit.push("Controleer de geboortedatum van kind " + (i + 1) + ".");
+  });
+  return uit;
+}
+function kindEindDefaults(m) {
+  var kids = (m.profiel.kids || []), max = function (arr) { var r = null; arr.forEach(function (d) { if (d && (!r || d > r)) r = d; }); return r; };
+  return {
+    opvang: max(kids.filter(function (k) { return k.opvang; }).map(function (k) { return bsoEindeDatum(k.geboorte); })),
+    kgb: max(kids.map(function (k) { var g = geldigeDatum(k.geboorte); return g ? plusJaren(g, 18) : null; }))
+  };
 }
 // Welke onderdelen wil je gebruiken? Niet gekozen onderdelen verdwijnen uit beeld en zijn later toe te voegen.
 function ProductenVelden() {
@@ -159,9 +191,10 @@ function foutenAlgemeen(c) {
 }
 
 /* ----- Inkomensbronnen: vaste omschrijvingen ----- */
-function nieuweBron(pid, cat) {
-  var vrij = cat.soort === "toeslag";
-  return { id: nieuwId(), persoon: pid, code: cat.code, naam: cat.code === "overig" ? "" : cat.label, soort: cat.soort, bruto: "", netto: "", freq: cat.freq, eersteMaand: 1, start: "", einde: "", werktijd: 100, index: vrij ? "geen" : "cpi", indexPct: "", wijzigDatum: "", wijzigBruto: "", wijzigNetto: "" };
+function nieuweBron(pid, cat, m) {
+  var vrij = cat.soort === "toeslag", def = m ? kindEindDefaults(m) : {};
+  var einde = cat.code === "kopvang" && def.opvang ? isoDatum(def.opvang) : cat.code === "kgb" && def.kgb ? isoDatum(def.kgb) : "";
+  return { id: nieuwId(), persoon: pid, code: cat.code, naam: cat.code === "overig" ? "" : cat.label, soort: cat.soort, bruto: "", netto: "", freq: cat.freq, eersteMaand: 1, start: "", einde: einde, werktijd: 100, index: vrij ? "geen" : "cpi", indexPct: "", wijzigDatum: "", wijzigBruto: "", wijzigNetto: "" };
 }
 function foutenBron(b) {
   var n = b.naam || "Inkomen";
@@ -217,7 +250,7 @@ function BronnenEditor(p) {
     }),
     h("div", { className: "rij" },
       h("div", { style: { flex: 1, minWidth: "12rem" } }, h(KeuzeVeld, { label: "Inkomen toevoegen", value: gekozen, opties: [["", "Kies een soort inkomen"]].concat(keuzes.map(function (k) { return [k.code, k.label]; })), onChange: setGekozen, naam: "bron-soort-kies" })),
-      h(Knop, { soort: "sec", disabled: !gekozen, onClick: function () { var cat = bronCat(gekozen); if (cat) { L.voeg(nieuweBron(p.persoon, cat)); setGekozen(""); } }, naam: "voeg-bron" }, "+ Toevoegen")));
+      h(Knop, { soort: "sec", disabled: !gekozen, onClick: function () { var cat = bronCat(gekozen); if (cat) { L.voeg(nieuweBron(p.persoon, cat, m)); setGekozen(""); } }, naam: "voeg-bron" }, "+ Toevoegen")));
 }
 function WerkJarenTabel() {
   var c = useC(), m = c.m;
@@ -302,7 +335,8 @@ function HypotheekForm() {
 var FREQ_KEUZES = [["maand", "Per maand"], ["kwartaal", "Per kwartaal"], ["halfjaar", "Per half jaar"], ["jaar", "Per jaar"]];
 function nieuweLast(cat, pid, m, auto) {
   var naam = cat.code === "overig" ? "" : cat.label + (pid && m && m.personen.length > 1 ? " (" + persoonVan(m, pid).naam + ")" : "") + (auto && auto.toon ? " (" + auto.naam + ")" : "");
-  return { id: nieuwId(), code: cat.code, persoon: pid || "", autoId: auto ? auto.id : "", naam: naam, bedrag: "", freq: cat.freq || "maand", eersteMaand: 1, index: cat.index || "cpi", indexPct: "", start: "", einde: "" };
+  var einde = cat.code === "kinderopvang" && m && kindEindDefaults(m).opvang ? isoDatum(kindEindDefaults(m).opvang) : "";
+  return { id: nieuwId(), code: cat.code, persoon: pid || "", autoId: auto ? auto.id : "", naam: naam, bedrag: "", freq: cat.freq || "maand", eersteMaand: 1, index: cat.index || "cpi", indexPct: "", start: "", einde: einde };
 }
 function foutenLast(b) {
   var n = b.naam || "Post";

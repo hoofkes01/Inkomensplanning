@@ -99,3 +99,18 @@ const PR = c.adviesParams(mR);
 ok("vergelijkingsrente = hoogste eigen rente (deposito 3,2% of spaar 2%)", Math.abs(PR.ref - Math.max(2, ...S.verm.deposito.map(d => Number(d.rente) || 0))) < 1e-9, PR.ref + " " + PR.refBron);
 S.advies.refOverride = 4.5;
 ok("handmatige vergelijkingsrente gaat voor", c.adviesParams(c.maakModel(S, c.geldigeDatum("2026-10-18"))).ref === 4.5);
+
+// Kinderbijslag per kind per kwartaal (SVB), achteraf betaald, stopt op 18
+const SK = JSON.parse(JSON.stringify(S));
+SK.bronnen = []; SK.profiel.gebruik.aanvulling = false;
+SK.profiel.kids = [{ id: "a", geboorte: "2018-03-10", opvang: false, studerend: false }, { id: "b", geboorte: "2008-05-15", opvang: false, studerend: false }];
+const mK = c.maakModel(SK, c.geldigeDatum("2026-10-18"));
+const kb = (d, kas) => Math.round(c.persoonMaand(mK, "A", c.geldigeDatum(d), kas).netto * 100) / 100;
+ok("kinderbijslag januari 2027 (kas): kind 8 jaar = 362,35, kind 18 = 0", kb("2027-01-01", true) === 362.35, kb("2027-01-01", true));
+ok("kinderbijslag februari (kas): geen betaling", kb("2027-02-01", true) === 0);
+ok("kinderbijslag juli 2026 (kas): kind van 17 krijgt het kwartaal nog (12-17), 18e verjaardag 15-5-2026 -> eerste dag Q3 is 18", kb("2026-07-01", true) === Math.round((362.35 + 426.29) * 100) / 100, kb("2026-07-01", true));
+ok("kinderbijslag gemiddeld per maand (kind 8): 362,35/3", Math.abs(kb("2027-02-01", false) - 362.35 / 3) < 0.01, kb("2027-02-01", false));
+ok("laatste kwartaal kind geboren 15-05-2008 eindigt 30-06-2026", c.fmtDatum(c.kinderbijslagLaatsteKwartaalEind("2008-05-15")) === "30-06-2026", c.fmtDatum(c.kinderbijslagLaatsteKwartaalEind("2008-05-15")));
+ok("BSO-einde kind geboren 10-03-2018: 1-8-2030", c.fmtDatum(c.bsoEindeDatum("2018-03-10")) === "01-08-2030", c.fmtDatum(c.bsoEindeDatum("2018-03-10")));
+SK.profiel.kinderbijslagAuto = false;
+ok("kinderbijslag uit: niets automatisch", c.persoonMaand(c.maakModel(SK, c.geldigeDatum("2026-10-18")), "A", c.geldigeDatum("2027-01-01"), true).netto === 0);

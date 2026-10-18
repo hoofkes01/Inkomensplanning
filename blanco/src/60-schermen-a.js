@@ -86,6 +86,12 @@ function SchermInkomen() {
         pm.lijst.length ? h("div", { style: { marginTop: ".6rem" } }, h("h4", null, "Nu per maand"), pm.kortingBij ? h("p", { className: "klein" }, "Heffingskorting is automatisch toegepast op je hoogste inkomen: " + pm.kortingBij + ".") : null,
           h(Tabel, { kop: ["Bron", "Bruto", "Netto"], get: [1, 2], rijen: pm.lijst.map(function (x) { return [x.naam, eur(x.bruto), eur(x.netto)]; }).concat([{ klasse: "totaal", cellen: ["Totaal", eur(pm.bruto), eur(pm.netto)] }]) })) : null);
     }),
+    (lijstL(m.profiel).kbAuto) ? h(Kaart, { titel: "Kinderbijslag (automatisch)" },
+      h(Tabel, { kop: ["Kind", "Leeftijd", "Per kwartaal", "Laatste kwartaal"], get: [1, 2], rijen: (m.profiel.kids || []).map(function (k, i) {
+        var g = geldigeDatum(k.geboorte), l = kinderbijslagLaatsteKwartaalEind(k.geboorte);
+        return ["Kind " + (i + 1), g ? leeftijdJaren(g, m.peil) + " jaar" : "–", eur(kinderbijslagKwartaal(m, k.geboorte, kwartaalStart(m.peil))), l ? fmtMaand(l) : "–"];
+      }) }),
+      h("p", { className: "klein" }, "Bedragen van de SVB per kind per kwartaal; ze worden achteraf betaald (januari, april, juli en oktober). Het bedrag stijgt in het kwartaal waarin je kind 6 en 12 wordt en stopt als je kind op de eerste dag van een kwartaal 18 is. Voor 2027 en later houdt de app de bedragen van nu aan met jaarlijkse indexatie.")) : null,
     m.bronnen.some(function (b) { return b.soort === "loon"; }) ? h(Kaart, { titel: "Werken of stoppen per jaar" }, h(WerkJarenTabel, null)) : null,
     h(Kaart, { titel: "AOW" }, h(AowKaart, null)),
     h(Kaart, { titel: "Parameters" }, h("p", { className: "klein" }, "Indexatie per bron stel je hierboven in. Het CPI-percentage (nu " + pct(m.inst.cpi, 1) + ") wordt bijgehouden via 'Cijfers bijwerken' op het Dashboard. Inkomen wordt per 1 januari geïndexeerd; vaste lasten per maand."),

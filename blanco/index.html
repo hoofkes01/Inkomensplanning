@@ -410,7 +410,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 })();
 </script>
 <script>
-var APP_VERSIE = "18-10-2026 · 18:23";
+var APP_VERSIE = "18-10-2026 · 18:27";
 /* ===== Basis: hulpfuncties, opslag, invoervelden ===== */
 var h = React.createElement;
 var useState = React.useState, useEffect = React.useEffect, useMemo = React.useMemo, useRef = React.useRef, useContext = React.useContext;
@@ -764,6 +764,7 @@ var FISCAAL_PER_JAAR = {
       max_jaaruitkering_tijdelijke_lijfrente_5_20jr: 27192,
       aow_bruto_gehuwd_pm: 1139.39, aow_vakantiegeld_gehuwd_pm: 74.85,
       aow_bruto_alleen_pm: 1662.16, aow_vakantiegeld_alleen_pm: 104.78,
+      kinderbijslag_0_5: 298.40, kinderbijslag_6_11: 362.35, kinderbijslag_12_17: 426.29,
       box3_tarief: 36, box3_vrij_pp: 59357, box3_sparen_pct: 1.28, box3_beleggen_pct: 6.00, box3_schuld_pct: 2.70
     }
   },
@@ -782,6 +783,7 @@ var FISCAAL_PER_JAAR = {
       max_jaaruitkering_tijdelijke_lijfrente_5_20jr: 27192,
       aow_bruto_gehuwd_pm: 1139.39, aow_vakantiegeld_gehuwd_pm: 74.85,
       aow_bruto_alleen_pm: 1662.16, aow_vakantiegeld_alleen_pm: 104.78,
+      kinderbijslag_0_5: 298.40, kinderbijslag_6_11: 362.35, kinderbijslag_12_17: 426.29,
       box3_tarief: 36, box3_vrij_pp: 59357, box3_sparen_pct: 1.28, box3_beleggen_pct: 6.00, box3_schuld_pct: 2.70
     }
   }
@@ -792,7 +794,7 @@ var FISCAAL_LAATSTE_JAAR = FISCAAL_JAREN[FISCAAL_JAREN.length - 1];
 // percentage; andere jaren gebruiken de eigen aanname (instelling 'indexSchijven').
 var FISCAAL_INDEXATIE_BIJZONDER = { 2028: { pct: 0.3, toelichting: "beperkte correctie, aanname circa 0,3%" } };
 var FISCAAL_BEDRAGVELDEN = ["schijf1_max", "schijf2_max", "algemene_heffingskorting_max", "ahk_afbouwgrens", "ouderenkorting_max", "ouderenkorting_afbouwgrens", "ahk_na_aow_max", "arbeidskorting_max", "arbeidskorting_afbouwgrens", "zvw_max_bijdrage_inkomen", "max_jaaruitkering_tijdelijke_lijfrente_5_20jr", "box3_vrij_pp"];
-var FISCAAL_AOWVELDEN = ["aow_bruto_gehuwd_pm", "aow_vakantiegeld_gehuwd_pm", "aow_bruto_alleen_pm", "aow_vakantiegeld_alleen_pm"];
+var FISCAAL_AOWVELDEN = ["aow_bruto_gehuwd_pm", "aow_vakantiegeld_gehuwd_pm", "aow_bruto_alleen_pm", "aow_vakantiegeld_alleen_pm", "kinderbijslag_0_5", "kinderbijslag_6_11", "kinderbijslag_12_17"];
 var FISCAAL_LABELS = {
   schijf1_max: ["Einde eerste schijf (€ per jaar)", "b"], schijf2_max: ["Einde tweede schijf (€ per jaar)", "b"],
   tarief1: ["Tarief eerste schijf voor AOW (%)", "p"], tarief1_aow: ["Tarief eerste schijf vanaf AOW (%)", "p"], tarief2: ["Tarief tweede schijf (%)", "p"], tarief3: ["Tarief derde schijf (%)", "p"],
@@ -804,6 +806,7 @@ var FISCAAL_LABELS = {
   max_jaaruitkering_tijdelijke_lijfrente_5_20jr: ["Maximale jaaruitkering tijdelijke lijfrente (5 tot 20 jaar)", "b"],
   aow_bruto_gehuwd_pm: ["AOW bruto per maand, per persoon (met partner)", "b"], aow_vakantiegeld_gehuwd_pm: ["AOW-vakantiegeld per maand, per persoon (met partner)", "b"],
   aow_bruto_alleen_pm: ["AOW bruto per maand (alleenstaand)", "b"], aow_vakantiegeld_alleen_pm: ["AOW-vakantiegeld per maand (alleenstaand)", "b"],
+  kinderbijslag_0_5: ["Kinderbijslag per kwartaal, kind van 0 tot en met 5 jaar", "b"], kinderbijslag_6_11: ["Kinderbijslag per kwartaal, kind van 6 tot en met 11 jaar", "b"], kinderbijslag_12_17: ["Kinderbijslag per kwartaal, kind van 12 tot en met 17 jaar", "b"],
   box3_tarief: ["Box 3: tarief (%)", "p"], box3_vrij_pp: ["Box 3: heffingsvrij vermogen per persoon", "b"], box3_sparen_pct: ["Box 3: fictief rendement sparen (%)", "p"], box3_beleggen_pct: ["Box 3: fictief rendement beleggen (%)", "p"], box3_schuld_pct: ["Box 3: rente op schulden (%)", "p"]
 };
 
@@ -959,7 +962,7 @@ function actieveMenus(profiel) {
 var STANDAARD = {
   profiel: {
     type: "", partner: false, fiscalePartners: true, naamA: "Persoon A", naamB: "Persoon B", geboorteA: "", geboorteB: "", aowA: "", aowB: "", peildatum: "", akkoordAnoniem: false,
-    werk: { A: [], B: [] },
+    werk: { A: [], B: [] }, kids: [], kinderbijslagAuto: true,
     leef: { woning: "", woningGeen: "", woz: "", auto: "", eigen: "", lease: "", deel: false, kinderen: 0, opvang: false, studerend: false, huisdier: false },
     gebruik: { hypotheek: false, deposito: false, beleggen: false, aanvulling: false, pensioen: false }
   },
@@ -1010,7 +1013,7 @@ var BRON_CAT = [
   { code: "zorgtoeslag", label: "Zorgtoeslag", soort: "toeslag", freq: "maand", wanneer: function () { return true; } },
   { code: "kgb", label: "Kindgebonden budget", soort: "toeslag", freq: "maand", wanneer: function (L) { return L.kinderen > 0; } },
   { code: "kopvang", label: "Kinderopvangtoeslag", soort: "toeslag", freq: "maand", wanneer: function (L) { return L.kinderen > 0 && L.opvang; } },
-  { code: "kinderbijslag", label: "Kinderbijslag", soort: "toeslag", freq: "kwartaal", wanneer: function (L) { return L.kinderen > 0; } },
+  { code: "kinderbijslag", label: "Kinderbijslag", soort: "toeslag", freq: "kwartaal", wanneer: function (L) { return L.kinderen > 0 && !L.kbAuto; } },
   { code: "kinderalim_ontv", label: "Kinderalimentatie (ontvangen)", soort: "toeslag", freq: "maand", wanneer: function (L) { return L.kinderen > 0; } },
   { code: "partneralim_ontv", label: "Partneralimentatie (ontvangen, belast)", soort: "overig", freq: "maand", wanneer: function () { return true; } },
   { code: "verhuur", label: "Huurinkomsten uit verhuur", soort: "overig", freq: "maand", wanneer: function () { return true; } },
@@ -1082,7 +1085,12 @@ function aantalAutos(l, soort) {
 function lijstL(profiel) {
   var l = profiel.leef || {};
   var eigen = aantalAutos(l, "eigen"), lease = aantalAutos(l, "lease");
-  return { woning: l.woning, eigen: eigen, lease: lease, auto: eigen + lease > 0, deel: !!l.deel, geenAuto: eigen + lease === 0, kinderen: Number(l.kinderen) || 0, opvang: !!l.opvang, studerend: !!l.studerend, huisdier: !!l.huisdier, partner: !!profiel.partner };
+  var kids = (profiel.kids || []).filter(function (k) { return k; });
+  var n = kids.length ? kids.length : (Number(l.kinderen) || 0);
+  return { woning: l.woning, eigen: eigen, lease: lease, auto: eigen + lease > 0, deel: !!l.deel, geenAuto: eigen + lease === 0, kinderen: n,
+    opvang: kids.length ? kids.some(function (k) { return k.opvang; }) : !!l.opvang, studerend: kids.length ? kids.some(function (k) { return k.studerend; }) : !!l.studerend,
+    kbAuto: profiel.kinderbijslagAuto !== false && kids.some(function (k) { return !!geldigeDatum(k.geboorte); }),
+    huisdier: !!l.huisdier, partner: !!profiel.partner };
 }
 // De auto's van het huishouden, elk met een eigen id en naam (voor lasten per auto).
 function autosVan(L) {
@@ -1222,6 +1230,41 @@ function potSaldoOp(m, pot, d) {
   return iT === 0 ? pl.kapitaalStart - pl.maand * t : Math.max(0, pl.kapitaalStart * f - pl.maand * (f - 1) / iT);
 }
 
+/* ---------- Kinderbijslag (SVB): per kind, per kwartaal, achteraf betaald ---------- */
+function kwartaalStart(d) { return new Date(d.getFullYear(), Math.floor(d.getMonth() / 3) * 3, 1); }
+function kwartaalEind(d) { var q = kwartaalStart(d); return new Date(q.getFullYear(), q.getMonth() + 3, 0); }
+// Bedrag voor het kwartaal dat op qStart begint: stopt als het kind op de eerste dag 18 is; leeftijdsgroep naar de leeftijd aan het einde van het kwartaal.
+function kinderbijslagKwartaal(m, geboorte, qStart) {
+  var g = geldigeDatum(geboorte); if (!g) return 0;
+  var qEind = kwartaalEind(qStart);
+  if (g > qEind) return 0;
+  if (leeftijdJaren(g, qStart) >= 18) return 0;
+  var a = leeftijdJaren(g, qEind), f = fx(m, qEind);
+  return getal(a >= 12 ? f.kinderbijslag_12_17 : a >= 6 ? f.kinderbijslag_6_11 : f.kinderbijslag_0_5);
+}
+function kinderbijslagMaand(m, d, kas) {
+  var kids = (m.profiel.kids || []), L = lijstL(m.profiel);
+  if (!L.kbAuto) return 0;
+  var kb = 0;
+  kids.forEach(function (k) {
+    if (kas) { if (d.getMonth() % 3 === 0) kb += kinderbijslagKwartaal(m, k.geboorte, new Date(d.getFullYear(), d.getMonth() - 3, 1)); }
+    else kb += kinderbijslagKwartaal(m, k.geboorte, kwartaalStart(d)) / 3;
+  });
+  return kb;
+}
+// Laatste kwartaal met kinderbijslag voor dit kind (einddatum van dat kwartaal).
+function kinderbijslagLaatsteKwartaalEind(geboorte) {
+  var g = geldigeDatum(geboorte); if (!g) return null;
+  var d18 = plusJaren(g, 18), q = kwartaalStart(d18);
+  if (d18.getTime() === q.getTime()) q = new Date(q.getFullYear(), q.getMonth() - 3, 1);
+  return kwartaalEind(q);
+}
+// Einde voortgezet onderwijs-start: kinderopvang (BSO) loopt tot ongeveer 1 augustus van het jaar waarin het kind naar de middelbare school gaat.
+function bsoEindeDatum(geboorte) {
+  var g = geldigeDatum(geboorte); if (!g) return null;
+  return new Date(g.getFullYear() + 12 + (g.getMonth() >= 9 ? 1 : 0), 7, 1);
+}
+
 /* ---------- Inkomen per persoon en huishouden ---------- */
 function bronBedrag(m, b, d) {
   var wijzig = geldigeDatum(b.wijzigDatum);
@@ -1260,6 +1303,10 @@ function persoonMaand(m, pid, d, kas) {
     }
     lijst.push({ naam: b.naam || SOORT_NAAM[b.soort], soort: b.soort, bruto: v.bruto, netto: v.netto });
   });
+  if (pid === "A") {
+    var kbm = kinderbijslagMaand(m, d, kas);
+    if (kbm > 0) { lijst.push({ naam: "Kinderbijslag (automatisch)", soort: "toeslag", bruto: kbm, netto: kbm, vrij: true }); vrijNetto += kbm; }
+  }
   if (na) lijst.push({ naam: "AOW", soort: "aow", bruto: aowBrutoMaand(m, d), netto: null });
   m.potten.forEach(function (pt) {
     if (pt.persoon !== pid) return;
@@ -2140,14 +2187,46 @@ function AutoVelden() {
     h(Uitleg, null, "Kies 'Geen' bij beide als je geen auto hebt. Per auto vraagt de app later naar verzekering, belasting, brandstof en onderhoud (eigen auto) of de leasetermijn (leaseauto)."));
 }
 function GezinVelden() {
-  var c = useC(), l = c.S.profiel.leef || {};
-  function z(patch) { c.zetPad("profiel", ["leef"], Object.assign({}, l, patch)); }
+  var c = useC(), p = c.S.profiel, l = p.leef || {}, kids = p.kids || [];
+  function zetKids(nieuw) {
+    var patch = { kids: nieuw, leef: Object.assign({}, l, { kinderen: nieuw.length, opvang: nieuw.some(function (k) { return k.opvang; }), studerend: nieuw.some(function (k) { return k.studerend; }) }) };
+    c.zet("profiel", patch);
+  }
+  function zetAantal(n) {
+    n = Math.max(0, Math.min(12, Math.round(getal(n))));
+    var nieuw = kids.slice(0, n);
+    while (nieuw.length < n) nieuw.push({ id: nieuwId(), geboorte: "", opvang: false, studerend: false });
+    zetKids(nieuw);
+  }
+  function wijzigKind(id, patch) { zetKids(kids.map(function (k) { return k.id === id ? Object.assign({}, k, patch) : k; })); }
   return h("div", null,
-    h(BedragVeld, { label: "Aantal kinderen dat (deels) van je afhankelijk is", hint: "0 als er geen zijn. Kinderen die thuis wonen of voor wie je betaalt.", value: l.kinderen, onChange: function (v) { z({ kinderen: Math.max(0, Math.round(getal(v))) }); }, naam: "kinderen", max: 15 }),
-    getal(l.kinderen) > 0 ? h("div", null,
-      h(Vink, { label: "Kinderopvang of buitenschoolse opvang", value: !!l.opvang, onChange: function (v) { z({ opvang: v }); } }),
-      h(Vink, { label: "Een of meer kinderen studeren", value: !!l.studerend, onChange: function (v) { z({ studerend: v }); } })) : null,
-    h(Vink, { label: "We hebben een huisdier", value: !!l.huisdier, onChange: function (v) { z({ huisdier: v }); } }));
+    h(BedragVeld, { label: "Aantal kinderen dat (deels) van je afhankelijk is", hint: "0 als er geen zijn. De geboortedatum van elk kind bepaalt de kinderbijslag en de duur van de kinderopvang. Alleen de datum, geen naam.", value: kids.length, onChange: zetAantal, naam: "kinderen", max: 12 }),
+    kids.map(function (k, i) {
+      return h("div", { key: k.id, className: "kaart", style: { background: "#f8fafc" }, "data-kind": i + 1 },
+        h("b", null, "Kind " + (i + 1)),
+        h(DatumVeld, { label: "Geboortedatum kind " + (i + 1), value: k.geboorte, onChange: function (v) { wijzigKind(k.id, { geboorte: v }); }, naam: "kind-geboorte" + (i + 1) }),
+        h(Vink, { label: "Dit kind gaat naar kinderopvang of buitenschoolse opvang", value: !!k.opvang, onChange: function (v) { wijzigKind(k.id, { opvang: v }); } }),
+        h(Vink, { label: "Dit kind studeert", value: !!k.studerend, onChange: function (v) { wijzigKind(k.id, { studerend: v }); } }));
+    }),
+    kids.length ? h(Vink, { label: "Kinderbijslag automatisch berekenen", hint: "De app rekent per kind met de bedragen van de SVB en stopt het kwartaal waarin je kind 18 wordt. Vink uit als je het bedrag zelf wilt invullen.", value: p.kinderbijslagAuto !== false, onChange: function (v) { c.zet("profiel", { kinderbijslagAuto: v }); } }) : null,
+    h(Vink, { label: "We hebben een huisdier", value: !!l.huisdier, onChange: function (v) { c.zetPad("profiel", ["leef"], Object.assign({}, l, { huisdier: v })); } }));
+}
+function foutenKinderen(c) {
+  var uit = [], nu = c.m.nu;
+  (c.S.profiel.kids || []).forEach(function (k, i) {
+    var d = geldigeDatum(k.geboorte);
+    if (!d) uit.push("Vul de geboortedatum van kind " + (i + 1) + " in.");
+    else if (d > nu) uit.push("De geboortedatum van kind " + (i + 1) + " ligt in de toekomst.");
+    else if (leeftijdJaren(d, nu) > 30) uit.push("Controleer de geboortedatum van kind " + (i + 1) + ".");
+  });
+  return uit;
+}
+function kindEindDefaults(m) {
+  var kids = (m.profiel.kids || []), max = function (arr) { var r = null; arr.forEach(function (d) { if (d && (!r || d > r)) r = d; }); return r; };
+  return {
+    opvang: max(kids.filter(function (k) { return k.opvang; }).map(function (k) { return bsoEindeDatum(k.geboorte); })),
+    kgb: max(kids.map(function (k) { var g = geldigeDatum(k.geboorte); return g ? plusJaren(g, 18) : null; }))
+  };
 }
 // Welke onderdelen wil je gebruiken? Niet gekozen onderdelen verdwijnen uit beeld en zijn later toe te voegen.
 function ProductenVelden() {
@@ -2201,9 +2280,10 @@ function foutenAlgemeen(c) {
 }
 
 /* ----- Inkomensbronnen: vaste omschrijvingen ----- */
-function nieuweBron(pid, cat) {
-  var vrij = cat.soort === "toeslag";
-  return { id: nieuwId(), persoon: pid, code: cat.code, naam: cat.code === "overig" ? "" : cat.label, soort: cat.soort, bruto: "", netto: "", freq: cat.freq, eersteMaand: 1, start: "", einde: "", werktijd: 100, index: vrij ? "geen" : "cpi", indexPct: "", wijzigDatum: "", wijzigBruto: "", wijzigNetto: "" };
+function nieuweBron(pid, cat, m) {
+  var vrij = cat.soort === "toeslag", def = m ? kindEindDefaults(m) : {};
+  var einde = cat.code === "kopvang" && def.opvang ? isoDatum(def.opvang) : cat.code === "kgb" && def.kgb ? isoDatum(def.kgb) : "";
+  return { id: nieuwId(), persoon: pid, code: cat.code, naam: cat.code === "overig" ? "" : cat.label, soort: cat.soort, bruto: "", netto: "", freq: cat.freq, eersteMaand: 1, start: "", einde: einde, werktijd: 100, index: vrij ? "geen" : "cpi", indexPct: "", wijzigDatum: "", wijzigBruto: "", wijzigNetto: "" };
 }
 function foutenBron(b) {
   var n = b.naam || "Inkomen";
@@ -2259,7 +2339,7 @@ function BronnenEditor(p) {
     }),
     h("div", { className: "rij" },
       h("div", { style: { flex: 1, minWidth: "12rem" } }, h(KeuzeVeld, { label: "Inkomen toevoegen", value: gekozen, opties: [["", "Kies een soort inkomen"]].concat(keuzes.map(function (k) { return [k.code, k.label]; })), onChange: setGekozen, naam: "bron-soort-kies" })),
-      h(Knop, { soort: "sec", disabled: !gekozen, onClick: function () { var cat = bronCat(gekozen); if (cat) { L.voeg(nieuweBron(p.persoon, cat)); setGekozen(""); } }, naam: "voeg-bron" }, "+ Toevoegen")));
+      h(Knop, { soort: "sec", disabled: !gekozen, onClick: function () { var cat = bronCat(gekozen); if (cat) { L.voeg(nieuweBron(p.persoon, cat, m)); setGekozen(""); } }, naam: "voeg-bron" }, "+ Toevoegen")));
 }
 function WerkJarenTabel() {
   var c = useC(), m = c.m;
@@ -2344,7 +2424,8 @@ function HypotheekForm() {
 var FREQ_KEUZES = [["maand", "Per maand"], ["kwartaal", "Per kwartaal"], ["halfjaar", "Per half jaar"], ["jaar", "Per jaar"]];
 function nieuweLast(cat, pid, m, auto) {
   var naam = cat.code === "overig" ? "" : cat.label + (pid && m && m.personen.length > 1 ? " (" + persoonVan(m, pid).naam + ")" : "") + (auto && auto.toon ? " (" + auto.naam + ")" : "");
-  return { id: nieuwId(), code: cat.code, persoon: pid || "", autoId: auto ? auto.id : "", naam: naam, bedrag: "", freq: cat.freq || "maand", eersteMaand: 1, index: cat.index || "cpi", indexPct: "", start: "", einde: "" };
+  var einde = cat.code === "kinderopvang" && m && kindEindDefaults(m).opvang ? isoDatum(kindEindDefaults(m).opvang) : "";
+  return { id: nieuwId(), code: cat.code, persoon: pid || "", autoId: auto ? auto.id : "", naam: naam, bedrag: "", freq: cat.freq || "maand", eersteMaand: 1, index: cat.index || "cpi", indexPct: "", start: "", einde: einde };
 }
 function foutenLast(b) {
   var n = b.naam || "Post";
@@ -2703,7 +2784,8 @@ INTAKE.dashboard = {
       valideer: function (c) { return intakeKeuze(c.S.profiel.leef.woning, "Kies je woonsituatie."); } },
     { id: "auto", titel: "Auto's", uitleg: "Eigen auto's, leaseauto's, een deelauto of geen auto geven andere lasten. Er mogen er meer dan één zijn.", render: function () { return h(AutoVelden, null); },
       valideer: function (c) { var l = c.S.profiel.leef; return leeg([(l.eigen === "" || l.eigen === undefined) ? "Kies het aantal eigen auto's (Geen mag ook)." : null, (l.lease === "" || l.lease === undefined) ? "Kies het aantal leaseauto's (Geen mag ook)." : null]); } },
-    { id: "gezin", titel: "Gezin", uitleg: "Kinderen geven recht op toeslagen en kosten. Dit bepaalt welke posten de app aanbiedt.", render: function () { return h(GezinVelden, null); } },
+    { id: "gezin", titel: "Gezin", uitleg: "Kinderen geven recht op kinderbijslag en toeslagen en brengen kosten mee. De geboortedatum van elk kind bepaalt de kinderbijslag (die stopt in het kwartaal waarin je kind 18 wordt) en hoelang kinderopvang loopt.", render: function () { return h(GezinVelden, null); },
+      valideer: function (c) { return foutenKinderen(c); } },
     { id: "buffer", titel: "Minimale buffer", uitleg: "Hoeveel spaargeld wil je altijd direct beschikbaar hebben? Dit verschilt per persoon. De app waarschuwt als je er onder komt en belegt of reserveert nooit geld dat nodig is voor de buffer.", render: function () { return h(MinimumVeld, null); },
       valideer: function (c) { var v = c.S.grote.minimum; return v === "" || v == null ? ["Vul je minimale buffer in (0 mag ook)."] : leeg([nietNeg(v, "Buffer")]); } },
     { id: "producten", titel: "Onderdelen en peildatum", uitleg: "Spaargeld heeft iedereen. Deposito's en beleggen alleen als dat bij je past; je kunt er later altijd mee beginnen.", render: function () { return h("div", null, h(ProductenVelden, null), h(PeildatumVeld, null)); },
@@ -2880,7 +2962,7 @@ var HELP_ITEMS = [
   ["Peildatum", "datum vandaag peil", "De datum waarop je bedragen gelden. Leeg laten betekent: vandaag. Handig om een eerdere stand na te rekenen."],
   ["Bruto en netto", "bruto netto salaris loon heffingskorting", "Bruto is voor belasting, netto is wat je ontvangt. Vul bij voorkeur beide in. Vul je alleen het bruto in, dan schat de app het netto met de fiscale tabel."],
   ["Heffingskorting", "heffingskorting netto korting ouderenkorting arbeidskorting", "Je hoeft niets in te vullen. De app past de heffingskorting automatisch toe op je hoogste inkomen, op basis van je leeftijd (voor of na de AOW-leeftijd), of je werkt (arbeidskorting) en de hoogte van je inkomen. Vul bij elk inkomen het netto in zoals op je specificatie staat."],
-  ["Toeslagen en kinderbijslag", "huurtoeslag zorgtoeslag kinderopvangtoeslag kindgebonden budget kinderbijslag toeslag", "Toeslagen en kinderbijslag zijn belastingvrij en tellen volledig mee als inkomen. Vul het bedrag per betaling in en hoe vaak je het ontvangt (kinderbijslag komt per kwartaal). Pas het bedrag aan zodra de Belastingdienst een nieuw bedrag doorgeeft."],
+  ["Toeslagen en kinderbijslag", "huurtoeslag zorgtoeslag kinderopvangtoeslag kindgebonden budget kinderbijslag toeslag", "Toeslagen en kinderbijslag zijn belastingvrij en tellen volledig mee als inkomen. De kinderbijslag rekent de app zelf uit met de geboortedatum van elk kind (SVB-bedragen per kwartaal, stopt in het kwartaal waarin je kind 18 wordt). Huurtoeslag, zorgtoeslag, kindgebonden budget en kinderopvangtoeslag vul je zelf in: bedrag per betaling en hoe vaak. Pas het bedrag aan zodra de Belastingdienst een nieuw bedrag doorgeeft. Bij kinderopvangtoeslag en kindgebonden budget zet de app een einddatum klaar op basis van de leeftijd van je kinderen; controleer die."],
   ["Auto's", "auto eigen lease deelauto taxi", "Je kunt meer dan één auto hebben: kies het aantal eigen auto's en leaseauto's (ook 0), en of je een deelauto of taxi gebruikt. Per auto komen de passende lasten: verzekering, belasting, onderhoud bij een eigen auto, de leasetermijn bij een leaseauto."],
   ["Huur, koop of geen woning", "woning huur koop hypotheek inwonend", "De vragen en lasten passen zich aan. Huurder: huur, servicekosten en eventueel huurtoeslag. Eigenaar: hypotheek, OZB, opstalverzekering, onderhoud en WOZ-waarde. Geen woning: een eventuele bijdrage voor woonkosten."],
   ["Hypotheek", "hypotheek rente aflossing rentevast", "Alleen bij een koopwoning. Vul openstaand bedrag, rente, maandlast en aflossing in. Na de einddatum van de aflossing rekent de app met alleen rente. De hypotheekrenteaftrek zit niet in de berekening; vul je netto inkomen in zoals je het ontvangt."],
@@ -3102,6 +3184,12 @@ function SchermInkomen() {
         pm.lijst.length ? h("div", { style: { marginTop: ".6rem" } }, h("h4", null, "Nu per maand"), pm.kortingBij ? h("p", { className: "klein" }, "Heffingskorting is automatisch toegepast op je hoogste inkomen: " + pm.kortingBij + ".") : null,
           h(Tabel, { kop: ["Bron", "Bruto", "Netto"], get: [1, 2], rijen: pm.lijst.map(function (x) { return [x.naam, eur(x.bruto), eur(x.netto)]; }).concat([{ klasse: "totaal", cellen: ["Totaal", eur(pm.bruto), eur(pm.netto)] }]) })) : null);
     }),
+    (lijstL(m.profiel).kbAuto) ? h(Kaart, { titel: "Kinderbijslag (automatisch)" },
+      h(Tabel, { kop: ["Kind", "Leeftijd", "Per kwartaal", "Laatste kwartaal"], get: [1, 2], rijen: (m.profiel.kids || []).map(function (k, i) {
+        var g = geldigeDatum(k.geboorte), l = kinderbijslagLaatsteKwartaalEind(k.geboorte);
+        return ["Kind " + (i + 1), g ? leeftijdJaren(g, m.peil) + " jaar" : "–", eur(kinderbijslagKwartaal(m, k.geboorte, kwartaalStart(m.peil))), l ? fmtMaand(l) : "–"];
+      }) }),
+      h("p", { className: "klein" }, "Bedragen van de SVB per kind per kwartaal; ze worden achteraf betaald (januari, april, juli en oktober). Het bedrag stijgt in het kwartaal waarin je kind 6 en 12 wordt en stopt als je kind op de eerste dag van een kwartaal 18 is. Voor 2027 en later houdt de app de bedragen van nu aan met jaarlijkse indexatie.")) : null,
     m.bronnen.some(function (b) { return b.soort === "loon"; }) ? h(Kaart, { titel: "Werken of stoppen per jaar" }, h(WerkJarenTabel, null)) : null,
     h(Kaart, { titel: "AOW" }, h(AowKaart, null)),
     h(Kaart, { titel: "Parameters" }, h("p", { className: "klein" }, "Indexatie per bron stel je hierboven in. Het CPI-percentage (nu " + pct(m.inst.cpi, 1) + ") wordt bijgehouden via 'Cijfers bijwerken' op het Dashboard. Inkomen wordt per 1 januari geïndexeerd; vaste lasten per maand."),
