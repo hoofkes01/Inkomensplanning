@@ -4083,7 +4083,7 @@ function nettoMarginaal(bestaandBrutoJaar, extraBrutoJaar, naAOW, datum, metExtr
   }
   const [cpiPrognose, setCpiPrognose] = useOpslag("cpiPrognose", 3);
   const [vmDetail, setVmDetail] = React.useState(null);
-  const [adviesParams, setAdviesParams] = useOpslag("adviesParams", { euribor: 3.2, euriborDatum: "2026-10-16", drempel: 15000, def: 20, neu: 30, off: 50, semisGedaald: true });
+  const [adviesParams, setAdviesParams] = useOpslag("adviesParams", { euribor: 3.2, euriborDatum: "2026-10-16", drempel: 15000, def: 20, neu: 30, off: 50, semisBehouden: true });
   const [kortDepoMeetellen, setKortDepoMeetellen] = useOpslag("kortDepoMeetellen", true);
   const [nieuweBron, setNieuweBron] = useOpslag("nieuweBronFormulier", { naam: "", persoon: "man", soort: "werk", bedrag: "", indexType: "vast", index: "", caoTot: "", start: "", eind: "" });
   function voegBronToe() {
@@ -6797,16 +6797,17 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     const perFonds = {};
     alle.forEach(x => { perFonds[x.naam] = (perFonds[x.naam] || 0) + x.waarde; });
     const grootste = Object.keys(perFonds).filter(n => !/onbekend/i.test(n)).map(n => ({ naam: n, waarde: perFonds[n] })).sort((a, c) => c.waarde - a.waarde);
-    const thema = alle.filter(x => /semiconductor|robotics|automation|banks/i.test(x.naam)).reduce((s, x) => s + x.waarde, 0);
+    const thema = alle.filter(x => /robotics|automation|banks/i.test(x.naam)).reduce((s, x) => s + x.waarde, 0);
     const semis = alle.filter(x => /semiconductor/i.test(x.naam)).reduce((s, x) => s + x.waarde, 0);
     const pct = (a, b2) => (b2 > 0 ? Math.round(a / b2 * 100) : 0);
     const waarnemingen = [];
     if (totaalNu > 0) {
       const off = pct(huidig.off, totaalNu);
       waarnemingen.push("Je vrij belegde vermogen (Hoofkes02) is " + vmEuro(totaalNu) + ", waarvan " + off + "% offensief, " + pct(huidig.neu, totaalNu) + "% neutraal en " + pct(huidig.def, totaalNu) + "% defensief (doel " + pct(doel.off, somDoel) + "/" + pct(doel.neu, somDoel) + "/" + pct(doel.def, somDoel) + "% offensief/neutraal/defensief).");
-      if (grootste[0] && grootste[0].waarde / totaalNu > 0.15) waarnemingen.push("Grootste positie: " + grootste[0].naam + " is " + pct(grootste[0].waarde, totaalNu) + "% van je vrij beleggen (" + vmEuro(grootste[0].waarde) + "). Dat is veel voor één fonds.");
-      if (semis > 0 && semis / totaalNu > 0.1) waarnemingen.push("Halfgeleiders zijn " + pct(semis, totaalNu) + "% van je vrij beleggen (" + vmEuro(semis) + ") van je vrij belegde vermogen. " + (P.semisGedaald !== false ? "De sector is de afgelopen weken flink gedaald (SOX circa −16% in 8 handelsdagen). Verkopen na zo'n daling is minder aantrekkelijk en een herstel is nog niet gezien: voeg niet bij, verkoop eerst andere offensieve posities en verlaag het gewicht (doel 10 tot 15%) gefaseerd bij herstel." : "De sector is cyclisch en hoog gewaardeerd; voeg hier niet bij en overweeg het gewicht naar 10 tot 15% terug te brengen."));
-      if (thema / totaalNu > 0.2) waarnemingen.push("Thematische fondsen (halfgeleiders, robotica, banken) vormen samen " + pct(thema, totaalNu) + "% van je vrij beleggen. Breed gespreide wereldfondsen geven meer spreiding.");
+      const grootsteNietChip = grootste.filter(g => !/semiconductor/i.test(g.naam))[0];
+      if (grootsteNietChip && grootsteNietChip.waarde / totaalNu > 0.25) waarnemingen.push("Grootste positie: " + grootsteNietChip.naam + " is " + pct(grootsteNietChip.waarde, totaalNu) + "% van je vrij beleggen (" + vmEuro(grootsteNietChip.waarde) + "). Dat is veel voor één fonds.");
+      if (semis > 0) waarnemingen.push("Chipfondsen zijn " + pct(semis, totaalNu) + "% van je vrij beleggen (" + vmEuro(semis) + ") en " + pct(semis, huidig.off) + "% van je offensieve deel. Dat is jouw bewuste keuze en valt binnen je offensieve " + pct(doel.off, somDoel) + "%. De sector schommelt sterk (SOX circa −16% in 8 handelsdagen); houd daar rekening mee.");
+      if (thema / totaalNu > 0.2) waarnemingen.push("Overige thematische fondsen (robotica, banken) vormen samen " + pct(thema, totaalNu) + "% van je vrij beleggen. Breed gespreide wereldfondsen geven meer spreiding.");
       if (huidig.def === 0) waarnemingen.push("Je hebt geen defensief deel in je beleggingen. Dat past bij een lange horizon; je spaargeld en deposito's vormen nu je buffer.");
     }
     return { P, euribor, drempel, doel, somDoel, nu, spaarNu, ruimteNu, blijvendNu, koopBasis, koop, somBeh, behoefte, maandEinden, laagsteKomend, tekortKomend, pf, delen, huidig, totaalNu, vrijWaarde, waarnemingen, pct };
@@ -6822,19 +6823,21 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     ["def", "neu", "off"].forEach(c => { gap[c] = doelBedrag(c) - A.huidig[c]; });
     const afwijking = Math.max(...["def", "neu", "off"].map(c => Math.abs(gap[c]) / totaal * 100));
     const rek = [A.delen[0]];
-    const handelOff = rek.reduce((s, d) => s + d.som.off, 0);
+    // Chipfondsen blijven staan als de gebruiker ze wil behouden (standaard): ze vallen binnen het offensieve deel.
+    const semisBehouden = (A.P || {}).semisBehouden !== false;
+    const verkoopbaar = d => d.posities.filter(x => adviesCategorie(x.naam) === "off" && !(semisBehouden && /semiconductor/i.test(x.naam)));
+    const handelOff = rek.reduce((s, d) => s + verkoopbaar(d).reduce((s2, x) => s2 + x.waarde, 0), 0);
     const verkoopTotaal = Math.max(0, -gap.off);
     const S1 = Math.min(handelOff, Math.round(verkoopTotaal / 4 / 100) * 100);
     const needDef = Math.max(0, gap.def), needNeu = Math.max(0, gap.neu);
     const neuAandeel = needDef + needNeu > 0 ? needNeu / (needDef + needNeu) : 0.5;
-    const semisGedaald = (A.P || {}).semisGedaald !== false;
-    const prio = n => (/semiconductor/i.test(n) ? (semisGedaald ? 5 : 0) : /robotics|automation|banks/i.test(n) ? 1 : /small cap/i.test(n) ? 2 : 3);
+    const prio = n => (/semiconductor/i.test(n) ? 0 : /robotics|automation|banks/i.test(n) ? 1 : /small cap/i.test(n) ? 2 : 3);
     const stap = [];
     rek.forEach(d => {
-      const deel = handelOff > 0 ? S1 * d.som.off / handelOff : 0;
+      const deel = handelOff > 0 ? S1 * verkoopbaar(d).reduce((s2, x) => s2 + x.waarde, 0) / handelOff : 0;
       let rest = deel;
       const verkoop = [];
-      d.posities.filter(x => adviesCategorie(x.naam) === "off").sort((a, b) => prio(a.naam) - prio(b.naam) || b.waarde - a.waarde).forEach(x => {
+      verkoopbaar(d).sort((a, b) => prio(a.naam) - prio(b.naam) || b.waarde - a.waarde).forEach(x => {
         if (rest <= 0) return;
         const v = Math.min(x.waarde, rest);
         if (Math.round(v / 10) * 10 > 0) verkoop.push({ naam: x.naam, bedrag: Math.round(v / 10) * 10 });
@@ -6941,7 +6944,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
             s.verkoop.map((v, j) => H("div", { key: j, className: "text-xs" }, "Verkoop " + vmEuro(v.bedrag) + " " + v.naam)),
             s.neu > 0 ? H("div", { className: "text-xs" }, "Koop " + vmEuro(s.neu) + " " + ADVIES_FONDSEN.find(f => f.cat === "neu" && f.hoofd).naam + " (ISIN " + ADVIES_FONDSEN.find(f => f.cat === "neu" && f.hoofd).isin + ")") : null,
             s.def > 0 ? H("div", { className: "text-xs" }, "Koop " + vmEuro(Math.round(s.def / 2 / 10) * 10) + " " + ADVIES_FONDSEN.find(f => f.cat === "def" && f.hoofd).naam + " (ISIN " + ADVIES_FONDSEN.find(f => f.cat === "def" && f.hoofd).isin + ") en " + vmEuro(s.def - Math.round(s.def / 2 / 10) * 10) + " " + ADVIES_FONDSEN.find(f => f.cat === "def" && !f.hoofd).naam + " (ISIN " + ADVIES_FONDSEN.find(f => f.cat === "def" && !f.hoofd).isin + ")") : null)),
-          P.semisGedaald !== false ? H("p", { className: "text-xs text-amber-800" }, "Chipfondsen zijn recent flink gedaald. Daarom verkoop ik nu eerst andere offensieve posities; het chipgewicht verlaag je later gefaseerd bij herstel.") : null,
+          P.semisBehouden !== false ? H("p", { className: "text-xs text-slate-600" }, "Chipfondsen blijven staan (jouw keuze); ze tellen mee in je offensieve deel.") : null,
           H("p", { className: "text-xs text-slate-500" }, "De volgende stappen herhaal je per kwartaal na een nieuwe controle van dit advies.")) : null,
         H("div", { className: "mt-2 font-semibold text-sm" }, "Je opties"),
         H("div", { className: "text-sm py-1 border-t border-slate-100" }, H("b", null, "Niets doen: "), "geen kosten. Bij een aandelencorrectie van 25% verlies je nu circa " + vmEuro(-plan.stressNu) + " (" + pct(-plan.stressNu, plan.totaal) + "% van de portefeuille)."),
@@ -6957,7 +6960,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
         inv("Euribor 12 maanden", euribor, v => zet("euribor", v), "%", "0.01"),
         H("p", { className: "text-xs text-slate-500" }, "Stand " + P.euriborDatum + ": 3,2% (euribor-rates.eu, global-rates.com). Pas aan als het verandert."),
         inv("Drempel direct opneembaar spaargeld", drempel, v => zet("drempel", v), "€"),
-        H("label", { className: "flex items-center gap-2 text-sm py-1.5" }, H("input", { type: "checkbox", checked: P.semisGedaald !== false, onChange: e => zet("semisGedaald", e.target.checked) }), "Chipfondsen zijn recent flink gedaald (niet eerst verkopen)"),
+        H("label", { className: "flex items-center gap-2 text-sm py-1.5" }, H("input", { type: "checkbox", checked: P.semisBehouden !== false, onChange: e => zet("semisBehouden", e.target.checked) }), "Chipfondsen behouden (niet verkopen)"),
         H("div", { className: "text-xs uppercase tracking-wide text-slate-500 mt-3 mb-1" }, "Doelverdeling vrij beleggen (in %)"),
         inv("Defensief", P.def, v => zet("def", v), "%"), inv("Neutraal", P.neu, v => zet("neu", v), "%"), inv("Offensief", P.off, v => zet("off", v), "%"),
         somDoel !== 100 ? H("p", { className: "text-xs text-amber-700" }, "Let op: de percentages tellen op tot " + somDoel + "%. De app rekent ze om naar 100%.") : null),
@@ -8162,7 +8165,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     className: "font-mono text-xs uppercase tracking-widest bg-slate-700/60 border border-slate-500 rounded-full px-3 py-1"
   }, "peildatum ", fmtDate(PEILDATUM)), /*#__PURE__*/React.createElement("span", {
     className: "w-full text-xs text-slate-400 no-print"
-  }, "App-versie ", "18-10-2026 · 13:30")), /*#__PURE__*/React.createElement("p", {
+  }, "App-versie ", "18-10-2026 · 14:00")), /*#__PURE__*/React.createElement("p", {
     className: "mt-2 text-slate-300 text-sm max-w-2xl"
   }, "Bedragen zijn nominaal per peildatum, tenzij een indexatiepercentage is ingevuld. Alle basisbedragen zijn zelf aanpasbaar bij \"Basisgegevens\"." + (actieveTab === "fiscaliteit" ? " Alle aannames staan onderaan bij \"Aannames & beperkingen\". Bij het openen checkt dit bestand automatisch vier fiscale kerncijfers (zie bovenaan) — bij een afwijking wordt er niets automatisch aangepast, dat blijft een bewuste stap." : "")), /*#__PURE__*/React.createElement("div", {
     className: "mt-4 flex flex-wrap gap-2 items-center no-print"
