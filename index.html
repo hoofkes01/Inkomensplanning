@@ -6564,19 +6564,20 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
 
   // ===== Beleggingsadvies =====
   // Gecontroleerd op 18-10-2026 via fondsdata-sites (extraETF, finanzen, finect). Controleer de ISIN altijd ook in DEGIRO.
-  // Per categorie 5 kapitaliserende (accumulating) ETF's, gesorteerd op lage kosten (TER) en daarna hoge fondsomvang (maatstaf voor volume).
-  // Nummer 1 is de hoofdkeuze die het advies bij aankoop voorstelt. Gegevens gecontroleerd op 18-10-2026 bij fondsdata-sites en uitgevers.
+  // Per categorie 5 kapitaliserende (accumulating) ETF's: lage kosten (TER) eerst, daarna hoge fondsomvang (maatstaf voor volume),
+  // en zo veel mogelijk verschillend van elkaar (andere regio of andere strategie). De hoofdkeuze is het fonds dat het koopadvies noemt.
+  // Gegevens gecontroleerd op 18-10-2026 bij fondsdata-sites; DEGIRO Kernselectie is niet gecontroleerd.
   const ADVIES_FONDSEN = [
-    { cat: "off", hoofd: true, naam: "Xtrackers MSCI World UCITS ETF 1C", isin: "IE00BJ0KDQ92", ter: "0,12%", omvang: "circa 28,6 mld USD (30-06-2026)", soort: "Ontwikkelde landen aandelen, kapitaliserend" },
-    { cat: "off", hoofd: false, naam: "Amundi Core MSCI World UCITS ETF Acc", isin: "IE000BI8OT95", ter: "0,12%", omvang: "circa 16 mld USD", soort: "Ontwikkelde landen aandelen, kapitaliserend (sinds 2024)" },
-    { cat: "off", hoofd: false, naam: "Vanguard FTSE All-World UCITS ETF USD Acc", isin: "IE00BK5BQT80", ter: "0,14% (sinds 28-07-2026)", omvang: "circa 75 mld USD", soort: "Wereldwijd aandelen incl. opkomende landen, kapitaliserend" },
-    { cat: "off", hoofd: false, naam: "iShares Core MSCI EM IMI UCITS ETF USD Acc", isin: "IE00BKM4GZ66", ter: "0,18%", omvang: "circa 17 tot 40 mld USD (bronnen verschillen)", soort: "Opkomende landen aandelen (aanvulling op een wereldfonds), kapitaliserend" },
-    { cat: "off", hoofd: false, naam: "iShares Core MSCI World UCITS ETF USD Acc", isin: "IE00B4L5Y983", ter: "0,20%", omvang: "circa 125 mld EUR", soort: "Ontwikkelde landen aandelen, kapitaliserend; grootste en meest verhandelde" },
-    { cat: "neu", hoofd: true, naam: "Xtrackers MSCI World Minimum Volatility UCITS ETF 1C", isin: "IE00BL25JN58", ter: "0,25%", omvang: "circa 1,1 mld EUR", soort: "Wereldwijd aandelen met lage koersschommeling, kapitaliserend" },
-    { cat: "neu", hoofd: false, naam: "Vanguard LifeStrategy 60% Equity UCITS ETF (EUR) Acc", isin: "IE00BMVB5P51", ter: "0,25%", omvang: "circa 0,9 tot 1,05 mld EUR", soort: "60% aandelen, 40% obligaties, kapitaliserend" },
-    { cat: "neu", hoofd: false, naam: "Amundi MSCI World Minimum Volatility Advanced UCITS ETF", isin: "IE0001DKJVC2", ter: "0,25%", omvang: "circa 0,46 mld EUR", soort: "Wereldwijd aandelen met lage koersschommeling, kapitaliserend (sinds 2024)" },
-    { cat: "neu", hoofd: false, naam: "Vanguard LifeStrategy 40% Equity UCITS ETF (EUR) Acc", isin: "IE00BMVB5M21", ter: "0,25%", omvang: "circa 0,28 mld EUR", soort: "40% aandelen, 60% obligaties, kapitaliserend; rustiger dan nummer 1 tot 3" },
-    { cat: "neu", hoofd: false, naam: "iShares Edge MSCI World Minimum Volatility UCITS ETF USD Acc", isin: "IE00B8FHGS14", ter: "0,30%", omvang: "circa 2,2 mld EUR", soort: "Wereldwijd aandelen met lage koersschommeling, kapitaliserend; grootste in deze groep maar duurder" }
+    { cat: "off", hoofd: false, naam: "Vanguard S&P 500 UCITS ETF USD Acc", isin: "IE00BFMXXD54", ter: "0,07%", omvang: "circa 27 mld EUR", soort: "Alleen Verenigde Staten, kapitaliserend; goedkoopste, maar geen spreiding over regio's" },
+    { cat: "off", hoofd: false, naam: "iShares Core MSCI Europe UCITS ETF EUR Acc", isin: "IE00B4K48X80", ter: "0,12%", omvang: "circa 14 mld EUR", soort: "Europa, kapitaliserend" },
+    { cat: "off", hoofd: false, naam: "iShares Core MSCI Japan IMI UCITS ETF USD Acc", isin: "IE00B4L5YX21", ter: "0,12%", omvang: "circa 3,5 tot 7 mld USD (bronnen verschillen)", soort: "Japan, kapitaliserend" },
+    { cat: "off", hoofd: true, naam: "Vanguard FTSE All-World UCITS ETF USD Acc", isin: "IE00BK5BQT80", ter: "0,14% (sinds 28-07-2026)", omvang: "circa 75 mld USD", soort: "Wereldwijd aandelen incl. opkomende landen, kapitaliserend; bevat ook de regio's hierboven en onder, dus kies dit fonds alleen of de regio-fondsen" },
+    { cat: "off", hoofd: false, naam: "iShares Core MSCI EM IMI UCITS ETF USD Acc", isin: "IE00BKM4GZ66", ter: "0,18%", omvang: "circa 17 tot 40 mld USD (bronnen verschillen)", soort: "Opkomende landen, kapitaliserend" },
+    { cat: "neu", hoofd: false, naam: "iShares Edge MSCI World Quality Factor UCITS ETF USD Acc", isin: "IE00BP3QZ601", ter: "0,25% (bronnen: 0,25 tot 0,30%)", omvang: "circa 3,7 tot 4 mld EUR", soort: "Wereldwijd aandelen van bedrijven met hoge kwaliteit (sectorneutraal), kapitaliserend" },
+    { cat: "neu", hoofd: false, naam: "Xtrackers MSCI World Minimum Volatility UCITS ETF 1C", isin: "IE00BL25JN58", ter: "0,25%", omvang: "circa 1,1 mld EUR", soort: "Wereldwijd aandelen met lage koersschommeling, kapitaliserend" },
+    { cat: "neu", hoofd: true, naam: "Vanguard LifeStrategy 60% Equity UCITS ETF (EUR) Acc", isin: "IE00BMVB5P51", ter: "0,25%", omvang: "circa 0,9 tot 1,05 mld EUR", soort: "60% aandelen, 40% obligaties, kapitaliserend" },
+    { cat: "neu", hoofd: false, naam: "iShares Edge MSCI Europe Minimum Volatility UCITS ETF EUR Acc", isin: "IE00B86MWN23", ter: "0,25%", omvang: "circa 0,83 tot 0,9 mld EUR", soort: "Europa aandelen met lage koersschommeling, kapitaliserend" },
+    { cat: "neu", hoofd: false, naam: "Vanguard LifeStrategy 40% Equity UCITS ETF (EUR) Acc", isin: "IE00BMVB5M21", ter: "0,25%", omvang: "circa 0,28 mld EUR", soort: "40% aandelen, 60% obligaties, kapitaliserend; rustiger, rendement waarschijnlijk onder Euribor + 2%" }
   ];
   // Portefeuille volgens DEGIRO (schermafbeelding van 18-10-2026); zelf bij te werken in het tabblad.
   const ADVIES_STANDAARD_PF = [
@@ -6615,6 +6616,8 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
   }
   // ISIN's van fondsen die je hebt of die ik voorstel, alleen als ze zijn gecontroleerd. Staat het ISIN in je upload, dan gaat die voor.
   const ADVIES_NAAM_ISIN = [
+    [/europe.*min(imum)?\s*vol/i, "IE00B86MWN23"], [/quality factor|qual fctr/i, "IE00BP3QZ601"],
+    [/vanguard s&p 500/i, "IE00BFMXXD54"], [/core msci europe/i, "IE00B4K48X80"], [/core msci japan imi/i, "IE00B4L5YX21"],
     [/(xtrackers|dws).*min(imum)?\s*vol/i, "IE00BL25JN58"], [/amundi.*min(imum)?\s*vol/i, "IE0001DKJVC2"], [/(edge|ishares).*(world|wld).*min(imum)?\s*vol/i, "IE00B8FHGS14"],
     [/xtrackers msci world (ucits|etf)/i, "IE00BJ0KDQ92"], [/amundi core msci world/i, "IE000BI8OT95"],
     [/world small cap/i, "IE00BF4RFH31"], [/stoxx europe 600/i, "LU0908500753"], [/em imi/i, "IE00BKM4GZ66"],
@@ -6625,7 +6628,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
   ];
   function adviesIsinVoorNaam(naam) { const m = ADVIES_NAAM_ISIN.find(([re]) => re.test(String(naam || ""))); return m ? m[1] : ""; }
   // Eenvoudige indeling van je bestaande fondsen op naam; niet herkend = offensief.
-  const ADVIES_ISIN_CAT = { IE00BF11F565: "def", IE00B3F81R35: "def", IE00B14X4Q57: "def", LU0290356871: "def", LU0290358497: "def", LU1650487413: "def", LU0478205379: "def", IE00BMVB5P51: "neu", IE00BMVB5M21: "neu", IE00BMVB5Q68: "neu", IE00BL25JN58: "neu", IE0001DKJVC2: "neu", IE00B8FHGS14: "neu" };
+  const ADVIES_ISIN_CAT = { IE00BF11F565: "def", IE00B3F81R35: "def", IE00B14X4Q57: "def", LU0290356871: "def", LU0290358497: "def", LU1650487413: "def", LU0478205379: "def", IE00BMVB5P51: "neu", IE00BMVB5M21: "neu", IE00BMVB5Q68: "neu", IE00BL25JN58: "neu", IE0001DKJVC2: "neu", IE00B8FHGS14: "neu", IE00B86MWN23: "neu", IE00BP3QZ601: "neu" };
   function adviesCategorie(naam, isin) {
     const i = String(isin || "").toUpperCase();
     if (ADVIES_ISIN_CAT[i]) return ADVIES_ISIN_CAT[i];
@@ -7038,7 +7041,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
             H("div", { className: "text-sm" }, (i + 1) + ". " + f.naam + (f.hoofd ? " (hoofdkeuze)" : "")),
             H("div", { className: "text-xs font-mono text-slate-700" }, "ISIN " + f.isin + " · TER " + f.ter),
             H("div", { className: "text-xs text-slate-500" }, f.omvang ? f.soort + " · fondsomvang " + f.omvang : f.soort))))),
-        H("p", { className: "text-xs text-slate-500 mt-2" }, "Alleen kapitaliserende (accumulating) fondsen, gesorteerd op lage kosten en daarna hoge fondsomvang (maatstaf voor volume; het werkelijke handelsvolume is niet gecontroleerd). Nummer 1 is de hoofdkeuze in het advies. ISIN's en kosten zijn op 18-10-2026 gecontroleerd bij fondsdata-sites; fondsomvang is een afgeronde schatting en verschilt per bron. Controleer in DEGIRO of het fonds op jouw beurs beschikbaar is en wat de kosten zijn. Dit is een rekenhulp op basis van je eigen uitgangspunten, geen persoonlijk beleggingsadvies.")));
+        H("p", { className: "text-xs text-slate-500 mt-2" }, "Alleen kapitaliserende (accumulating) fondsen, gesorteerd op lage kosten en daarna hoge fondsomvang (maatstaf voor volume; het werkelijke handelsvolume is niet gecontroleerd). De hoofdkeuze is het fonds dat het koopadvies noemt. Of een fonds bij de DEGIRO Kernselectie hoort, is niet gecontroleerd (de lijst was niet op te vragen): controleer in DEGIRO of het fonds op Tradegate de Kernselectie-voorwaarden heeft. ISIN's en kosten zijn op 18-10-2026 gecontroleerd bij fondsdata-sites; fondsomvang is een afgeronde schatting en verschilt per bron. Controleer in DEGIRO of het fonds op jouw beurs beschikbaar is en wat de kosten zijn. Dit is een rekenhulp op basis van je eigen uitgangspunten, geen persoonlijk beleggingsadvies.")));
   }
 
   function renderVermogenOverzicht() {
