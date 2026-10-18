@@ -155,10 +155,39 @@ SH.hyp.voordeelInNetto = false;
 const r1 = c.hypRisico(mH);
 ok("risico per deel: herzieningsdatum en effect van 1 procentpunt", r1.length === 2 && r1[0].datum && Math.abs(r1[0].impact - r1[0].saldoDan * 0.01 / 12) < 0.01, r1.map(x => c.fmtDatum(x.datum) + " " + Math.round(x.impact)).join(" | "));
 const vorige = c.hypDeelOp(mH, SH.hyp.delen[0], c.geldigeDatum("2027-12-01")).maandlast, daarna = c.hypDeelOp(mH, SH.hyp.delen[0], c.geldigeDatum("2028-02-01")).maandlast;
-ok("na renteherziening stijgt de maandlast (3,5% -> 5,5%)", daarna > vorige + 300, Math.round(vorige) + " -> " + Math.round(daarna));
+ok("na renteherziening stijgt de maandlast (3,5% -> 5,5%)", daarna > vorige + 150, Math.round(vorige) + " -> " + Math.round(daarna));
 const itemsH = c.vermogenItems(mH, c.geldigeDatum("2026-10-18"), 0, {});
 ok("box 3-deel telt als schuld in box 3", Math.round(c.schuldBox3(itemsH, c.vermogenTotalen(itemsH)) - 30000) === 0, c.schuldBox3(itemsH, c.vermogenTotalen(itemsH)));
 // Hillen: lage hypotheek -> bijtelling kleiner dan zonder Hillen
 SH.hyp.delen = [{ id: "c", box: "1", bedrag: 20000, rente: 3, maandlast: 100, aflossing: 50, vorm: "annuiteit", aflosEinde: "", herzienDatum: "2030-01-01", variabel: false, nieuweRente: "" }];
 const hv2 = c.hypVoordeel(c.maakModel(SH, c.geldigeDatum("2026-10-18")), c.geldigeDatum("2026-11-01"));
 ok("lage hypotheek: eigenwoningforfait geeft een (beperkt) nadeel", hv2 && hv2.verschil < 0 && hv2.jaar < 0 && hv2.jaar > hv2.verschil * 0.4, hv2 && Math.round(hv2.jaar) + " vs " + Math.round(hv2.verschil));
+
+// Aflossingsvormen
+const SV = JSON.parse(JSON.stringify(SH));
+SV.hyp.delen = [
+  { id: "an", box: "1", bedrag: 200000, rente: 3.5, maandlast: 898.09, aflossing: "", vorm: "annuiteit", aflosEinde: "2056-10-01", herzienDatum: "", variabel: true, nieuweRente: "" },
+  { id: "li", box: "1", bedrag: 120000, rente: 3, maandlast: "", aflossing: 500, vorm: "lineair", aflosEinde: "", herzienDatum: "", variabel: true, nieuweRente: "" },
+  { id: "av", box: "1", bedrag: 100000, rente: 4, maandlast: "", aflossing: "", vorm: "aflossingsvrij", aflosEinde: "", herzienDatum: "", variabel: true, nieuweRente: "" },
+  { id: "sp", box: "3", bedrag: 50000, rente: 4, maandlast: 400, aflossing: "", vorm: "spaar", aflosEinde: "", herzienDatum: "", variabel: true, nieuweRente: "" }
+];
+const mV = c.maakModel(SV, c.geldigeDatum("2026-10-18"));
+const dO = (id, d) => c.hypDeelOp(mV, SV.hyp.delen.filter(x => x.id === id)[0], c.geldigeDatum(d));
+const an0 = dO("an", "2026-10-01"), an12 = dO("an", "2027-10-01"), an359 = dO("an", "2056-09-01"), an360 = dO("an", "2056-11-01");
+ok("annuïteit: maandlast constant", Math.abs(an0.maandlast - an12.maandlast) < 0.01 && Math.abs(an0.maandlast - 898.09) < 0.01, Math.round(an0.maandlast * 100) / 100);
+ok("annuïteit: aflossing stijgt, rente daalt", an12.aflossing > an0.aflossing && an12.rente < an0.rente, Math.round(an0.aflossing) + " -> " + Math.round(an12.aflossing));
+ok("annuïteit: na 360 maanden afgelost", an360.saldo === 0 && an359.saldo > 0 && an359.saldo < 1000, Math.round(an359.saldo));
+const li0 = dO("li", "2026-10-01"), li12 = dO("li", "2027-10-01");
+ok("lineair: vaste aflossing 500, dalende maandlast", li0.aflossing === 500 && li12.aflossing === 500 && li12.maandlast < li0.maandlast && Math.abs(li0.maandlast - (500 + 120000 * 0.03 / 12)) < 0.01, Math.round(li0.maandlast) + " -> " + Math.round(li12.maandlast));
+ok("lineair: saldo daalt 500 per maand", Math.abs(dO("li", "2027-10-01").saldo - (120000 - 12 * 500)) < 0.01);
+const av0 = dO("av", "2026-10-01"), av60 = dO("av", "2031-10-01");
+ok("aflossingsvrij: saldo en maandlast constant (alleen rente)", av60.saldo === 100000 && Math.abs(av0.maandlast - 100000 * 0.04 / 12) < 0.01 && Math.abs(av60.maandlast - av0.maandlast) < 0.01, Math.round(av0.maandlast));
+const sp0 = dO("sp", "2026-10-01"), sp60 = dO("sp", "2031-10-01");
+ok("spaarhypotheek: saldo constant, maandlast = ingevoerd bedrag", sp60.saldo === 50000 && sp0.maandlast === 400 && sp60.maandlast === 400);
+// annuïteit met herziening: maandlast herberekend voor resterende looptijd, einde blijft gelijk
+SV.hyp.delen = [{ id: "ah", box: "1", bedrag: 200000, rente: 3.5, maandlast: 898.09, aflossing: "", vorm: "annuiteit", aflosEinde: "2056-10-01", herzienDatum: "2031-10-01", variabel: false, nieuweRente: 5.5 }];
+const mH2 = c.maakModel(SV, c.geldigeDatum("2026-10-18")), dlH = SV.hyp.delen[0];
+const voor = c.hypDeelOp(mH2, dlH, c.geldigeDatum("2031-09-01")), na = c.hypDeelOp(mH2, dlH, c.geldigeDatum("2031-10-01"));
+const verwacht = c.annuiteit(voor.saldo - voor.aflossing, 5.5, 300);
+ok("annuïteit na herziening: maandlast volgens resterende looptijd", Math.abs(na.maandlast - verwacht) < 0.5, Math.round(na.maandlast) + " vs " + Math.round(verwacht));
+ok("annuïteit na herziening: einde blijft 2056 (afgelost)", c.hypDeelOp(mH2, dlH, c.geldigeDatum("2056-12-01")).saldo === 0);

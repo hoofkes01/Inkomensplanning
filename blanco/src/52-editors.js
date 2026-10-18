@@ -353,6 +353,7 @@ function PottenEditor() {
     }
   });
 }
+var HYP_VORM_UITLEG = { annuiteit: "Vaste maandlast; je lost steeds meer af en betaalt steeds minder rente.", lineair: "Vaste aflossing per maand; de maandlast daalt omdat de rente daalt.", aflossingsvrij: "Je lost niet af; de maandlast is alleen rente.", spaar: "Je lost niet af op de lening; de premie bouwt kapitaal op bij een bank of verzekeraar. Dat kapitaal is niet gemodelleerd." };
 var HYP_VORMEN = [["annuiteit", "Annuïteit"], ["lineair", "Lineair"], ["aflossingsvrij", "Aflossingsvrij"], ["spaar", "Spaar- of beleggingshypotheek"]];
 function nieuwHypDeel() { return { id: nieuwId(), box: "", bedrag: "", rente: "", maandlast: "", aflossing: "", vorm: "annuiteit", aflosEinde: "", herzienDatum: "", variabel: false, nieuweRente: "" }; }
 function foutenHypDeel(dl, i) {
@@ -370,7 +371,7 @@ function HypotheekForm() {
   var risico = hypRisico(m);
   var geenInkomen = !m.bronnen.some(function (b) { return b.soort !== "toeslag"; });
   return h("div", null,
-    h(Uitleg, null, "Voeg elk hypotheekdeel apart toe. Heb je geen hypotheek (meer), laat het dan leeg. Geef per deel aan of het in box 1 valt (besteed aan de eigen woning, rente aftrekbaar) of in box 3 (niet aan de eigen woning besteed, bijvoorbeeld voor een auto of studie; geen renteaftrek)."),
+    h(Uitleg, null, "Voeg elk hypotheekdeel apart toe: er is geen maximum. Heb je geen hypotheek (meer), laat het dan leeg. Geef per deel aan of het in box 1 valt (besteed aan de eigen woning, rente aftrekbaar) of in box 3 (niet aan de eigen woning besteed, bijvoorbeeld voor een auto of studie; geen renteaftrek)."),
     h(LijstEditor, {
       naam: "hypdeel", items: L.items, leeg: "Nog geen hypotheekdelen.", voegTekst: "Hypotheekdeel toevoegen",
       kop: function (dl, i) { return "Hypotheekdeel " + (i + 1) + (dl.box === "1" ? " · box 1" : dl.box === "3" ? " · box 3" : "") + (getal(dl.bedrag) ? " · " + eur(dl.bedrag) : ""); },
@@ -383,11 +384,11 @@ function HypotheekForm() {
             h(BedragVeld, { label: "Openstaand bedrag", value: dl.bedrag, onChange: function (v) { w({ bedrag: v }); }, naam: "hyp-bedrag" }),
             h(BedragVeld, { label: "Rente (%)", value: dl.rente, pct: true, onChange: function (v) { w({ rente: v }); }, naam: "hyp-rente" })),
           h("div", { className: "raster" },
-            h(BedragVeld, { label: "Maandlast van dit deel (rente en aflossing, bruto)", value: dl.maandlast, onChange: function (v) { w({ maandlast: v }); }, naam: "hyp-maandlast" }),
-            h(BedragVeld, { label: "Waarvan aflossing per maand", hint: "Bij aflossingsvrij: 0.", value: dl.aflossing, onChange: function (v) { w({ aflossing: v }); } })),
+            h(BedragVeld, { label: "Maandlast van dit deel nu (bruto)", hint: dl.vorm === "spaar" ? "Rente plus premie voor de spaar- of beleggingsrekening." : "Rente en aflossing samen.", value: dl.maandlast, onChange: function (v) { w({ maandlast: v }); }, naam: "hyp-maandlast" }),
+            dl.vorm === "lineair" ? h(BedragVeld, { label: "Aflossing per maand (vast bedrag)", hint: "Leeg: de app rekent met de looptijd.", value: dl.aflossing, onChange: function (v) { w({ aflossing: v }); }, naam: "hyp-aflossing" }) : null),
           h("div", { className: "raster" },
-            h(KeuzeVeld, { label: "Aflossingsvorm", value: dl.vorm, opties: HYP_VORMEN, onChange: function (v) { w({ vorm: v }); } }),
-            h(DatumVeld, { label: "Einde aflossing (daarna alleen rente)", value: dl.aflosEinde, onChange: function (v) { w({ aflosEinde: v }); } })),
+            h(KeuzeVeld, { label: "Aflossingsvorm", hint: HYP_VORM_UITLEG[dl.vorm || "annuiteit"], value: dl.vorm, opties: HYP_VORMEN, onChange: function (v) { w({ vorm: v }); }, naam: "hyp-vorm" }),
+            h(DatumVeld, { label: dl.vorm === "annuiteit" || dl.vorm === "lineair" ? "Einde looptijd (laatste aflossing)" : "Einde looptijd (aflossing of herfinanciering)", value: dl.aflosEinde, onChange: function (v) { w({ aflosEinde: v }); } })),
           h(Vink, { label: "Variabele rente (geen vaste rentevaste periode)", value: !!dl.variabel, onChange: function (v) { w({ variabel: v }); } }),
           !dl.variabel ? h("div", { className: "raster" },
             h(DatumVeld, { label: "Renteherzieningsdatum (einde rentevaste periode)", hint: "Staat op je hypotheekoverzicht. Daarna wordt de rente opnieuw vastgesteld: een risico.", value: dl.herzienDatum, onChange: function (v) { w({ herzienDatum: v }); }, naam: "hyp-herzien" }),

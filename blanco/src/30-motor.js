@@ -276,21 +276,52 @@ function huishoudenMaand(m, d, kas) {
 }
 
 /* ---------- Lasten ---------- */
-// Eén hypotheekdeel op datum d. Na de renteherzieningsdatum geldt de verwachte nieuwe rente (leeg = dezelfde rente).
+// Aflossingsschema van één hypotheekdeel, maand voor maand vanaf de peilmaand (maximaal 50 jaar).
+//  annuïteit: vaste bruto maandlast; de aflossing stijgt, de rente daalt.
+//  lineair: vaste aflossing per maand; de maandlast daalt met de rente.
+//  aflossingsvrij en spaar-/beleggingshypotheek: geen aflossing van de lening; de maandlast blijft (bij spaar/beleggen incl. premie).
+// Na een renteherziening geldt de verwachte nieuwe rente; bij een annuïteit wordt de maandlast herberekend voor de resterende looptijd.
+function hypSchema(m, dl) {
+  m._cache.hd = m._cache.hd || {};
+  if (m._cache.hd[dl.id]) return m._cache.hd[dl.id];
+  var uit = [], saldo = getal(dl.bedrag), d0 = eerstVanMaand(m.peil);
+  var einde = geldigeDatum(dl.aflosEinde), eindM = einde ? eerstVanMaand(einde) : null;
+  var herz = geldigeDatum(dl.herzienDatum), herzM = herz && !dl.variabel && dl.nieuweRente !== "" && dl.nieuweRente != null ? eerstVanMaand(herz) : null;
+  var r0 = getal(dl.rente), ingevoerd = getal(dl.maandlast), vorm = dl.vorm || "annuiteit";
+  var rate = r0, last = ingevoerd, aflVast = getal(dl.aflossing);
+  var N0 = eindM ? Math.max(1, maandenTussen(d0, eindM)) : 360;
+  if (vorm === "annuiteit" && !(last > 0)) last = annuiteit(saldo, r0, N0);
+  if (vorm === "lineair" && !(aflVast > 0)) aflVast = ingevoerd > saldo * r0 / 1200 ? ingevoerd - saldo * r0 / 1200 : saldo / N0;
+  for (var k = 0; k <= 600; k++) {
+    var d = plusMaanden(d0, k);
+    var nieuweRente = herzM && d >= herzM ? getal(dl.nieuweRente) : r0;
+    if (nieuweRente !== rate) {
+      if (vorm === "annuiteit" && saldo > 0) {
+        var rem;
+        if (eindM) rem = Math.max(1, maandenTussen(d, eindM));
+        else { var iV = rate / 1200, x = iV > 0 && last > saldo * iV ? -Math.log(1 - saldo * iV / last) / Math.log(1 + iV) : 240; rem = Math.max(1, Math.round(x)); }
+        last = annuiteit(saldo, nieuweRente, rem);
+      }
+      rate = nieuweRente;
+    }
+    if (saldo <= 0.005) { uit.push({ saldo: 0, maandlast: 0, aflossing: 0, rente: 0 }); continue; }
+    var rente = saldo * rate / 1200, afl, mlast;
+    if (eindM && d >= eindM) { afl = 0; mlast = rente; }
+    else if (vorm === "annuiteit") { afl = Math.max(0, Math.min(saldo, last - rente)); mlast = afl + rente; }
+    else if (vorm === "lineair") { afl = Math.min(saldo, aflVast); mlast = afl + rente; }
+    else { afl = 0; mlast = ingevoerd > 0 ? Math.max(rente, ingevoerd + saldo * (rate - r0) / 1200) : rente; }
+    uit.push({ saldo: saldo, maandlast: mlast, aflossing: afl, rente: rente });
+    saldo -= afl;
+  }
+  m._cache.hd[dl.id] = uit;
+  return uit;
+}
+// Eén hypotheekdeel op datum d.
 function hypDeelOp(m, dl, d) {
   var nul = { maandlast: 0, saldo: 0, aflossing: 0, rente: 0 };
   if (!(getal(dl.bedrag) > 0)) return nul;
-  var n = Math.max(0, maandenTussen(m.peil, d));
-  var einde = geldigeDatum(dl.aflosEinde), aflM = getal(dl.aflossing);
-  var aantalAfl = einde ? Math.min(n, Math.max(0, maandenTussen(m.peil, einde))) : n;
-  var saldo = Math.max(0, getal(dl.bedrag) - aflM * aantalAfl);
-  if (saldo <= 0) return nul;
-  var herz = geldigeDatum(dl.herzienDatum), rente0 = getal(dl.rente), renteNu = rente0;
-  if (herz && !dl.variabel && d >= eerstVanMaand(herz) && dl.nieuweRente !== "" && dl.nieuweRente != null) renteNu = getal(dl.nieuweRente);
-  var rente = saldo * renteNu / 1200;
-  if (einde && d >= eerstVanMaand(einde)) return { maandlast: rente, saldo: saldo, aflossing: 0, rente: rente };
-  var last = getal(dl.maandlast) + saldo * (renteNu - rente0) / 1200;
-  return { maandlast: Math.max(0, last), saldo: saldo, aflossing: Math.min(aflM, saldo), rente: rente };
+  var k = Math.max(0, Math.min(600, maandenTussen(eerstVanMaand(m.peil), eerstVanMaand(d))));
+  return hypSchema(m, dl)[k] || nul;
 }
 function hypOp(m, d) {
   var uit = { maandlast: 0, saldo: 0, aflossing: 0, rente: 0, saldoBox1: 0, saldoBox3: 0, renteBox1: 0, renteBox3: 0 };
