@@ -1,5 +1,6 @@
 // Bij een laag inkomen meldt de app per toeslag: waarschijnlijk recht, met de plek om aan te vragen.
 const { chromium } = require("playwright");
+const { start: startApp, openKlant } = require("./hulp");
 const path = require("path");
 const url = "file://" + path.join(__dirname, "..", "index.html");
 let fouten = 0;
@@ -8,7 +9,7 @@ async function start(browser, brutoMaand) {
   const ctx = await browser.newContext({ viewport: { width: 411, height: 900 }, timezoneId: "Europe/Amsterdam" });
   const page = await ctx.newPage(); const pe = [];
   page.on("pageerror", e => pe.push(e.message)); page.on("dialog", d => d.accept());
-  await page.goto(url); await page.waitForSelector("[role=dialog]");
+  await startApp(page, url, "[role=dialog]");
   const dlg = "[role=dialog] ", v = (s, w) => page.fill(`${dlg}[data-veld="${s}"]`, w), volgende = () => page.click('[data-knop="intake-volgende"]');
   await page.check(`${dlg}input[type=checkbox]`); await volgende();
   await page.check(`${dlg}[data-huishouden="vrouw"]`); await volgende();

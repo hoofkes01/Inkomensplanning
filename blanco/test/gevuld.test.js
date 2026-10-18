@@ -1,4 +1,5 @@
 const { chromium } = require("playwright");
+const { start, openKlant } = require("./hulp");
 const path = require("path"), fs = require("fs");
 const { opslag } = require("./voorbeeld.js");
 const url = "file://" + path.join(__dirname, "..", "index.html");
@@ -15,7 +16,7 @@ const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undef
     const page = await ctx.newPage();
     const pe = [], ce = [];
     page.on("pageerror", e => pe.push(e.message)); page.on("console", m => { if (m.type() === "error" && !/ERR_FAILED/.test(m.text())) ce.push(m.text()); }); page.on("dialog", d => d.accept());
-    await page.goto(url); await page.waitForSelector(".kop");
+    await start(page, url, ".kop");
     for (const id of MENUS) {
       await page.click('[data-knop="menu"]'); await page.click(`[data-menu="${id}"]`); await page.waitForTimeout(150);
       const sw = await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]);
@@ -52,7 +53,7 @@ const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undef
     await page.selectOption('[data-indexeer] [data-veld="indexeer-groep"]', 'toeslagen');
     await page.fill('[data-indexeer] [data-veld="indexeer-pct"]', '3');
     await page.click('[data-knop="indexeer-toepassen"]'); await page.click('[data-knop="indexeer-bevestig"]');
-    const zt = await page.evaluate(() => JSON.parse(localStorage.getItem("inkomensplanning_bronnen")).filter(b => b.code === "zorgtoeslag")[0]);
+    const zt = await page.evaluate(() => JSON.parse(localStorage.getItem("inkomensplanning_k001_bronnen")).filter(b => b.code === "zorgtoeslag")[0]);
     ok(`[${breedte}] indexeren: zorgtoeslag 120 -> 123,60`, zt.netto === 123.6 && !!zt.bijgewerkt, JSON.stringify([zt.netto, zt.bijgewerkt]));
     await page.click('[data-knop="menu"]'); await page.click('[data-menu="dashboard"]');
     ok(`[${breedte}] toeslagcontrole: inkomen boven zorgtoeslaggrens wordt gemeld`, /inkomensgrens voor zorgtoeslag/.test(await page.textContent("#aandacht")), (await page.textContent("#aandacht")).slice(0, 80));

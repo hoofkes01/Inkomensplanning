@@ -1,5 +1,6 @@
 // Loopt de volledige intake door voor verschillende huishoudens en controleert dat alles doorloopt zonder fouten.
 const { chromium } = require("playwright");
+const { start, openKlant } = require("./hulp");
 const path = require("path");
 const url = "file://" + path.join(__dirname, "..", "index.html");
 let fouten = 0;
@@ -17,7 +18,7 @@ const SITUATIES = [
     const ctx = await browser.newContext({ viewport: { width: 411, height: 900 }, timezoneId: "Europe/Amsterdam" });
     const page = await ctx.newPage(); const pe = [];
     page.on("pageerror", e => pe.push(e.message)); page.on("dialog", d => d.accept());
-    await page.goto(url); await page.waitForSelector("[role=dialog]");
+    await start(page, url, "[role=dialog]");
     const dlg = "[role=dialog] ";
     const v = (sel, w) => page.fill(`${dlg}[data-veld="${sel}"]`, w);
     const volgende = () => page.click('[data-knop="intake-volgende"]');

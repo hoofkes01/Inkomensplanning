@@ -24,15 +24,16 @@ function GegevensKaart() {
   var s = useState(""), melding = s[0], setMelding = s[1];
   var bm = backupMeta();
   return h(Kaart, { titel: "Je gegevens opslaan en verder gaan" },
-    h("p", { className: "klein" }, "Alles staat alleen in deze browser, op dit apparaat. Sla je gegevens regelmatig op als bestand (ook via de balk linksonder). Een nieuwe versie van de app is een nieuw bestand: zet daarna je laatste bestand terug en ga verder met je actuele gegevens."),
+    h("p", { className: "klein" }, "Alles staat alleen in deze browser, op dit apparaat. Sla je gegevens regelmatig op als bestand (ook via de balk linksonder; die bewaart alle klanten samen). Een nieuwe versie van de app is een nieuw bestand: zet daarna je laatste bestand terug en ga verder met je actuele gegevens."),
     h("div", { className: "rij" },
       h(Knop, { onClick: function () { bewaarBackup(); setMelding("Back-up opgeslagen."); }, naam: "backup-opslaan" }, "Gegevens opslaan als bestand"),
       h("label", { className: "knop sec", style: { display: "inline-block", cursor: "pointer" } }, "Gegevens terugzetten",
         h("input", { type: "file", accept: "application/json,.json", style: { display: "none" }, "data-veld": "backup-bestand", onChange: function (e) { var f = e.target.files[0]; if (f) zetBackupTerug(f, setMelding); e.target.value = ""; } }))),
     melding ? h("p", { className: "klein", role: "status" }, melding) : null,
     h("p", { className: "klein" }, "Laatste back-up: " + (bm ? tijdTekst(bm.tijd) : "nog niet gemaakt") + "."),
-    h("details", null, h("summary", { className: "klein" }, "Alle gegevens wissen"),
-      h(Knop, { soort: "gevaar", onClick: function () { if (window.confirm("Alle ingevulde gegevens definitief wissen? Maak eerst een back-up.")) { try { Object.keys(window.localStorage).filter(function (k) { return k.indexOf(OPSLAG_VOORVOEGSEL) === 0 || k === BACKUP_META; }).forEach(function (k) { window.localStorage.removeItem(k); }); } catch (e) {} window.location.reload(); } }, naam: "wis-alles" }, "Alles wissen")));
+    h("div", { className: "rij" }, h(Knop, { soort: "sec", onClick: function () { var k = klantenLees().lijst.filter(function (x) { return OPSLAG_KLANT === x.id + "_"; })[0]; if (k) klantExporteer(k); }, naam: "klant-bestand" }, "Alleen deze klant als bestand")),
+    h("details", null, h("summary", { className: "klein" }, "Deze klant verwijderen"),
+      h(Knop, { soort: "gevaar", onClick: function () { if (window.confirm("Alle gegevens van deze klant definitief wissen? Maak eerst een back-up.")) { try { var id = OPSLAG_KLANT.replace("_", ""); klantSleutels(id).forEach(function (k) { window.localStorage.removeItem(k); }); var r = klantenLees(); r.lijst = r.lijst.filter(function (x) { return x.id !== id; }); klantenSchrijf(r); window.sessionStorage.removeItem("ip_actief"); } catch (e) {} window.location.reload(); } }, naam: "wis-alles" }, "Deze klant wissen")));
 }
 function FasenTabel(p) {
   var m = p.m, fasen = useMemo(function () { return fasenLijst(m); }, [m]);

@@ -28,7 +28,7 @@ function EerstAlgemeen() {
     h(Knop, { onClick: function () { c.nav("dashboard"); c.openIntake("dashboard"); }, naam: "naar-algemene-intake" }, "Naar de algemene intake"));
 }
 
-function App() {
+function KlantApp(props) {
   var stores = {};
   OPSLAG_SLEUTELS.forEach(function (k) { stores[k] = useOpslag(k, STANDAARD[k]); });
   var S = {}; OPSLAG_SLEUTELS.forEach(function (k) { S[k] = stores[k][0]; });
@@ -41,6 +41,8 @@ function App() {
   useEffect(function () { opslagLuisteraars.push(function () { setTik(function (x) { return x + 1; }); }); }, []);
 
   var deps = OPSLAG_SLEUTELS.map(function (k) { return S[k]; });
+  var eerste = useRef(true);
+  useEffect(function () { if (eerste.current) { eerste.current = false; return; } klantAanraken(props.klantId); }, deps);
   var m = useMemo(function () { return maakModel(S, nu); }, deps);
   var sim = useMemo(function () { return maakSim(m); }, [m]);
   var vr = useMemo(function () { return vermogenReeks(m, sim); }, [m, sim]);
@@ -79,7 +81,8 @@ function App() {
 
   return h(Ctx.Provider, { value: c },
     h("header", { className: "kop noprint" },
-      h("div", { className: "titel" }, h("b", null, "Inkomensplanning"), h("small", null, naam + " · App-versie " + APP_VERSIE)),
+      h("div", { className: "titel" }, h("b", null, "Inkomensplanning · " + props.klantCode), h("small", null, naam + " · App-versie " + APP_VERSIE)),
+      h("button", { type: "button", className: "menuknop licht", onClick: props.terug, "data-knop": "naar-klanten" }, "← Klanten"),
       h("button", { type: "button", className: "menuknop licht", onClick: function () { setHelpOpen(true); }, "data-knop": "help" }, "? Help"),
       h("button", { type: "button", className: "menuknop", onClick: function () { setMenuOpen(!menuOpen); }, "data-knop": "menu", "aria-haspopup": "true", "aria-expanded": menuOpen }, "☰ Menu")),
     menuOpen ? h("div", { className: "menulaag noprint" },
@@ -96,6 +99,21 @@ function App() {
     helpOpen ? h(HelpModal, { sluit: function () { setHelpOpen(false); } }) : null,
     h(BackupBalk, null),
     meldingen.length ? h("div", { className: "melding noprint", role: "alert" }, meldingen.map(function (t, i) { return h("div", { key: i }, t); })) : null);
+}
+function App() {
+  var s = useState(function () {
+    klantenMigreer();
+    var id = null;
+    try { id = window.sessionStorage.getItem("ip_actief"); } catch (e) {}
+    return id && klantenLees().lijst.some(function (k) { return k.id === id; }) ? id : null;
+  });
+  var actief = s[0], setActief = s[1];
+  function open(id) { try { window.sessionStorage.setItem("ip_actief", id); } catch (e) {} setActief(id); try { window.scrollTo(0, 0); } catch (e) {} }
+  function terug() { try { window.sessionStorage.removeItem("ip_actief"); } catch (e) {} setActief(null); }
+  var klant = actief ? klantenLees().lijst.filter(function (k) { return k.id === actief; })[0] : null;
+  if (!klant) { OPSLAG_KLANT = ""; return h(Klantenlijst, { open: open }); }
+  OPSLAG_KLANT = klant.id + "_"; // vóór de opslag van deze klant wordt gelezen
+  return h(KlantApp, { key: klant.id, klantId: klant.id, klantCode: klant.code, terug: terug });
 }
 ReactDOM.createRoot(document.getElementById("root")).render(h(App, null));
 window.addEventListener("error", function (e) { try { var d = document.createElement("div"); d.className = "melding"; d.textContent = "Fout in de app: " + e.message; document.body.appendChild(d); } catch (x) {} });

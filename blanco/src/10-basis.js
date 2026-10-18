@@ -3,6 +3,7 @@ var h = React.createElement;
 var useState = React.useState, useEffect = React.useEffect, useMemo = React.useMemo, useRef = React.useRef, useContext = React.useContext;
 
 var OPSLAG_VOORVOEGSEL = "inkomensplanning_";
+var OPSLAG_KLANT = ""; // voorvoegsel van de geopende klant, bv. "k001_"
 var OPSLAG_MELDINGEN = {};
 var opslagLuisteraars = [];
 function meldOpslagprobleem(soort, tekst) {
@@ -86,7 +87,7 @@ function ouderDan(datumTekst, dagen, nu) {
 
 /* ---------- Opslag in de browser ---------- */
 function useOpslag(sleutel, beginwaarde) {
-  var volleSleutel = OPSLAG_VOORVOEGSEL + sleutel;
+  var volleSleutel = OPSLAG_VOORVOEGSEL + OPSLAG_KLANT + sleutel, klantNu = OPSLAG_KLANT;
   var s = useState(function () {
     try {
       var o = window.localStorage.getItem(volleSleutel);
@@ -108,7 +109,7 @@ function useOpslag(sleutel, beginwaarde) {
       try {
         var kapot = window.localStorage.getItem(volleSleutel);
         if (kapot !== null) {
-          window.localStorage.setItem(OPSLAG_VOORVOEGSEL + "_kapot_" + sleutel, kapot);
+          window.localStorage.setItem(OPSLAG_VOORVOEGSEL + "_kapot_" + klantNu + sleutel, kapot);
           meldOpslagprobleem("lezen", "Opgeslagen gegevens van '" + sleutel + "' waren onleesbaar en staan nu op de beginwaarde. Het origineel is apart bewaard. Zet anders je laatste back-up terug.");
         }
       } catch (e2) {
@@ -143,6 +144,16 @@ function downloadBackup() {
   document.body.appendChild(a); a.click();
   setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
 }
+// Bij terugzetten blijven klanten die alleen in de browser staan behouden; bij dezelfde klant wint de back-up.
+function voegKlantenSamen(huidig, nieuw) {
+  try {
+    var a = JSON.parse(huidig || "null") || { lijst: [], teller: 0 }, b = JSON.parse(nieuw);
+    var lijst = (b.lijst || []).slice(), ids = {};
+    lijst.forEach(function (k) { ids[k.id] = 1; });
+    (a.lijst || []).forEach(function (k) { if (!ids[k.id]) lijst.push(k); });
+    return JSON.stringify({ lijst: lijst, teller: Math.max(a.teller || 0, b.teller || 0) });
+  } catch (e) { return nieuw; }
+}
 function zetBackupTerug(bestand, klaar) {
   var lezer = new FileReader();
   lezer.onload = function () {
@@ -153,7 +164,12 @@ function zetBackupTerug(bestand, klaar) {
     if (bd && nu && bd < nu && !window.confirm("Let op: deze back-up komt uit een oudere versie van de app (" + b.appVersie + "). Nieuwe onderdelen kunnen leeg zijn. Doorgaan met terugzetten?")) { klaar("Terugzetten afgebroken."); return; }
     if (bd && nu && bd > nu && !window.confirm("Let op: deze back-up komt uit een nieuwere versie (" + b.appVersie + ") dan deze app (" + APP_VERSIE + "). Vervang eerst het appbestand door de nieuwste versie. Toch doorgaan?")) { klaar("Terugzetten afgebroken."); return; }
     try {
-      Object.keys(b.gegevens).forEach(function (k) { if (k.indexOf(OPSLAG_VOORVOEGSEL) === 0) window.localStorage.setItem(k, b.gegevens[k]); });
+      Object.keys(b.gegevens).forEach(function (k) {
+        if (k.indexOf(OPSLAG_VOORVOEGSEL) !== 0) return;
+        if (k === OPSLAG_VOORVOEGSEL + "klanten") window.localStorage.setItem(k, voegKlantenSamen(window.localStorage.getItem(k), b.gegevens[k]));
+        else window.localStorage.setItem(k, b.gegevens[k]);
+      });
+      window.sessionStorage.removeItem("ip_actief");
     } catch (e) { klaar("Terugzetten is mislukt: " + (e && e.name)); return; }
     klaar("Terugzetten gelukt. De app laadt opnieuw."); setTimeout(function () { window.location.reload(); }, 600);
   };

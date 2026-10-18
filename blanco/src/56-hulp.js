@@ -240,7 +240,7 @@ function ActualiseerKaart() {
 
 /* ---------- Back-upbalk linksonder (zoals in je eigen app) ---------- */
 var BACKUP_META = "ip_backupMeta";
-var BACKUP_NEGEER = /^inkomensplanning_(_kapot_.*|cijfers)$/;
+var BACKUP_NEGEER = /^inkomensplanning_(_kapot_.*|(k\d+_)?cijfers)$/;
 function opslagStand(volledig) {
   var o = {};
   try {

@@ -1,5 +1,6 @@
 // Browsertest met Playwright (Chromium, tijdzone Europe/Amsterdam).
 const { chromium } = require("playwright");
+const { start, openKlant } = require("./hulp");
 const path = require("path");
 const url = "file://" + path.join(__dirname, "..", "index.html");
 const MENUS = ["dashboard", "inkomen", "pensioen", "lasten", "vermogen", "grote", "fiscaal", "rapport"]; // aanvulling en advies zijn pas zichtbaar na keuze in de intake
@@ -14,8 +15,7 @@ const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undef
     page.on("pageerror", e => pageErrors.push(e.message));
     page.on("console", m => { if (m.type() === "error") consoleErr.push(m.text()); });
     page.on("dialog", d => d.accept());
-    await page.goto(url);
-    await page.waitForSelector(".kop");
+    await start(page, url, ".kop");
     // Verse start: intake van Dashboard opent automatisch
     ok(`[${breedte}] opent op Dashboard`, (await page.textContent(".kop small")).startsWith("Dashboard"));
     ok(`[${breedte}] versiestempel in kop`, /App-versie \d{2}-\d{2}-\d{4} · \d{2}:\d{2}/.test(await page.textContent(".kop small")));

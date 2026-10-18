@@ -1,4 +1,5 @@
 const { chromium } = require("playwright");
+const { start, openKlant } = require("./hulp");
 const path = require("path");
 const url = "file://" + path.join(__dirname, "..", "index.html");
 let fouten = 0;
@@ -8,7 +9,7 @@ const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undef
   const ctx = await browser.newContext({ viewport: { width: 411, height: 900 }, timezoneId: "Europe/Amsterdam", acceptDownloads: true });
   const page = await ctx.newPage(); const pe = [];
   page.on("pageerror", e => pe.push(e.message)); page.on("dialog", d => d.accept());
-  await page.goto(url); await page.waitForSelector("[role=dialog]");
+  await start(page, url, "[role=dialog]");
   const dlg = "[role=dialog] ";
   const v = (sel, w) => page.fill(`${dlg}[data-veld="${sel}"]`, w);
   const volgende = () => page.click('[data-knop="intake-volgende"]');
@@ -116,10 +117,12 @@ const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undef
   const b = JSON.parse(require("fs").readFileSync(pad, "utf8"));
   ok("back-up bevat gegevens en versie", b.app === "inkomensplanning-blanco" && /\d{2}-\d{2}-\d{4}/.test(b.appVersie) && Object.keys(b.gegevens).length > 5);
   ok("balk meldt back-up actueel", /Back-up actueel/.test(await page.textContent('[data-balkje]')), await page.textContent('[data-balkje]'));
-  await page.evaluate(() => localStorage.clear()); await page.reload(); await page.waitForSelector(".kop");
-  await page.setInputFiles('[data-veld="backup-bestand"]', pad).catch(async () => { await page.keyboard.press("Escape"); await page.setInputFiles('[data-veld="backup-bestand"]', pad); });
-  await page.waitForTimeout(1500); await page.waitForSelector(".kop");
-  ok("terugzetten herstelt gegevens", (await page.evaluate(() => JSON.parse(localStorage.getItem("inkomensplanning_verm")).rekeningen[0].saldo)) === 25000);
+  await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); }); await page.reload(); await page.waitForSelector('[data-scherm="klanten"]');
+  ok("na wissen: lege klantenlijst", await page.locator('[data-klant]').count() === 0);
+  await page.setInputFiles('[data-veld="backup-bestand"]', pad);
+  await page.waitForTimeout(1500); await page.waitForSelector('[data-scherm="klanten"]');
+  ok("terugzetten brengt de klant terug", await page.locator('[data-klant]').count() === 1);
+  ok("terugzetten herstelt gegevens", (await page.evaluate(() => JSON.parse(localStorage.getItem("inkomensplanning_k001_verm")).rekeningen[0].saldo)) === 25000);
   ok("geen pageerror", pe.length === 0, pe.join("|"));
   await browser.close(); console.log(fouten ? "FOUTEN" : "Alles OK");
 })();

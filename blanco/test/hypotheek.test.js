@@ -1,4 +1,5 @@
 const { chromium } = require("playwright");
+const { start, openKlant } = require("./hulp");
 const path = require("path");
 const url = "file://" + path.join(__dirname, "..", "index.html");
 let fouten = 0;
@@ -8,7 +9,7 @@ const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undef
   const ctx = await browser.newContext({ viewport: { width: 411, height: 900 }, timezoneId: "Europe/Amsterdam" });
   const page = await ctx.newPage(); const pe = [];
   page.on("pageerror", e => pe.push(e.message)); page.on("dialog", d => d.accept());
-  await page.goto(url); await page.waitForSelector("[role=dialog]");
+  await start(page, url, "[role=dialog]");
   const dlg = "[role=dialog] ", v = (s, w) => page.fill(`${dlg}[data-veld="${s}"]`, w), volgende = () => page.click('[data-knop="intake-volgende"]'), tekst = () => page.textContent("[role=dialog]");
   await page.check(`${dlg}input[type=checkbox]`); await volgende();
   await page.check(`${dlg}[data-huishouden="man"]`); await volgende();
