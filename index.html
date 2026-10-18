@@ -6869,6 +6869,17 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
   // Kaart op het openingsscherm: het advies verschijnt elke keer dat de app opent.
   const adviesCache = React.useRef(null);
   const [adviesUpload, setAdviesUpload] = React.useState("");
+  const [adviesMelding, setAdviesMelding] = React.useState("");
+  // Verdeling van een lijst fondsen in % offensief / % neutraal (en defensief, alleen als er obligatiefondsen in zitten).
+  function adviesVerdelingTekst(lijst) {
+    const som = { def: 0, neu: 0, off: 0 };
+    lijst.forEach(x => { som[adviesCategorie(x.naam, x.isin)] += Number(x.waarde) || 0; });
+    const t = som.def + som.neu + som.off;
+    if (!(t > 0)) return "";
+    const off = Math.round(som.off / t * 100);
+    if (som.def > 0) { const def = Math.round(som.def / t * 100); return off + "% offensief, " + (100 - off - def) + "% neutraal, " + def + "% defensief"; }
+    return off + "% offensief, " + (100 - off) + "% neutraal";
+  }
   function renderAdviesOpening() {
     const sig = JSON.stringify([adviesParams, beleggingsOverzicht && beleggingsOverzicht.pensioenDegiro && beleggingsOverzicht.pensioenDegiro.totaal, beleggingsOverzicht && beleggingsOverzicht.pensioenBnd && beleggingsOverzicht.pensioenBnd.totaal]);
     if (!adviesCache.current || adviesCache.current.sig !== sig) {
@@ -6990,7 +7001,9 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
           const som2 = gelezen.reduce((s, x) => s + x.waarde, 0);
           return H("div", null,
             adviesUpload.trim() ? H("p", { className: "text-xs mt-1 " + (gelezen.length ? "text-emerald-700" : "text-rose-700") }, gelezen.length ? gelezen.length + " fondsen gelezen, totaal " + vmEuro(som2) + ": " + gelezen.map(x => x.naam).join("; ") : "Niets herkend. Gebruik de csv uit DEGIRO of een regel per fonds met naam en bedrag.") : null,
-            H("button", { type: "button", disabled: !gelezen.length, className: vmKnopDonker + " mt-2", style: gelezen.length ? null : { opacity: 0.4 }, onClick: () => { if (!gelezen.length) return; setAdviesParams(prev => ({ ...(prev || {}), portefeuille: gelezen, portefeuilleDatum: vmIso(APP_VANDAAG) })); setAdviesUpload(""); } }, "Verwerk en herijk"));
+            gelezen.length ? H("p", { className: "text-xs mt-1 text-slate-700" }, "Nieuwe situatie na verwerken: " + adviesVerdelingTekst(gelezen) + " (doel " + pct(doel.off, somDoel) + "% offensief, " + pct(doel.neu, somDoel) + "% neutraal).") : null,
+            H("button", { type: "button", disabled: !gelezen.length, className: vmKnopDonker + " mt-2", style: gelezen.length ? null : { opacity: 0.4 }, onClick: () => { if (!gelezen.length) return; setAdviesMelding("Portefeuille bijgewerkt op " + fmtDate(APP_VANDAAG) + ". Nieuwe situatie: " + adviesVerdelingTekst(gelezen) + " (doel " + pct(doel.off, somDoel) + "% offensief, " + pct(doel.neu, somDoel) + "% neutraal)."); setAdviesParams(prev => ({ ...(prev || {}), portefeuille: gelezen, portefeuilleDatum: vmIso(APP_VANDAAG) })); setAdviesUpload(""); } }, "Verwerk en herijk"),
+            adviesMelding ? H("p", { className: "text-sm mt-2 font-semibold text-emerald-800" }, adviesMelding) : null);
         })()),
       H("div", { className: kaart },
         H("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-1" }, "Je fondsen vrij beleggen (stand " + (P.portefeuilleDatum || "2026-10-18") + ", zelf bij te werken of te uploaden)"),
