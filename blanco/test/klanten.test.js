@@ -49,7 +49,7 @@ const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undef
   await page.locator('[data-klant="k004"] [data-knop="klant-wis"]').click();
   ok("verwijderen haalt klant en data weg", await page.locator("[data-klant]").count() === 3 && await page.evaluate(() => Object.keys(localStorage).filter(k => k.indexOf("inkomensplanning_k004_") === 0).length === 0));
   // terugkeren naar app na herladen blijft in dezelfde klant; nieuw tabblad start in lijst
-  await page.locator('[data-klant="k002"] [data-knop="klant-open"]').click(); await page.waitForSelector(".kop small");
+  await page.locator('[data-klant="k002"] [data-knop="klant-open"]').click(); await page.waitForSelector('[data-knop="naar-klanten"]');
   await page.reload(); await page.waitForSelector(".kop");
   ok("herladen blijft in geopende klant", /K-007/.test(await page.textContent(".kop .titel b")));
   const sw = await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]);
