@@ -6724,10 +6724,15 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
   function adviesRaisin(P) { return Number((P || {}).raisin6 != null ? P.raisin6 : 3.15); }
   function adviesRaisinDatum(P) { return (P || {}).raisinDatum || "2026-10-15"; }
   function adviesBelasting(P) { return Number((P || {}).belasting != null ? P.belasting : 36); }
-  // Marge is netto (na belasting); omgerekend naar bruto: het fonds moet na belasting minstens zoveel méér overhouden dan Raisin.
+  // Stelsel: "forfait" = huidige box 3 (fictief rendement: sparen 1,28%, beleggen 6,00%, voor 2026), "werkelijk" = belasting over het echte rendement (beoogd vanaf 2028, nog onzeker).
+  function adviesStelsel(P) { return (P || {}).stelsel === "werkelijk" ? "werkelijk" : "forfait"; }
+  function adviesForfaitSparen(P) { return Number((P || {}).forfaitSparen != null ? P.forfaitSparen : 1.28); }
+  function adviesForfaitBeleg(P) { return Number((P || {}).forfaitBeleg != null ? P.forfaitBeleg : 6); }
+  // Marge is netto (na belasting): het fonds moet na belasting minstens zoveel méér overhouden dan Raisin.
   function adviesMargeNetto(P) { return Number((P || {}).defMarge != null ? P.defMarge : 0.3); }
-  function adviesMinDef(P) { return Math.round((adviesRaisin(P) + adviesMargeNetto(P) / (1 - adviesBelasting(P) / 100)) * 100) / 100; }
-  function adviesNetto(bruto, P) { return bruto * (1 - adviesBelasting(P) / 100); }
+  function adviesNettoRaisin(P) { const t = adviesBelasting(P) / 100, r = adviesRaisin(P); return adviesStelsel(P) === "forfait" ? r - t * adviesForfaitSparen(P) : r * (1 - t); }
+  function adviesNetto(bruto, P) { const t = adviesBelasting(P) / 100; return adviesStelsel(P) === "forfait" ? bruto - t * adviesForfaitBeleg(P) : bruto * (1 - t); }
+  function adviesMinDef(P) { const t = adviesBelasting(P) / 100, doelNetto = adviesNettoRaisin(P) + adviesMargeNetto(P); return Math.round((adviesStelsel(P) === "forfait" ? doelNetto + t * adviesForfaitBeleg(P) : doelNetto / (1 - t)) * 100) / 100; }
   function adviesRaisinOud(P) { const d = new Date(adviesRaisinDatum(P) + "T12:00:00"); return (Date.now() - d.getTime()) / 86400000 > 7; }
   function adviesVoldoetMin(f, P) { return f.rend != null && f.rend - f.terNum >= adviesMinDef(P); }
   // Fondsen en bedragen voor een categorie: defensief verdeelt over de fondsen die het minimum halen.
@@ -7010,7 +7015,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     return H("section", null, H("div", { className: "rounded-lg p-4 text-sm bg-white", style: { border: "1px solid #a7f3d0", background: "#f0fdf4" } },
       H("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-1" }, "Beleggingsadvies bij het openen · markt " + ADVIES_MARKT.datum),
       S.regels.map((r, i) => H("p", { key: i, className: "py-1" }, r)),
-      H("p", { className: "py-1" }, "Raisin 6-maandsdeposito: " + vmPct(adviesRaisin(adviesParams), 2) + " bruto (stand " + adviesRaisinDatum(adviesParams).split("-").reverse().join("-") + "), na " + adviesBelasting(adviesParams) + "% belasting " + vmPct(adviesNetto(adviesRaisin(adviesParams), adviesParams), 2) + ". Defensief beleggen heeft pas zin als een fonds bruto minimaal " + vmPct(adviesMinDef(adviesParams), 2) + " haalt (na belasting " + vmPct(adviesMargeNetto(adviesParams), 1) + " méér dan Raisin). Anders neem je risico voor niets."),
+      H("p", { className: "py-1" }, "Raisin 6-maandsdeposito: " + vmPct(adviesRaisin(adviesParams), 2) + " bruto (stand " + adviesRaisinDatum(adviesParams).split("-").reverse().join("-") + "), na belasting " + vmPct(adviesNettoRaisin(adviesParams), 2) + ". " + (adviesStelsel(adviesParams) === "forfait" ? "Sparen wordt belast over een fictief rendement van " + vmPct(adviesForfaitSparen(adviesParams), 2) + ", beleggen over " + vmPct(adviesForfaitBeleg(adviesParams), 2) + ": dat is een fiscaal voordeel voor sparen. " : "") + "Een defensief fonds moet daarom bruto minimaal " + vmPct(adviesMinDef(adviesParams), 2) + " halen. Anders neem je risico voor niets."),
       adviesRaisinOud(adviesParams) ? H("p", { className: "py-1 font-semibold", style: { color: "#b45309" } }, "Controleer de Raisin-rente: de stand is ouder dan 7 dagen. De app kan Raisin niet zelf opvragen. Pas de rente aan in het tabblad Beleggingsadvies, of vraag mij hem bij te werken.") : null,
       H("button", { type: "button", className: "underline font-semibold mt-1", onClick: () => setActieveTab("beleggingsadvies") }, "Bekijk het hele advies")));
   }
@@ -7097,6 +7102,8 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
         inv("Raisin 6-maandsdeposito (hoogste rente)", adviesRaisin(P), v => { zet("raisin6", v); zet("raisinDatum", new Date().toISOString().slice(0, 10)); }, "%", "0.01"),
         inv("Extra rendement na belasting boven Raisin", adviesMargeNetto(P), v => zet("defMarge", v), "%", "0.1"),
         inv("Belasting over rendement", adviesBelasting(P), v => zet("belasting", v), "%", "1"),
+        H("div", { className: "flex gap-2 py-1.5 text-sm" }, [["forfait", "Huidig stelsel (fictief)"], ["werkelijk", "Werkelijk rendement"]].map(([id, nm]) => H("button", { key: id, type: "button", onClick: () => zet("stelsel", id), className: "px-3 py-1.5 rounded-lg border " + (adviesStelsel(P) === id ? "bg-slate-800 text-white border-slate-800" : "bg-white border-slate-300") }, nm))),
+        adviesStelsel(P) === "forfait" ? [inv("Fictief rendement sparen (2026, voorlopig)", adviesForfaitSparen(P), v => zet("forfaitSparen", v), "%", "0.01"), inv("Fictief rendement beleggen (2026)", adviesForfaitBeleg(P), v => zet("forfaitBeleg", v), "%", "0.01")] : null,
         H("label", { className: "flex items-center gap-2 text-sm py-1.5" }, H("input", { type: "checkbox", checked: P.semisBehouden !== false, onChange: e => zet("semisBehouden", e.target.checked) }), "Chipfondsen behouden (niet verkopen)"),
         H("div", { className: "text-xs uppercase tracking-wide text-slate-500 mt-3 mb-1" }, "Doelverdeling vrij beleggen (in %)"),
         inv("Defensief", P.def, v => zet("def", v), "%"), inv("Neutraal", P.neu, v => zet("neu", v), "%"), inv("Offensief", P.off, v => zet("off", v), "%"),
@@ -8314,7 +8321,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     className: "font-mono text-xs uppercase tracking-widest bg-slate-700/60 border border-slate-500 rounded-full px-3 py-1"
   }, "peildatum ", fmtDate(PEILDATUM)), /*#__PURE__*/React.createElement("span", {
     className: "w-full text-xs text-slate-400 no-print"
-  }, "App-versie ", "18-10-2026 · 18:40")), /*#__PURE__*/React.createElement("p", {
+  }, "App-versie ", "18-10-2026 · 19:15")), /*#__PURE__*/React.createElement("p", {
     className: "mt-2 text-slate-300 text-sm max-w-2xl"
   }, "Bedragen zijn nominaal per peildatum, tenzij een indexatiepercentage is ingevuld. Alle basisbedragen zijn zelf aanpasbaar bij \"Basisgegevens\"." + (actieveTab === "fiscaliteit" ? " Alle aannames staan onderaan bij \"Aannames & beperkingen\". Bij het openen checkt dit bestand automatisch vier fiscale kerncijfers (zie bovenaan) — bij een afwijking wordt er niets automatisch aangepast, dat blijft een bewuste stap." : "")), /*#__PURE__*/React.createElement("div", {
     className: "mt-4 flex flex-wrap gap-2 items-center no-print"
