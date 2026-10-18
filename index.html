@@ -6700,8 +6700,8 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
   // ===== Beleggingsadvies =====
   // Gecontroleerd op 18-10-2026 via fondsdata-sites (extraETF, finanzen, finect). Controleer de ISIN altijd ook in DEGIRO.
   const ADVIES_FONDSEN = [
-    { cat: "def", hoofd: true, naam: "iShares Core € Corp Bond UCITS ETF (Dist)", isin: "IE00B3F81R35", ter: "0,09%", soort: "Euro bedrijfsobligaties, uitkerend" },
-    { cat: "def", hoofd: false, naam: "iShares € Govt Bond 1-3yr UCITS ETF (Dist)", isin: "IE00B14X4Q57", ter: "0,15%", soort: "Euro staatsobligaties 1-3 jaar, uitkerend; rendement dicht bij de rente" },
+    { cat: "def", hoofd: true, naam: "iShares Core € Corp Bond UCITS ETF EUR (Acc)", isin: "IE00BF11F565", ter: "0,09%", soort: "Euro bedrijfsobligaties, kapitaliserend" },
+    { cat: "def", hoofd: false, naam: "Xtrackers II Eurozone Government Bond 1-3 UCITS ETF 1C", isin: "LU0290356871", ter: "0,10%", soort: "Euro staatsobligaties 1-3 jaar, kapitaliserend; rendement dicht bij de rente" },
     { cat: "neu", hoofd: true, naam: "Vanguard LifeStrategy 60% Equity UCITS ETF (EUR) Acc", isin: "IE00BMVB5P51", ter: "0,25%", soort: "60% aandelen, 40% obligaties, kapitaliserend" },
     { cat: "neu", hoofd: false, naam: "Vanguard LifeStrategy 40% Equity UCITS ETF (EUR) Acc", isin: "IE00BMVB5M21", ter: "0,25%", soort: "40% aandelen, 60% obligaties, kapitaliserend" },
     { cat: "off", hoofd: true, naam: "Vanguard FTSE All-World UCITS ETF USD Acc", isin: "IE00BK5BQT80", ter: "0,14% (eerder 0,19%)", soort: "Wereldwijd aandelen incl. opkomende landen, kapitaliserend" },
@@ -7001,7 +7001,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
             H("div", { className: "text-sm" }, f.naam + (f.hoofd ? " (hoofdkeuze)" : "")),
             H("div", { className: "text-xs font-mono text-slate-700" }, "ISIN " + f.isin + " · TER " + f.ter),
             H("div", { className: "text-xs text-slate-500" }, f.soort))))),
-        H("p", { className: "text-xs text-slate-500 mt-2" }, "ISIN's en kosten zijn op 18-10-2026 gecontroleerd bij fondsdata-sites. Controleer in DEGIRO of het fonds op jouw beurs beschikbaar is en wat de kosten zijn. Dit is een rekenhulp op basis van je eigen uitgangspunten, geen persoonlijk beleggingsadvies.")));
+        H("p", { className: "text-xs text-slate-500 mt-2" }, "Alleen kapitaliserende (accumulating) fondsen. ISIN's en kosten zijn op 18-10-2026 gecontroleerd bij fondsdata-sites. Controleer in DEGIRO of het fonds op jouw beurs beschikbaar is en wat de kosten zijn. Dit is een rekenhulp op basis van je eigen uitgangspunten, geen persoonlijk beleggingsadvies.")));
   }
 
   function renderVermogenOverzicht() {
@@ -8165,7 +8165,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     className: "font-mono text-xs uppercase tracking-widest bg-slate-700/60 border border-slate-500 rounded-full px-3 py-1"
   }, "peildatum ", fmtDate(PEILDATUM)), /*#__PURE__*/React.createElement("span", {
     className: "w-full text-xs text-slate-400 no-print"
-  }, "App-versie ", "18-10-2026 · 14:00")), /*#__PURE__*/React.createElement("p", {
+  }, "App-versie ", "18-10-2026 · 14:30")), /*#__PURE__*/React.createElement("p", {
     className: "mt-2 text-slate-300 text-sm max-w-2xl"
   }, "Bedragen zijn nominaal per peildatum, tenzij een indexatiepercentage is ingevuld. Alle basisbedragen zijn zelf aanpasbaar bij \"Basisgegevens\"." + (actieveTab === "fiscaliteit" ? " Alle aannames staan onderaan bij \"Aannames & beperkingen\". Bij het openen checkt dit bestand automatisch vier fiscale kerncijfers (zie bovenaan) — bij een afwijking wordt er niets automatisch aangepast, dat blijft een bewuste stap." : "")), /*#__PURE__*/React.createElement("div", {
     className: "mt-4 flex flex-wrap gap-2 items-center no-print"
