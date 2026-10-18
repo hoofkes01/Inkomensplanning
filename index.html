@@ -4083,7 +4083,7 @@ function nettoMarginaal(bestaandBrutoJaar, extraBrutoJaar, naAOW, datum, metExtr
   }
   const [cpiPrognose, setCpiPrognose] = useOpslag("cpiPrognose", 3);
   const [vmDetail, setVmDetail] = React.useState(null);
-  const [adviesParams, setAdviesParams] = useOpslag("adviesParams", { euribor: 3.2, euriborDatum: "2026-10-16", drempel: 15000, def: 20, neu: 30, off: 50, semisBehouden: true, defMin: 3.1 });
+  const [adviesParams, setAdviesParams] = useOpslag("adviesParams", { euribor: 3.2, euriborDatum: "2026-10-16", drempel: 15000, def: 20, neu: 30, off: 50, semisBehouden: true, defMin: 3.1, raisin6: 3.15, raisinDatum: "2026-10-15", defMarge: 0.5 });
   const [kortDepoMeetellen, setKortDepoMeetellen] = useOpslag("kortDepoMeetellen", true);
   const [nieuweBron, setNieuweBron] = useOpslag("nieuweBronFormulier", { naam: "", persoon: "man", soort: "werk", bedrag: "", indexType: "vast", index: "", caoTot: "", start: "", eind: "" });
   function voegBronToe() {
@@ -6719,9 +6719,13 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
   ];
   const ADVIES_CAT = { def: "Defensief", neu: "Neutraal", off: "Offensief" };
   const ADVIES_KLEUR = { def: "#0d9488", neu: "#2563eb", off: "#7c3aed" };
-  // Defensieve fondsen mogen nooit minder opleveren dan een 3-maandsdeposito (instelbaar, standaard 3,1%).
+  // Defensieve fondsen: minimaal Raisin 6-maandsdeposito plus marge; anders is beleggen zinloos (box 3).
   // Alleen fondsen met een gecontroleerd rendement (yield min kosten) boven dat minimum komen in aanmerking.
-  function adviesVoldoetMin(f, P) { const min = Number(((P || {}).defMin != null ? (P || {}).defMin : 3.1)); return f.rend != null && f.rend - f.terNum >= min; }
+  function adviesRaisin(P) { return Number((P || {}).raisin6 != null ? P.raisin6 : 3.15); }
+  function adviesRaisinDatum(P) { return (P || {}).raisinDatum || "2026-10-15"; }
+  function adviesMinDef(P) { return Math.round((adviesRaisin(P) + Number((P || {}).defMarge != null ? P.defMarge : 0.5)) * 100) / 100; }
+  function adviesRaisinOud(P) { const d = new Date(adviesRaisinDatum(P) + "T12:00:00"); return (Date.now() - d.getTime()) / 86400000 > 7; }
+  function adviesVoldoetMin(f, P) { return f.rend != null && f.rend - f.terNum >= adviesMinDef(P); }
   // Fondsen en bedragen voor een categorie: defensief verdeelt over de fondsen die het minimum halen.
   function adviesKoopRegels(c, bedrag, P) {
     if (c !== "def") { const f = ADVIES_FONDSEN.find(x => x.cat === c && x.hoofd); return f ? [{ f, bedrag }] : []; }
@@ -6995,6 +6999,8 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     return H("section", null, H("div", { className: "rounded-lg p-4 text-sm bg-white", style: { border: "1px solid #a7f3d0", background: "#f0fdf4" } },
       H("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-1" }, "Beleggingsadvies bij het openen · markt " + ADVIES_MARKT.datum),
       S.regels.map((r, i) => H("p", { key: i, className: "py-1" }, r)),
+      H("p", { className: "py-1" }, "Raisin 6-maandsdeposito: " + vmPct(adviesRaisin(adviesParams), 2) + " (stand " + adviesRaisinDatum(adviesParams).split("-").reverse().join("-") + "). Defensief beleggen heeft pas zin bij minimaal " + vmPct(adviesMinDef(adviesParams), 2) + " (Raisin plus marge); bij een klein verschil is het zinloos, mede door de toekomstige box 3-heffing."),
+      adviesRaisinOud(adviesParams) ? H("p", { className: "py-1 font-semibold", style: { color: "#b45309" } }, "Controleer de Raisin-rente: de stand is ouder dan 7 dagen. De app kan Raisin niet zelf opvragen. Pas de rente aan in het tabblad Beleggingsadvies, of vraag mij hem bij te werken.") : null,
       H("button", { type: "button", className: "underline font-semibold mt-1", onClick: () => setActieveTab("beleggingsadvies") }, "Bekijk het hele advies")));
   }
   function renderBeleggingsadvies() {
@@ -7008,7 +7014,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     const inv = (label, waarde, onChange, eenheid, step) => H("label", { className: "flex items-center justify-between gap-3 py-1.5 text-sm" }, H("span", null, label),
       H("span", { className: "flex items-center gap-1" }, H(NumInput, { step: step || "1", value: waarde, onChange: e => onChange(e.target.value === "" ? "" : Number(e.target.value)), className: "w-24 border border-slate-300 rounded px-2 py-1.5 font-mono text-sm text-right" }), H("span", { className: "text-xs text-slate-500" }, eenheid)));
     const rendement = {
-      def: "verwacht rendement ongeveer " + vmPct(euribor + 1, 1) + " (Euribor + 1%), en nooit minder dan een 3-maandsdeposito (" + vmPct(P.defMin != null ? P.defMin : 3.1, 1) + ")",
+      def: "verwacht rendement ongeveer " + vmPct(euribor + 1, 1) + " (Euribor + 1%), en minimaal Raisin 6-maandsdeposito (" + vmPct(adviesRaisin(P), 2) + ") plus marge = " + vmPct(adviesMinDef(P), 2),
       neu: "verwacht rendement " + vmPct(euribor + 2, 1) + " tot " + vmPct(euribor + 3, 1) + " (Euribor + 2 tot 3%)",
       off: "verwacht rendement boven " + vmPct(euribor + 3, 1) + " (boven Euribor + 3%)"
     };
@@ -7036,8 +7042,8 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
               H("div", { className: "text-sm" }, f.naam + " · " + vmEuro(bedrag)),
               H("div", { className: "text-xs font-mono text-slate-700" }, "ISIN " + f.isin + " · TER " + f.ter),
               H("div", { className: "text-xs text-slate-500" }, f.soort))),
-            c === "def" && regels.length === 0 ? H("div", { className: "text-sm text-amber-800 mt-1" }, "Geen defensief fonds haalt het minimum van " + vmPct(P.defMin != null ? P.defMin : 3.1, 1) + " (3-maandsdeposito). Houd dit bedrag liever in een deposito.") : null,
-            c === "def" && regels.length > 0 ? H("div", { className: "text-xs text-slate-500 mt-1" }, "Alleen fondsen die minimaal " + vmPct(P.defMin != null ? P.defMin : 3.1, 1) + " opleveren (yield min kosten), zoals een 3-maandsdeposito.") : null,
+            c === "def" && regels.length === 0 ? H("div", { className: "text-sm text-amber-800 mt-1" }, "Geen defensief fonds haalt het minimum van " + vmPct(adviesMinDef(P), 2) + " (Raisin 6 maanden + marge). Het verschil is te klein om defensief te beleggen (ook door de toekomstige box 3-heffing over werkelijk rendement): houd dit bedrag liever in een deposito.") : null,
+            c === "def" && regels.length > 0 ? H("div", { className: "text-xs text-slate-500 mt-1" }, "Alleen fondsen die minimaal " + vmPct(adviesMinDef(P), 2) + " opleveren (yield min kosten): Raisin 6 maanden + marge.") : null,
             c === "off" ? H("div", { className: "text-xs text-slate-500 mt-1" }, "Spreid dit over 3 maandelijkse aankopen van ongeveer " + vmEuro(Math.round(koop[c] / 3 / 10) * 10) + ": de markt is volatiel en de waardering is hoog.") : null);
         }),
         somBeh === 0 ? H("p", { className: "text-sm text-slate-600" }, "Je vrij beleggen zit al op of boven de doelverdeling; zet het bedrag naar eigen inzicht in.") : null,
@@ -7058,7 +7064,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
             s.verkoop.map((v, j) => H("div", { key: j, className: "text-sm font-mono" }, "VERKOPEN " + (v.isin || "(ISIN onbekend)") + " " + vmEuro(v.bedrag), H("span", { className: "font-sans text-xs text-slate-500" }, " " + v.naam + (v.isin ? "" : ": zoek op naam in DEGIRO")))),
             ["def", "neu", "off"].filter(c => s.koop[c] > 0).map(c => {
               const regels = adviesKoopRegels(c, s.koop[c], P);
-              if (!regels.length) return H("div", { key: c, className: "text-sm text-amber-800" }, "Defensief " + vmEuro(s.koop[c]) + ": geen fonds haalt het minimum van " + vmPct(P.defMin != null ? P.defMin : 3.1, 1) + "; houd dit in een deposito.");
+              if (!regels.length) return H("div", { key: c, className: "text-sm text-amber-800" }, "Defensief " + vmEuro(s.koop[c]) + ": geen fonds haalt het minimum van " + vmPct(adviesMinDef(P), 2) + "; houd dit in een deposito.");
               return H("div", { key: c }, regels.map(x => H("div", { key: x.f.isin, className: "text-sm font-mono" }, "KOPEN " + x.f.isin + " " + vmEuro(x.bedrag), H("span", { className: "font-sans text-xs text-slate-500" }, " " + x.f.naam))));
             }))),
           P.semisBehouden !== false ? H("p", { className: "text-xs text-slate-600" }, "Chipfondsen blijven staan (jouw keuze); ze tellen mee in je offensieve deel.") : null,
@@ -7077,7 +7083,8 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
         inv("Euribor 12 maanden", euribor, v => zet("euribor", v), "%", "0.01"),
         H("p", { className: "text-xs text-slate-500" }, "Stand " + P.euriborDatum + ": 3,2% (euribor-rates.eu, global-rates.com). Pas aan als het verandert."),
         inv("Drempel direct opneembaar spaargeld", drempel, v => zet("drempel", v), "€"),
-        inv("Minimaal rendement defensief (3-maandsdeposito)", P.defMin != null ? P.defMin : 3.1, v => zet("defMin", v), "%", "0.1"),
+        inv("Raisin 6-maandsdeposito (hoogste rente)", adviesRaisin(P), v => { zet("raisin6", v); zet("raisinDatum", new Date().toISOString().slice(0, 10)); }, "%", "0.01"),
+        inv("Marge boven Raisin (anders zinloos, box 3)", P.defMarge != null ? P.defMarge : 0.5, v => zet("defMarge", v), "%", "0.1"),
         H("label", { className: "flex items-center gap-2 text-sm py-1.5" }, H("input", { type: "checkbox", checked: P.semisBehouden !== false, onChange: e => zet("semisBehouden", e.target.checked) }), "Chipfondsen behouden (niet verkopen)"),
         H("div", { className: "text-xs uppercase tracking-wide text-slate-500 mt-3 mb-1" }, "Doelverdeling vrij beleggen (in %)"),
         inv("Defensief", P.def, v => zet("def", v), "%"), inv("Neutraal", P.neu, v => zet("neu", v), "%"), inv("Offensief", P.off, v => zet("off", v), "%"),
@@ -7131,7 +7138,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
             H("div", { className: "text-sm" }, f.naam + (f.hoofd ? " (hoofdkeuze)" : "")),
             H("div", { className: "text-xs font-mono text-slate-700" }, "ISIN " + f.isin + " · TER " + f.ter),
             H("div", { className: "text-xs text-slate-500" }, f.soort),
-            c === "def" ? H("div", { className: "text-xs " + (adviesVoldoetMin(f, P) ? "text-emerald-700" : "text-rose-700") }, f.rend != null ? "Rendement " + vmPct(f.rend, 2) + " min kosten " + vmPct(f.terNum, 2) + " = " + vmPct(f.rend - f.terNum, 2) + " (" + f.rendBron + "): " + (adviesVoldoetMin(f, P) ? "haalt" : "haalt niet") + " het minimum van " + vmPct(P.defMin != null ? P.defMin : 3.1, 1) : "Rendement niet gecontroleerd: wordt niet voorgesteld") : null)))),
+            c === "def" ? H("div", { className: "text-xs " + (adviesVoldoetMin(f, P) ? "text-emerald-700" : "text-rose-700") }, f.rend != null ? "Rendement " + vmPct(f.rend, 2) + " min kosten " + vmPct(f.terNum, 2) + " = " + vmPct(f.rend - f.terNum, 2) + " (" + f.rendBron + "): " + (adviesVoldoetMin(f, P) ? "haalt" : "haalt niet") + " het minimum van " + vmPct(adviesMinDef(P), 2) : "Rendement niet gecontroleerd: wordt niet voorgesteld") : null)))),
         H("p", { className: "text-xs text-slate-500 mt-2" }, "Alleen kapitaliserende (accumulating) fondsen. ISIN's en kosten zijn op 18-10-2026 gecontroleerd bij fondsdata-sites. Controleer in DEGIRO of het fonds op jouw beurs beschikbaar is en wat de kosten zijn. Dit is een rekenhulp op basis van je eigen uitgangspunten, geen persoonlijk beleggingsadvies.")));
   }
 
@@ -7984,10 +7991,10 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
             H("thead", null, H("tr", null, H("th", null, "Categorie"), H("th", null, "Bedrag"), H("th", { style: { textAlign: "left" } }, "Fonds"), H("th", { style: { textAlign: "left" } }, "ISIN"))),
             H("tbody", null, cat.filter(c => A.koop[c] > 0).map(c => {
               const regels = adviesKoopRegels(c, A.koop[c], A.P).map(x => [x.f, x.bedrag]);
-              if (!regels.length) return H("tr", { key: c }, H("td", { style: { textAlign: "left" } }, ADVIES_CAT[c]), H("td", null, vmGetal(A.koop[c])), H("td", { style: { textAlign: "left" } }, "Geen fonds haalt het minimum van " + vmPct(A.P.defMin != null ? A.P.defMin : 3.1, 1) + "; houd in deposito"), H("td", null, ""));
+              if (!regels.length) return H("tr", { key: c }, H("td", { style: { textAlign: "left" } }, ADVIES_CAT[c]), H("td", null, vmGetal(A.koop[c])), H("td", { style: { textAlign: "left" } }, "Geen fonds haalt het minimum van " + vmPct(adviesMinDef(A.P), 2) + "; houd in deposito"), H("td", null, ""));
               return regels.map(([x, b2]) => H("tr", { key: c + x.isin }, H("td", { style: { textAlign: "left" } }, ADVIES_CAT[c]), H("td", null, vmGetal(b2)), H("td", { style: { textAlign: "left" } }, x.naam), H("td", { style: { textAlign: "left", fontFamily: "monospace" } }, x.isin)));
             }))) : null,
-          A.koopBasis > 0 && A.koop.off > 0 ? noot("Offensief: spreid de aankoop over 3 maandelijkse tranches van circa " + vmEuro(Math.round(A.koop.off / 3 / 10) * 10) + ". Defensieve fondsen halen minimaal het rendement van een 3-maandsdeposito (" + vmPct(A.P.defMin != null ? A.P.defMin : 3.1, 1) + ").") : null,
+          A.koopBasis > 0 && A.koop.off > 0 ? noot("Offensief: spreid de aankoop over 3 maandelijkse tranches van circa " + vmEuro(Math.round(A.koop.off / 3 / 10) * 10) + ". Defensieve fondsen halen minimaal Raisin 6 maanden plus marge (" + vmPct(adviesMinDef(A.P), 2) + ").") : null,
           H("div", { className: "rp-pagekop" }, H("h2", null, "Vrij beleggen (Hoofkes02)")),
           H("table", { className: "rp-tabel" },
             H("thead", null, H("tr", null, H("th", { style: { textAlign: "left" } }, "Onderdeel"), H("th", null, "Waarde"), H("th", null, "Defensief"), H("th", null, "Neutraal"), H("th", null, "Offensief"))),
@@ -8295,7 +8302,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     className: "font-mono text-xs uppercase tracking-widest bg-slate-700/60 border border-slate-500 rounded-full px-3 py-1"
   }, "peildatum ", fmtDate(PEILDATUM)), /*#__PURE__*/React.createElement("span", {
     className: "w-full text-xs text-slate-400 no-print"
-  }, "App-versie ", "18-10-2026 · 16:45")), /*#__PURE__*/React.createElement("p", {
+  }, "App-versie ", "18-10-2026 · 17:30")), /*#__PURE__*/React.createElement("p", {
     className: "mt-2 text-slate-300 text-sm max-w-2xl"
   }, "Bedragen zijn nominaal per peildatum, tenzij een indexatiepercentage is ingevuld. Alle basisbedragen zijn zelf aanpasbaar bij \"Basisgegevens\"." + (actieveTab === "fiscaliteit" ? " Alle aannames staan onderaan bij \"Aannames & beperkingen\". Bij het openen checkt dit bestand automatisch vier fiscale kerncijfers (zie bovenaan) — bij een afwijking wordt er niets automatisch aangepast, dat blijft een bewuste stap." : "")), /*#__PURE__*/React.createElement("div", {
     className: "mt-4 flex flex-wrap gap-2 items-center no-print"
