@@ -27,34 +27,46 @@ function toeslagVermogenInfo(c) {
   var vermogen = box3Indicatie(m, bank, t.beleggen, overig, schuldBox3(items, t), m.peil).totaal;
   return { vermogen: vermogen, grens: getal(partners ? f.toeslag_vermogen_partner : f.toeslag_vermogen_alleen), grensHuur: partners ? null : getal(f.toeslag_vermogen_huur_alleen), partners: partners, grensInkomen: getal(partners ? f.toeslag_inkomen_zorg_partner : f.toeslag_inkomen_zorg_alleen) };
 }
-// Toeslagen waar de gebruiker mogelijk recht op heeft, op basis van woning, inkomen, vermogen en gezin.
+// Toeslagen waar de gebruiker (waarschijnlijk of mogelijk) recht op heeft, op basis van woning, inkomen, vermogen en gezin,
+// met de plek waar je ze aanvraagt. 'waarschijnlijk' = inkomen ruim onder de grens; 'mogelijk' = hangt van de details af.
+var AANVRAAG_TOESLAGEN = { tekst: "Mijn toeslagen op toeslagen.nl (Belastingdienst/Toeslagen)", url: "https://toeslagen.nl" };
+var AANVRAAG_SVB = { tekst: "de SVB (svb.nl)", url: "https://www.svb.nl" };
+var AANVRAAG_GEMEENTE = { tekst: "je gemeente of zorgkantoor", url: "" };
 function toeslagKandidaten(c) {
   var m = c.m, S = c.S, L = lijstL(S.profiel), vi = toeslagVermogenInfo(c), uit = [], geen = [];
   var kidsJong = (S.profiel.kids || []).filter(function (k) { var g = geldigeDatum(k.geboorte); return g && leeftijdJaren(g, m.nu) < 18; });
   var fasen = fasenLijst(m);
   var inkomenNu = fasen.length ? fasen[0].personen.reduce(function (s, p) { return s + p.bruto; }, 0) * 12 : 0;
-  var laterOnder = fasen.filter(function (x) { return x.personen.reduce(function (s, p) { return s + p.bruto; }, 0) * 12 <= vi.grensInkomen; })[0];
-  function voeg(code, reden) { var cat = bronCat(code); if (cat) uit.push({ code: code, label: cat.label, reden: reden }); }
-  // zorgtoeslag: elke volwassene verzekerd; grenzen voor inkomen en vermogen
+  var horizon = plusJaren(m.nu, 10);
+  var laterOnder = fasen.filter(function (x) { return x.d <= horizon && x.personen.reduce(function (s, p) { return s + p.bruto; }, 0) * 12 <= vi.grensInkomen; })[0];
+  var laag = inkomenNu <= vi.grensInkomen * 0.5;
+  var inkTxt = "Bij je inkomen (circa " + eur(inkomenNu) + " per jaar)";
+  function voeg(code, sterkte, reden, aanvraag) { var cat = bronCat(code); if (cat) uit.push({ code: code, label: cat.label, sterkte: sterkte, reden: reden, aanvraag: aanvraag }); }
   if (vi.vermogen > vi.grens) geen.push("Zorgtoeslag: je vermogen (circa " + eur(vi.vermogen) + ") ligt boven de grens van " + eur(vi.grens) + ".");
-  else if (inkomenNu <= vi.grensInkomen) voeg("zorgtoeslag", "Je inkomen (circa " + eur(inkomenNu) + " per jaar) ligt onder de inkomensgrens van " + eur(vi.grensInkomen) + " en je vermogen onder de grens.");
-  else if (laterOnder) voeg("zorgtoeslag", "Nu ligt je inkomen boven de grens van " + eur(vi.grensInkomen) + ", maar in de fase '" + laterOnder.naam + "' (" + fmtMaand(laterOnder.d) + ") daalt het eronder.");
+  else if (inkomenNu <= vi.grensInkomen * 0.8) voeg("zorgtoeslag", "waarschijnlijk", inkTxt + " en vermogen onder de grens heb je waarschijnlijk recht op zorgtoeslag.", AANVRAAG_TOESLAGEN);
+  else if (inkomenNu <= vi.grensInkomen) voeg("zorgtoeslag", "mogelijk", inkTxt + " zit je net onder de inkomensgrens van " + eur(vi.grensInkomen) + ". Het bedrag is dan klein.", AANVRAAG_TOESLAGEN);
+  else if (laterOnder) voeg("zorgtoeslag", "mogelijk", "Nu ligt je inkomen boven de grens van " + eur(vi.grensInkomen) + ", maar in de fase '" + laterOnder.naam + "' (" + fmtMaand(laterOnder.d) + ") daalt het eronder.", AANVRAAG_TOESLAGEN);
   else geen.push("Zorgtoeslag: je inkomen (circa " + eur(inkomenNu) + " per jaar) ligt boven de grens van " + eur(vi.grensInkomen) + ".");
-  // huurtoeslag
   if (L.woning === "huur") {
     if (vi.grensHuur != null && vi.vermogen > vi.grensHuur) geen.push("Huurtoeslag: je vermogen (circa " + eur(vi.vermogen) + ") ligt boven de grens van " + eur(vi.grensHuur) + " voor een alleenstaande.");
-    else voeg("huurtoeslag", "Je huurt een woning. Of je recht hebt hangt af van je huur, inkomen en vermogen.");
+    else if (laag) voeg("huurtoeslag", "waarschijnlijk", inkTxt + " en een huurwoning heb je waarschijnlijk recht op huurtoeslag. De hoogte hangt af van je huur.", AANVRAAG_TOESLAGEN);
+    else voeg("huurtoeslag", "mogelijk", "Je huurt een woning. Of je recht hebt hangt af van je huur, inkomen en vermogen.", AANVRAAG_TOESLAGEN);
   }
-  // kinderen
   if (kidsJong.length && vi.vermogen <= vi.grens) {
-    voeg("kgb", "Je hebt " + (kidsJong.length === 1 ? "een kind" : kidsJong.length + " kinderen") + " jonger dan 18. Kindgebonden budget hangt af van je inkomen.");
-    if (kidsJong.some(function (k) { return k.opvang; })) voeg("kopvang", "Een of meer kinderen gaan naar kinderopvang of buitenschoolse opvang.");
+    var kN = kidsJong.length === 1 ? "een kind" : kidsJong.length + " kinderen";
+    if (laag) voeg("kgb", "waarschijnlijk", inkTxt + " en " + kN + " jonger dan 18 heb je waarschijnlijk recht op kindgebonden budget.", AANVRAAG_TOESLAGEN);
+    else voeg("kgb", "mogelijk", "Je hebt " + kN + " jonger dan 18. Kindgebonden budget hangt af van je inkomen.", AANVRAAG_TOESLAGEN);
+    if (kidsJong.some(function (k) { return k.opvang; })) {
+      var werkend = m.personen.every(function (p) { return m.bronnen.some(function (b) { return b.persoon === p.id && b.soort === "loon"; }); });
+      voeg("kopvang", werkend ? "waarschijnlijk" : "mogelijk", werkend ? "Een kind gaat naar opvang en alle ouders werken: je hebt waarschijnlijk recht op kinderopvangtoeslag. De hoogte hangt af van je inkomen en de opvangkosten." : "Een kind gaat naar opvang. Recht op kinderopvangtoeslag vraagt dat je werkt of studeert.", AANVRAAG_TOESLAGEN);
+    }
   } else if (kidsJong.length) geen.push("Kindgebonden budget: je vermogen (circa " + eur(vi.vermogen) + ") ligt boven de grens van " + eur(vi.grens) + ".");
-  if (L.beperking) { voeg("extra_kb", "Een kind heeft een beperking met intensieve zorg: er kan extra kinderbijslag zijn."); voeg("tegemoetkoming", "Voor een kind met een beperking zijn er soms vergoedingen of tegemoetkomingen (gemeente, Wlz, Jeugdwet)."); }
+  if (L.beperking) { voeg("extra_kb", "mogelijk", "Een kind heeft een beperking met intensieve zorg: er kan extra kinderbijslag zijn.", AANVRAAG_SVB); voeg("tegemoetkoming", "mogelijk", "Voor een kind met een beperking zijn er soms vergoedingen of tegemoetkomingen (gemeente, Wlz, Jeugdwet).", AANVRAAG_GEMEENTE); }
   var antw = S.profiel.toeslagAntwoord || {};
   uit.forEach(function (k) {
     var heeft = S.bronnen.some(function (b) { return b.code === k.code; });
-    k.antwoord = antw[k.code] || (heeft ? "ja" : "");
+    var a = antw[k.code] === "nee" ? "geen" : antw[k.code];
+    k.antwoord = a || (heeft ? "ja" : "");
   });
   return { kandidaten: uit, geen: geen };
 }
@@ -80,7 +92,7 @@ function toeslagWaarschuwingen(c) {
 }
 function aandachtspunten(c) {
   var m = c.m, sim = c.sim, S = c.S, nu = m.nu, uit = [];
-  function pt(soort, tekst, menu) { uit.push({ soort: soort, tekst: tekst, menu: menu }); }
+  function pt(soort, tekst, menu, extra) { uit.push(Object.assign({ soort: soort, tekst: tekst, menu: menu }, extra || {})); }
   var tot = intakeMenus(S.profiel).length, klaar = intakeKlaarAantal(S);
   if (klaar < tot) pt("info", "Intake: " + klaar + " van " + tot + " menu's voltooid. Zonder intake kan de app niet alles berekenen.", "dashboard");
   if ((S.grote.minimum === "" || S.grote.minimum == null) && S.profiel.type) pt("waarschuw", "Geef je minimale buffer aan spaargeld aan (Vermogen). Daar rekent de app mee.", "vermogen");
@@ -89,9 +101,11 @@ function aandachtspunten(c) {
   if (S.inst.cijfersFout) pt("fout", "Het bijwerken van de cijfers is op " + fmtDatum(S.inst.cijfersFout.datum) + " mislukt: " + S.inst.cijfersFout.tekst + " Je rekent nu met oudere cijfers. Probeer het opnieuw of kies een cijferbestand.", "dashboard");
   else if ((S.cijfers || {}).versie && dagenTussen(geldigeDatum(S.cijfers.versie), nu) > 45) pt("waarschuw", "Het cijferbestand is van " + fmtDatum(S.cijfers.versie) + ": er zijn nog geen nieuwere cijfers beschikbaar. Controleer of er een nieuwe versie van de app is.", "dashboard");
   toeslagWaarschuwingen(c).forEach(function (t) { pt("waarschuw", t, "inkomen"); });
-  // Per toeslag een melding zolang de gebruiker niet heeft aangegeven of hij hem al ontvangt of heeft onderzocht.
+  // Per toeslag een melding zolang de gebruiker hem niet ontvangt en niet heeft onderzocht dat er geen recht is.
   if ((S.intake.dashboard || {}).klaar) toeslagKandidaten(c).kandidaten.forEach(function (k) {
-    if (k.antwoord === "" || k.antwoord === "onbekend") pt("waarschuw", "Onderzoek of je " + k.label.toLowerCase() + " kunt krijgen. " + k.reden + " Doe de proefberekening op toeslagen.nl en beantwoord de vraag bij Inkomen.", "inkomen");
+    if (k.antwoord === "ja" || k.antwoord === "geen") return;
+    var tekst = k.sterkte === "waarschijnlijk" ? k.reden + " Vraag hem aan via " + k.aanvraag.tekst + "." : "Onderzoek of je " + k.label.toLowerCase() + " kunt krijgen. " + k.reden + " Vraag of onderzoek het via " + k.aanvraag.tekst + ".";
+    pt("waarschuw", tekst, "inkomen", { badge: k.sterkte === "waarschijnlijk" ? "Waarschijnlijk recht" : "Onderzoek", url: k.aanvraag.url, urlTekst: k.aanvraag.url ? "Naar " + k.aanvraag.tekst.replace(/ \(.*\)/, "") : "" });
   });
   if (klaar >= 1) {
     var stale = actualiseerStappen(c).filter(function (x) { var l = actualiseerLeeftijd(c, x.id); return x.id !== "cijfers" && (l == null || l > (x.dagen || 31)); });

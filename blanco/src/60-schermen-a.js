@@ -56,8 +56,8 @@ function SchermDashboard() {
     (algemeenKlaar && (m.bronnen.length || m.potten.length)) ? h(Kaart, { titel: "Netto huishoudinkomen per fase" }, h(FasenTabel, { m: m })) : null,
     algemeenKlaar && punten.length ? h(Kaart, { titel: "Aandachtspunten", id: "aandacht" }, h("ul", { className: "lijst", style: { listStyle: "none", paddingLeft: 0 } }, punten.map(function (a, i) {
       return h("li", { key: i, className: "rij", style: { alignItems: "flex-start", flexWrap: "nowrap" } },
-        h("span", { className: "badge " + (a.soort === "fout" ? "fout" : a.soort === "waarschuw" ? "waarschuw" : "") }, a.soort === "fout" ? "Let op" : a.soort === "waarschuw" ? "Check" : "Info"),
-        h("span", { style: { flex: 1 } }, a.tekst, " ", a.menu !== "dashboard" ? h("a", { href: "#", onClick: function (e) { e.preventDefault(); c.nav(a.menu); }, style: { color: "#0f766e" } }, "Open") : null));
+        h("span", { className: "badge " + (a.badge === "Waarschijnlijk recht" ? "goed" : a.soort === "fout" ? "fout" : a.soort === "waarschuw" ? "waarschuw" : ""), style: { flexShrink: 0, maxWidth: "7rem", textAlign: "center" } }, a.badge || (a.soort === "fout" ? "Let op" : a.soort === "waarschuw" ? "Check" : "Info")),
+        h("span", { style: { flex: 1, minWidth: 0, overflowWrap: "anywhere" } }, a.tekst, " ", a.url ? h("a", { href: a.url, target: "_blank", rel: "noopener", style: { color: "#0f766e", fontWeight: 600 } }, a.urlTekst + " ") : null, a.menu !== "dashboard" ? h("a", { href: "#", onClick: function (e) { e.preventDefault(); c.nav(a.menu); }, style: { color: "#0f766e" } }, "Open") : null));
     }))) : null,
     (algemeenKlaar && heeftGegevens(m, "vermogen")) ? h(Kaart, { titel: "Kerncijfers nu" }, h(KV, { rijen: [["Spaargeld (direct opneembaar)", eur(t0.sparen)], ["Totaal vrij vermogen", eur(t0.vrij)], ["Totaal vermogen", eur(t0.totaal)], ["Laagste spaargeld komende 12 maanden", eur(min12)]] })) : null,
     algemeenKlaar ? h(Kaart, { titel: "Voortgang intake" },

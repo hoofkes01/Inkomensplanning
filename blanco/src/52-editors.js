@@ -315,14 +315,16 @@ function ToeslagenVraag() {
       return h("div", { key: k.code, className: "kaart", style: { background: "#f8fafc" }, "data-toeslagvraag": k.code },
         h("b", null, "Ontvang je " + k.label.toLowerCase() + "?"),
         h("p", { className: "klein" }, k.reden),
-        (k.antwoord === "" || k.antwoord === "onbekend") ? h("p", { className: "oranje", "data-onderzoek": k.code }, h("b", null, "Onderzoek of je " + k.label.toLowerCase() + " kunt krijgen. "), "Doe de proefberekening op ", h("a", { href: "https://toeslagen.nl", target: "_blank", rel: "noopener", style: { color: "inherit", textDecoration: "underline" } }, "toeslagen.nl"), ".") : null,
-        [["ja", "Ja"], ["nee", "Nee"], ["onbekend", "Weet ik niet"]].map(function (o) {
+        (k.antwoord !== "ja" && k.antwoord !== "geen") ? h("div", { className: "kaart " + (k.sterkte === "waarschijnlijk" ? "goed" : "waarschuw"), "data-onderzoek": k.code, "data-sterkte": k.code + "-" + k.sterkte },
+          h("b", null, k.sterkte === "waarschijnlijk" ? "Waarschijnlijk recht op " + k.label.toLowerCase() : "Onderzoek of je " + k.label.toLowerCase() + " kunt krijgen"),
+          h("p", null, "Aanvragen of onderzoeken kan via " + k.aanvraag.tekst + ". ", k.aanvraag.url ? h("a", { href: k.aanvraag.url, target: "_blank", rel: "noopener", style: { color: "inherit", fontWeight: 700, textDecoration: "underline" } }, "Ga naar " + k.aanvraag.url.replace("https://", "").replace("www.", "")) : null)) : null,
+        [["ja", "Ja, ik ontvang het"], ["nog_niet", "Nee, nog niet aangevraagd"], ["geen", "Nee, ik heb onderzocht dat ik geen recht heb"], ["onbekend", "Weet ik niet"]].map(function (o) {
           return h("label", { key: o[0], className: "vink" }, h("input", { type: "radio", name: rn + k.code, checked: k.antwoord === o[0], onChange: function () { antwoord(k.code, o[0]); }, "data-toeslag-antwoord": k.code + "-" + o[0] }), h("span", null, o[1]));
         }),
         k.antwoord === "ja" && b ? h("div", null,
           h(BedragVeld, { label: "Bedrag per betaling (netto)", value: b.netto, onChange: function (v) { L.wijzig(b.id, { netto: v, bruto: "", bijgewerkt: isoDatum(vandaag()) }); }, naam: "tv-bedrag-" + k.code }),
           h(KeuzeVeld, { label: "Hoe vaak ontvangen", value: b.freq || "maand", opties: FREQ_KEUZES, onChange: function (v) { L.wijzig(b.id, { freq: v }); } })) : null,
-        k.antwoord === "onbekend" ? h("p", { className: "oranje klein" }, "Controleer dit op toeslagen.nl. Zodra je het weet, kun je het hier invullen.") : null);
+        null);
     }),
     kd.geen.length ? h("div", { className: "kaart info" }, h("b", null, "Waarschijnlijk geen recht"), h("ul", { className: "lijst" }, kd.geen.map(function (t, i) { return h("li", { key: i }, t); }))) : null);
 }
