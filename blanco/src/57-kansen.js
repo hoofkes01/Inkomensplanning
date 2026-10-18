@@ -1,5 +1,5 @@
 /* ===== Kansen: waar kan de klant geld besparen of erbij krijgen? Alleen berekend uit de eigen gegevens van de klant. ===== */
-var KANSEN_GROEPEN = [["tijd", "Nu of binnenkort doen"], ["toeslag", "Toeslagen en regelingen"], ["rente", "Meer rente op spaargeld"], ["schuld", "Hypotheek en schulden"], ["lasten", "Lagere lasten"], ["reserveren", "Reserveren voor grote uitgaven"], ["inkomen", "Inkomen"], ["belasting", "Belasting en aftrek"], ["wonen", "Wonen"], ["zekerheid", "Zekerheid en overzicht"], ["risico", "Risico's die geld kosten"]];
+var KANSEN_GROEPEN = [["tijd", "Nu of binnenkort doen"], ["toeslag", "Toeslagen en regelingen"], ["rente", "Meer rente op spaargeld"], ["schuld", "Hypotheek en schulden"], ["lasten", "Lagere lasten"], ["reserveren", "Reserveren voor grote uitgaven"], ["inkomen", "Inkomen"], ["belasting", "Belasting en aftrek"], ["wonen", "Wonen"], ["leefstijl", "Leefstijl en gewoontes"], ["zekerheid", "Zekerheid en overzicht"], ["risico", "Risico's die geld kosten"]];
 var LASTEN_TIPS = {
   zorgverz: "Vergelijk elk najaar de basisverzekering. Overstappen kan tot en met 31 januari, met ingang van 1 januari.",
   zorg_aanv: "Kijk of je de aanvullende dekking echt gebruikt (fysio, tandarts, bril). Zo niet, dan is een lagere dekking goedkoper.",
@@ -83,10 +83,10 @@ function kansen(c) {
     if (basisD >= 0.25) add("rente", "Spaargeld boven je buffer vastzetten tegen " + pct(mDe, 2), eur(rest) + " staat boven je buffer en is niet nodig voor aflossen. Tegen de depositorente die je invulde levert vastzetten circa " + eur(rest * basisD / 100) + " per jaar meer op dan nu, vóór belasting. Alleen voor geld dat je tijdens de looptijd niet nodig hebt.", { jaar: rest * basisD / 100, sterkte: "hoog", menu: "vermogen" });
   }
   hypRisico(m).forEach(function (r) {
-    if (r.variabel) { add("schuld", r.naam + ": variabele rente", "Bij een variabele rente kan je maandlast elk moment stijgen (bij 1 procentpunt circa " + eur(r.impact) + " per maand). Bespreek met je hypotheekadviseur of vastzetten verstandig is.", { sterkte: "midden", menu: "pensioen" }); return; }
+    if (r.variabel) { add("schuld", r.naam + ": variabele rente", "Bij een variabele rente kan je maandlast elk moment stijgen (bij 1 procentpunt circa " + eur(r.impact) + " per maand). Overweeg de rente (een deel) vast te zetten en vergelijk de aanbiedingen van je geldverstrekker.", { sterkte: "midden", menu: "pensioen" }); return; }
     if (r.onbekend || r.dagen == null || r.dagen < 0 || r.maanden > 24) return;
     var dichtbij = r.maanden <= 9;
-    add(dichtbij ? "tijd" : "schuld", r.naam + ": neem op tijd contact op met je hypotheekadviseur", "De rente wordt herzien op " + fmtDatum(r.datum) + " (over " + r.maanden + " maanden). " + (dichtbij ? "Plan nu een gesprek: " : "Zet het in je agenda: ") + "vergelijk het rentevoorstel van je geldverstrekker met andere aanbieders en bespreek rentemiddeling, extra aflossen of oversluiten. Bij 1 procentpunt verschil is dat circa " + eur(r.impact * 12) + " per jaar. Houd rekening met boeterente.", { sterkte: dichtbij ? "hoog" : "midden", menu: "pensioen" });
+    add(dichtbij ? "tijd" : "schuld", r.naam + ": vergelijk op tijd je renteopties", "De rente wordt herzien op " + fmtDatum(r.datum) + " (over " + r.maanden + " maanden). " + (dichtbij ? "Pak het nu op: " : "Zet het in je agenda: ") + "vraag het rentevoorstel van je geldverstrekker op en vergelijk het met andere aanbieders. Denk ook aan rentemiddeling, extra aflossen of oversluiten. Bij 1 procentpunt verschil is dat circa " + eur(r.impact * 12) + " per jaar. Houd rekening met boeterente.", { sterkte: dichtbij ? "hoog" : "midden", menu: "pensioen" });
   });
 
   var mnd = m.nu.getMonth(), seizoen = mnd >= 10 || mnd === 0;
@@ -215,6 +215,13 @@ function kansenExtra(c, add) {
   }
   if (aowFase && fasen.some(function (f) { return f.saldo < -50; })) add("inkomen", "Doorwerken of bijverdienen na je pensioen", "Als je maandinkomen na de AOW-datum lager is dan je uitgaven, kan (deeltijd) doorwerken of bijverdienen het gat dichten. Houd rekening met het effect op toeslagen en belasting.", { menu: "dashboard", actie: "Reken met een variant in de app hoeveel je per maand nodig hebt." });
 
+  // ----- Leefstijl: alleen als de klant deze posten zelf heeft ingevuld, zonder oordeel
+  var genotJaar = jaarVan(["genot"]), etenJaar = jaarVan(["uiteten"]);
+  if (genotJaar >= 300) add("leefstijl", "Tabak, alcohol en genotmiddelen: " + eur(genotJaar) + " per jaar", "Dit is jouw keuze. Wil je er toch iets aan veranderen, dan scheelt elke tien procent minder circa " + eur(genotJaar / 10) + " per jaar. Voor stoppen met roken bestaan begeleidingsprogramma's die in het basispakket van de zorgverzekering zitten.", { menu: "lasten", waar: "rijksoverheid.nl en je zorgverzekeraar" });
+  if (etenJaar >= 600) add("leefstijl", "Afhaal, bezorging en uit eten: " + eur(etenJaar) + " per jaar", "Dit is ook gewoon genieten. Wil je de kosten omlaag brengen? Een of twee keer per maand minder bezorgen of uit eten scheelt al snel enkele honderden euro's per jaar. Bij bezorging komen bezorgkosten en fooi erbovenop.", { menu: "lasten" });
+  var sportJaar = jaarVan(["sport", "sport_kind"]);
+  if (sportJaar >= 240) add("leefstijl", "Sport en hobby's: gebruik je alles wat je betaalt?", "Je betaalt circa " + eur(sportJaar) + " per jaar. Controleer of je abonnement past bij hoe vaak je gaat, of je voor korting kunt betalen per jaar, en of je zorgverzekering of werkgever bijdraagt aan sport.", { menu: "lasten", waar: "je zorgverzekeraar en werkgever" });
+
   // ----- Zekerheid en overzicht
   var fase0 = f0 ? f0.lasten.totaal : 0;
   if (fase0 > 0) {
@@ -223,7 +230,7 @@ function kansenExtra(c, add) {
     else if (gebufferd > fase0 * 12 && over0(S, m) > 0) add("zekerheid", "Je buffer is groter dan 12 maanden aan lasten", "Je buffer is " + eur(gebufferd) + ", terwijl je lasten circa " + eur(fase0) + " per maand zijn. Een deel daarvan kan mogelijk beter renderen, bijvoorbeeld als deposito of belegging.", { menu: "vermogen", actie: "Beoordeel of je buffer kleiner kan en zet het meerdere vast tegen een hogere rente." });
   }
   if (maxLeeftijd >= 45 || S.profiel.gebruik.pensioen) add("zekerheid", "Controleer je pensioenopbouw", "Het pensioenoverzicht toont wat je bij de AOW-datum ontvangt, en wat je partner krijgt als jij overlijdt. Zo zie je of er een pensioengat is waarvoor je moet bijsparen of anders moet plannen.", { menu: "pensioen", actie: "Log in en bekijk het overzicht; vul de uitkomsten in bij Inkomen en pensioen.", waar: "mijnpensioenoverzicht.nl" });
-  if (partner || L.kinderen > 0) add("zekerheid", "Regel wat er bij overlijden of ziekte nodig is", "Met een partner of kinderen is het verstandig om vast te leggen wat er gebeurt bij overlijden of arbeidsongeschiktheid: testament, levenstestament, nabestaandenpensioen, overlijdensrisico- en arbeidsongeschiktheidsverzekering.", { menu: "dashboard", actie: "Laat je testament en de begunstigden van je polissen nalopen, zeker na een verhuizing, trouwen of kind.", waar: "notaris en je financieel adviseur" });
+  if (partner || L.kinderen > 0) add("zekerheid", "Regel wat er bij overlijden of ziekte nodig is", "Met een partner of kinderen is het verstandig om vast te leggen wat er gebeurt bij overlijden of arbeidsongeschiktheid: testament, levenstestament, nabestaandenpensioen, overlijdensrisico- en arbeidsongeschiktheidsverzekering.", { menu: "dashboard", actie: "Laat je testament en de begunstigden van je polissen nalopen, zeker na een verhuizing, trouwen of kind.", waar: "notaris, je verzekeraar of pensioenfonds" });
   if (S.profiel.gebruik.pensioen || S.profiel.gebruik.beleggen) {} // geen extra
   var studieSchuld = (S.verm.schulden || []).filter(function (s) { return /studie/i.test(s.naam || ""); }).length || lastenCode("studieschuld").length;
   if (studieSchuld) add("schuld", "Studieschuld: controleer rente en aflosregeling", "Voor een studieschuld bij DUO gelden eigen regels voor rente en aflossing. Controleer of aflossen zin heeft ten opzichte van je spaarrente en wat je maandlast is.", { menu: "vermogen", actie: "Vraag je actuele schuld, rente en aflosregeling op.", waar: "duo.nl" });
@@ -287,8 +294,9 @@ function jaarKalender(c) {
   if (L.woning === "koop") vast.push([1, "WOZ-beschikking en gemeentelijke aanslagen: controleer de WOZ-waarde; bezwaar kan binnen 6 weken."]);
   var eigen = [];
   function dat(d, tekst) { if (d && d >= m.nu) eigen.push({ d: d, tekst: tekst }); }
-  hypRisico(m).forEach(function (r) { if (r.datum) dat(r.datum, r.naam + ": renteherziening. Neem uiterlijk een half jaar eerder contact op met je hypotheekadviseur."); });
+  hypRisico(m).forEach(function (r) { if (r.datum) dat(r.datum, r.naam + ": renteherziening. Vraag uiterlijk een half jaar eerder het rentevoorstel op en vergelijk."); });
   (S.verm.deposito || []).forEach(function (dep) { var pl = depositoPlan(m, dep); if (pl) dat(pl.eind, "Deposito " + (dep.bank || dep.naam || "") + " loopt af. Besluit tijdig waar het geld naartoe gaat."); });
+  (m.lasten || []).forEach(function (p) { var d = geldigeDatum(p.contractEinde); if (d && CONTRACT_CODES.indexOf(p.code) >= 0) dat(d, ((lastCat(p.code) || {}).label || "Contract") + ": het contract loopt af. Vergelijk ruim van tevoren en zeg tijdig op of verleng bewust."); });
   m.personen.forEach(function (p) { if (p.aow) dat(p.aow, p.naam + ": AOW-datum. Controleer ruim van tevoren je aanvraag bij de SVB."); });
   (S.grote.boekingen || []).forEach(function (b) { var d = geldigeDatum(b.datum); if (d && b.type === "uitgave" && getal(b.bedrag) >= 500) dat(d, (b.omschrijving || "Grote uitgave") + ": " + eur(b.bedrag) + " gepland."); });
   eigen.sort(function (a, b) { return a.d - b.d; });
@@ -296,7 +304,7 @@ function jaarKalender(c) {
 }
 function KalenderBlok(p) {
   var k = jaarKalender(p.c);
-  return h("div", { "data-kalender": "1" },
+  return h("div", { "data-kalender": "1" }, h(AgendaKnop, null),
     h("h3", null, "Vaste momenten in het jaar"),
     h("ul", { className: "rp-lijst" }, k.vast.map(function (x, i) { return h("li", { key: i }, h("b", null, "☐ " + MAANDNAMEN[x[0]].charAt(0).toUpperCase() + MAANDNAMEN[x[0]].slice(1) + ": "), x[1]); })),
     k.eigen.length ? h("div", null, h("h3", null, "Jouw eigen data"), h("ul", { className: "rp-lijst" }, k.eigen.map(function (x, i) { return h("li", { key: i }, h("b", null, "☐ " + fmtDatum(x.d) + ": "), x.tekst); }))) : null);

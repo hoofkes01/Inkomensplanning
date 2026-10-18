@@ -412,7 +412,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 })();
 </script>
 <script>
-var APP_VERSIE = "18-10-2026 · 19:30";
+var APP_VERSIE = "18-10-2026 · 19:33";
 /* ===== Basis: hulpfuncties, opslag, invoervelden ===== */
 var h = React.createElement;
 var useState = React.useState, useEffect = React.useEffect, useMemo = React.useMemo, useRef = React.useRef, useContext = React.useContext;
@@ -1099,6 +1099,8 @@ var LASTEN_CAT = [
   { code: "sport", groep: "Overig", label: "Sport en hobby's", freq: "maand", index: "cpi", per: true, wanneer: function () { return true; } },
   { code: "studieschuld", groep: "Overig", label: "Aflossing studieschuld", freq: "maand", index: "geen", wanneer: function () { return true; } },
   { code: "lening", groep: "Overig", label: "Aflossing lening of krediet", freq: "maand", index: "geen", wanneer: function () { return true; } },
+  { code: "genot", groep: "Overig", label: "Tabak, alcohol en genotmiddelen", freq: "maand", index: "cpi", wanneer: function () { return true; } },
+  { code: "uiteten", groep: "Overig", label: "Afhaal, bezorging en uit eten", freq: "maand", index: "cpi", wanneer: function () { return true; } },
   { code: "contributies", groep: "Overig", label: "Contributies en donaties", freq: "maand", index: "cpi", wanneer: function () { return true; } },
   { code: "bankkosten", groep: "Overig", label: "Bankkosten", freq: "maand", index: "cpi", wanneer: function () { return true; } },
   { code: "belasting_na", groep: "Overig", label: "Belastingaanslagen (voorlopige aanslag, naheffing)", freq: "jaar", index: "geen", wanneer: function () { return true; } }
@@ -2764,7 +2766,7 @@ var FREQ_KEUZES = [["maand", "Per maand"], ["kwartaal", "Per kwartaal"], ["halfj
 function nieuweLast(cat, pid, m, auto) {
   var naam = cat.code === "overig" ? "" : cat.label + (pid && m && m.personen.length > 1 ? " (" + persoonVan(m, pid).naam + ")" : "") + (auto && auto.toon ? " (" + auto.naam + ")" : "");
   var einde = cat.code === "kinderopvang" && m && kindEindDefaults(m).opvang ? isoDatum(kindEindDefaults(m).opvang) : "";
-  return { id: nieuwId(), code: cat.code, persoon: pid || "", autoId: auto ? auto.id : "", naam: naam, bedrag: "", freq: cat.freq || "maand", eersteMaand: 1, index: cat.index || "cpi", indexPct: "", start: "", einde: einde };
+  return { id: nieuwId(), code: cat.code, persoon: pid || "", autoId: auto ? auto.id : "", naam: naam, bedrag: "", freq: cat.freq || "maand", eersteMaand: 1, index: cat.index || "cpi", indexPct: "", start: "", einde: einde, contractEinde: "" };
 }
 function foutenLast(b) {
   var n = b.naam || "Post";
@@ -2778,6 +2780,7 @@ function LastRij(p) {
     h("div", { className: "raster" },
       h(BedragVeld, { label: "Bedrag per betaling", value: b.bedrag, onChange: function (v) { w({ bedrag: v }); }, naam: "last-bedrag" }),
       h(KeuzeVeld, { label: "Hoe vaak", value: b.freq, opties: FREQ_KEUZES, onChange: function (v) { w({ freq: v }); } })),
+    CONTRACT_CODES.indexOf(b.code) >= 0 ? h(DatumVeld, { label: "Einddatum contract (optioneel)", hint: "Voor een herinnering in je agenda, ruim voor het contract afloopt.", value: b.contractEinde, onChange: function (v) { w({ contractEinde: v }); } }) : null,
     h("details", null, h("summary", { className: "klein" }, "Meer opties (indexatie, start, einde)"),
       h("div", { className: "raster", style: { marginTop: ".4rem" } },
         b.freq !== "maand" ? h(KeuzeVeld, { label: "Eerste betaling in", value: String(b.eersteMaand || 1), opties: MAANDEN.map(function (n, i) { return [String(i + 1), n]; }), onChange: function (v) { w({ eersteMaand: Number(v) }); } }) : null,
@@ -3510,7 +3513,7 @@ function BackupBalk() {
 }
 
 /* ===== Kansen: waar kan de klant geld besparen of erbij krijgen? Alleen berekend uit de eigen gegevens van de klant. ===== */
-var KANSEN_GROEPEN = [["tijd", "Nu of binnenkort doen"], ["toeslag", "Toeslagen en regelingen"], ["rente", "Meer rente op spaargeld"], ["schuld", "Hypotheek en schulden"], ["lasten", "Lagere lasten"], ["reserveren", "Reserveren voor grote uitgaven"], ["inkomen", "Inkomen"], ["belasting", "Belasting en aftrek"], ["wonen", "Wonen"], ["zekerheid", "Zekerheid en overzicht"], ["risico", "Risico's die geld kosten"]];
+var KANSEN_GROEPEN = [["tijd", "Nu of binnenkort doen"], ["toeslag", "Toeslagen en regelingen"], ["rente", "Meer rente op spaargeld"], ["schuld", "Hypotheek en schulden"], ["lasten", "Lagere lasten"], ["reserveren", "Reserveren voor grote uitgaven"], ["inkomen", "Inkomen"], ["belasting", "Belasting en aftrek"], ["wonen", "Wonen"], ["leefstijl", "Leefstijl en gewoontes"], ["zekerheid", "Zekerheid en overzicht"], ["risico", "Risico's die geld kosten"]];
 var LASTEN_TIPS = {
   zorgverz: "Vergelijk elk najaar de basisverzekering. Overstappen kan tot en met 31 januari, met ingang van 1 januari.",
   zorg_aanv: "Kijk of je de aanvullende dekking echt gebruikt (fysio, tandarts, bril). Zo niet, dan is een lagere dekking goedkoper.",
@@ -3594,10 +3597,10 @@ function kansen(c) {
     if (basisD >= 0.25) add("rente", "Spaargeld boven je buffer vastzetten tegen " + pct(mDe, 2), eur(rest) + " staat boven je buffer en is niet nodig voor aflossen. Tegen de depositorente die je invulde levert vastzetten circa " + eur(rest * basisD / 100) + " per jaar meer op dan nu, vóór belasting. Alleen voor geld dat je tijdens de looptijd niet nodig hebt.", { jaar: rest * basisD / 100, sterkte: "hoog", menu: "vermogen" });
   }
   hypRisico(m).forEach(function (r) {
-    if (r.variabel) { add("schuld", r.naam + ": variabele rente", "Bij een variabele rente kan je maandlast elk moment stijgen (bij 1 procentpunt circa " + eur(r.impact) + " per maand). Bespreek met je hypotheekadviseur of vastzetten verstandig is.", { sterkte: "midden", menu: "pensioen" }); return; }
+    if (r.variabel) { add("schuld", r.naam + ": variabele rente", "Bij een variabele rente kan je maandlast elk moment stijgen (bij 1 procentpunt circa " + eur(r.impact) + " per maand). Overweeg de rente (een deel) vast te zetten en vergelijk de aanbiedingen van je geldverstrekker.", { sterkte: "midden", menu: "pensioen" }); return; }
     if (r.onbekend || r.dagen == null || r.dagen < 0 || r.maanden > 24) return;
     var dichtbij = r.maanden <= 9;
-    add(dichtbij ? "tijd" : "schuld", r.naam + ": neem op tijd contact op met je hypotheekadviseur", "De rente wordt herzien op " + fmtDatum(r.datum) + " (over " + r.maanden + " maanden). " + (dichtbij ? "Plan nu een gesprek: " : "Zet het in je agenda: ") + "vergelijk het rentevoorstel van je geldverstrekker met andere aanbieders en bespreek rentemiddeling, extra aflossen of oversluiten. Bij 1 procentpunt verschil is dat circa " + eur(r.impact * 12) + " per jaar. Houd rekening met boeterente.", { sterkte: dichtbij ? "hoog" : "midden", menu: "pensioen" });
+    add(dichtbij ? "tijd" : "schuld", r.naam + ": vergelijk op tijd je renteopties", "De rente wordt herzien op " + fmtDatum(r.datum) + " (over " + r.maanden + " maanden). " + (dichtbij ? "Pak het nu op: " : "Zet het in je agenda: ") + "vraag het rentevoorstel van je geldverstrekker op en vergelijk het met andere aanbieders. Denk ook aan rentemiddeling, extra aflossen of oversluiten. Bij 1 procentpunt verschil is dat circa " + eur(r.impact * 12) + " per jaar. Houd rekening met boeterente.", { sterkte: dichtbij ? "hoog" : "midden", menu: "pensioen" });
   });
 
   var mnd = m.nu.getMonth(), seizoen = mnd >= 10 || mnd === 0;
@@ -3726,6 +3729,13 @@ function kansenExtra(c, add) {
   }
   if (aowFase && fasen.some(function (f) { return f.saldo < -50; })) add("inkomen", "Doorwerken of bijverdienen na je pensioen", "Als je maandinkomen na de AOW-datum lager is dan je uitgaven, kan (deeltijd) doorwerken of bijverdienen het gat dichten. Houd rekening met het effect op toeslagen en belasting.", { menu: "dashboard", actie: "Reken met een variant in de app hoeveel je per maand nodig hebt." });
 
+  // ----- Leefstijl: alleen als de klant deze posten zelf heeft ingevuld, zonder oordeel
+  var genotJaar = jaarVan(["genot"]), etenJaar = jaarVan(["uiteten"]);
+  if (genotJaar >= 300) add("leefstijl", "Tabak, alcohol en genotmiddelen: " + eur(genotJaar) + " per jaar", "Dit is jouw keuze. Wil je er toch iets aan veranderen, dan scheelt elke tien procent minder circa " + eur(genotJaar / 10) + " per jaar. Voor stoppen met roken bestaan begeleidingsprogramma's die in het basispakket van de zorgverzekering zitten.", { menu: "lasten", waar: "rijksoverheid.nl en je zorgverzekeraar" });
+  if (etenJaar >= 600) add("leefstijl", "Afhaal, bezorging en uit eten: " + eur(etenJaar) + " per jaar", "Dit is ook gewoon genieten. Wil je de kosten omlaag brengen? Een of twee keer per maand minder bezorgen of uit eten scheelt al snel enkele honderden euro's per jaar. Bij bezorging komen bezorgkosten en fooi erbovenop.", { menu: "lasten" });
+  var sportJaar = jaarVan(["sport", "sport_kind"]);
+  if (sportJaar >= 240) add("leefstijl", "Sport en hobby's: gebruik je alles wat je betaalt?", "Je betaalt circa " + eur(sportJaar) + " per jaar. Controleer of je abonnement past bij hoe vaak je gaat, of je voor korting kunt betalen per jaar, en of je zorgverzekering of werkgever bijdraagt aan sport.", { menu: "lasten", waar: "je zorgverzekeraar en werkgever" });
+
   // ----- Zekerheid en overzicht
   var fase0 = f0 ? f0.lasten.totaal : 0;
   if (fase0 > 0) {
@@ -3734,7 +3744,7 @@ function kansenExtra(c, add) {
     else if (gebufferd > fase0 * 12 && over0(S, m) > 0) add("zekerheid", "Je buffer is groter dan 12 maanden aan lasten", "Je buffer is " + eur(gebufferd) + ", terwijl je lasten circa " + eur(fase0) + " per maand zijn. Een deel daarvan kan mogelijk beter renderen, bijvoorbeeld als deposito of belegging.", { menu: "vermogen", actie: "Beoordeel of je buffer kleiner kan en zet het meerdere vast tegen een hogere rente." });
   }
   if (maxLeeftijd >= 45 || S.profiel.gebruik.pensioen) add("zekerheid", "Controleer je pensioenopbouw", "Het pensioenoverzicht toont wat je bij de AOW-datum ontvangt, en wat je partner krijgt als jij overlijdt. Zo zie je of er een pensioengat is waarvoor je moet bijsparen of anders moet plannen.", { menu: "pensioen", actie: "Log in en bekijk het overzicht; vul de uitkomsten in bij Inkomen en pensioen.", waar: "mijnpensioenoverzicht.nl" });
-  if (partner || L.kinderen > 0) add("zekerheid", "Regel wat er bij overlijden of ziekte nodig is", "Met een partner of kinderen is het verstandig om vast te leggen wat er gebeurt bij overlijden of arbeidsongeschiktheid: testament, levenstestament, nabestaandenpensioen, overlijdensrisico- en arbeidsongeschiktheidsverzekering.", { menu: "dashboard", actie: "Laat je testament en de begunstigden van je polissen nalopen, zeker na een verhuizing, trouwen of kind.", waar: "notaris en je financieel adviseur" });
+  if (partner || L.kinderen > 0) add("zekerheid", "Regel wat er bij overlijden of ziekte nodig is", "Met een partner of kinderen is het verstandig om vast te leggen wat er gebeurt bij overlijden of arbeidsongeschiktheid: testament, levenstestament, nabestaandenpensioen, overlijdensrisico- en arbeidsongeschiktheidsverzekering.", { menu: "dashboard", actie: "Laat je testament en de begunstigden van je polissen nalopen, zeker na een verhuizing, trouwen of kind.", waar: "notaris, je verzekeraar of pensioenfonds" });
   if (S.profiel.gebruik.pensioen || S.profiel.gebruik.beleggen) {} // geen extra
   var studieSchuld = (S.verm.schulden || []).filter(function (s) { return /studie/i.test(s.naam || ""); }).length || lastenCode("studieschuld").length;
   if (studieSchuld) add("schuld", "Studieschuld: controleer rente en aflosregeling", "Voor een studieschuld bij DUO gelden eigen regels voor rente en aflossing. Controleer of aflossen zin heeft ten opzichte van je spaarrente en wat je maandlast is.", { menu: "vermogen", actie: "Vraag je actuele schuld, rente en aflosregeling op.", waar: "duo.nl" });
@@ -3798,8 +3808,9 @@ function jaarKalender(c) {
   if (L.woning === "koop") vast.push([1, "WOZ-beschikking en gemeentelijke aanslagen: controleer de WOZ-waarde; bezwaar kan binnen 6 weken."]);
   var eigen = [];
   function dat(d, tekst) { if (d && d >= m.nu) eigen.push({ d: d, tekst: tekst }); }
-  hypRisico(m).forEach(function (r) { if (r.datum) dat(r.datum, r.naam + ": renteherziening. Neem uiterlijk een half jaar eerder contact op met je hypotheekadviseur."); });
+  hypRisico(m).forEach(function (r) { if (r.datum) dat(r.datum, r.naam + ": renteherziening. Vraag uiterlijk een half jaar eerder het rentevoorstel op en vergelijk."); });
   (S.verm.deposito || []).forEach(function (dep) { var pl = depositoPlan(m, dep); if (pl) dat(pl.eind, "Deposito " + (dep.bank || dep.naam || "") + " loopt af. Besluit tijdig waar het geld naartoe gaat."); });
+  (m.lasten || []).forEach(function (p) { var d = geldigeDatum(p.contractEinde); if (d && CONTRACT_CODES.indexOf(p.code) >= 0) dat(d, ((lastCat(p.code) || {}).label || "Contract") + ": het contract loopt af. Vergelijk ruim van tevoren en zeg tijdig op of verleng bewust."); });
   m.personen.forEach(function (p) { if (p.aow) dat(p.aow, p.naam + ": AOW-datum. Controleer ruim van tevoren je aanvraag bij de SVB."); });
   (S.grote.boekingen || []).forEach(function (b) { var d = geldigeDatum(b.datum); if (d && b.type === "uitgave" && getal(b.bedrag) >= 500) dat(d, (b.omschrijving || "Grote uitgave") + ": " + eur(b.bedrag) + " gepland."); });
   eigen.sort(function (a, b) { return a.d - b.d; });
@@ -3807,7 +3818,7 @@ function jaarKalender(c) {
 }
 function KalenderBlok(p) {
   var k = jaarKalender(p.c);
-  return h("div", { "data-kalender": "1" },
+  return h("div", { "data-kalender": "1" }, h(AgendaKnop, null),
     h("h3", null, "Vaste momenten in het jaar"),
     h("ul", { className: "rp-lijst" }, k.vast.map(function (x, i) { return h("li", { key: i }, h("b", null, "☐ " + MAANDNAMEN[x[0]].charAt(0).toUpperCase() + MAANDNAMEN[x[0]].slice(1) + ": "), x[1]); })),
     k.eigen.length ? h("div", null, h("h3", null, "Jouw eigen data"), h("ul", { className: "rp-lijst" }, k.eigen.map(function (x, i) { return h("li", { key: i }, h("b", null, "☐ " + fmtDatum(x.d) + ": "), x.tekst); }))) : null);
@@ -4002,6 +4013,95 @@ function Klantenlijst(p) {
     h(BackupBalk, null));
 }
 
+/* ===== Agenda: actiemomenten als .ics-bestand voor de agenda van de klant (Google, Apple, Outlook) ===== */
+var CONTRACT_CODES = ["energie", "internet", "mobiel", "opstal", "inboedel", "aansprakelijk", "rechtsbijstand", "auto_verz", "levensverz", "arbeidsong", "zorg_aanv", "auto_lease", "abonnementen"];
+var CONTRACT_VOORAF = { energie: 3, auto_lease: 6 }; // maanden vooraf; overige contracten: 2
+var JAAR_CHECK = { energie: [9, 1, "Beoordeel je energiecontract", "Vast of variabel, past het voorschot bij je verbruik, is er een beter aanbod?"], internet: [2, 1, "Beoordeel internet en tv", "Vergelijk aanbieders en zeg pakketten op die je niet gebruikt."], mobiel: [3, 1, "Beoordeel je mobiele abonnement", "Past de databundel bij je gebruik? Overweeg sim-only."], abonnementen: [5, 1, "Loop je abonnementen langs", "Zeg op wat je niet of nauwelijks gebruikt."], bankkosten: [8, 1, "Beoordeel de kosten van je bankrekening", "Vergelijk betaalrekeningen en kosten."] };
+var VERZ_CODES = ["opstal", "inboedel", "aansprakelijk", "rechtsbijstand", "auto_verz", "levensverz", "arbeidsong"];
+
+function agendaMomenten(c) {
+  var m = c.m, S = c.S, L = lijstL(S.profiel), uit = [], nu = new Date(m.nu.getFullYear(), m.nu.getMonth(), m.nu.getDate());
+  function volgende(mnd, dag) { var d = new Date(nu.getFullYear(), mnd, dag); if (d < nu) d = new Date(nu.getFullYear() + 1, mnd, dag); return d; }
+  function jaarlijks(mnd, dag, titel, uitleg) { uit.push({ d: volgende(mnd, dag), titel: titel, uitleg: uitleg, jaarlijks: true }); }
+  function eenmalig(d, titel, uitleg) { if (d && d >= nu) uit.push({ d: d, titel: titel, uitleg: uitleg, jaarlijks: false }); }
+  function maandenVoor(d, n) { return new Date(d.getFullYear(), d.getMonth() - n, Math.min(d.getDate(), 28)); }
+  var codes = (m.lasten || []).map(function (p) { return p.code; });
+  var heeft = function (c2) { return codes.indexOf(c2) >= 0; };
+
+  jaarlijks(10, 1, "Beoordeel je zorgverzekering", "De premies voor volgend jaar zijn bekend. Vergelijk basis en aanvullende verzekering. Overstappen kan tot en met 31 januari.");
+  jaarlijks(0, 20, "Laatste kans zorgverzekering", "Je kunt tot en met 31 januari nog overstappen met terugwerkende kracht per 1 januari.");
+  jaarlijks(2, 1, "Doe je aangifte inkomstenbelasting", "De aangifte kan vanaf 1 maart; de uiterste datum is 1 mei. Controleer ook je voorlopige aanslag en toeslagen.");
+  jaarlijks(3, 20, "Aangifte: uiterlijk 1 mei", "Is je aangifte nog niet klaar? Doe die nu of vraag uitstel aan.");
+  jaarlijks(8, 25, "Nieuwe belasting- en toeslagcijfers", "Na Prinsjesdag zijn de cijfers voor volgend jaar bekend. Werk je planning bij.");
+  jaarlijks(11, 15, "Peildatum 1 januari", "Je vermogen op 1 januari telt voor box 3 en toeslagen. Giften en uitgaven die je wilt aftrekken moeten voor 31 december zijn gedaan.");
+  if (L.woning === "koop") jaarlijks(2, 1, "Controleer je WOZ-waarde", "Bezwaar tegen de WOZ-beschikking kan meestal binnen 6 weken na de datum van de beschikking.");
+  if ((m.profiel.gebruik || {}).beleggen) jaarlijks(0, 5, "Controleer je beleggingen en spreiding", "Kijk of je verdeling nog past bij je risicoprofiel en doe zo nodig een herbalancering.");
+  Object.keys(JAAR_CHECK).forEach(function (k) {
+    if (!heeft(k)) return;
+    var post = (m.lasten || []).filter(function (p) { return p.code === k; })[0];
+    if (post && geldigeDatum(post.contractEinde)) return; // heeft een eigen einddatum
+    var j = JAAR_CHECK[k]; jaarlijks(j[0], j[1], j[2], j[3]);
+  });
+  if (VERZ_CODES.some(heeft)) jaarlijks(4, 1, "Loop je verzekeringen langs", "Vergelijk premies en dekking, schrap dubbele of overbodige dekking en controleer of alles nog past bij je situatie.");
+
+  (m.lasten || []).forEach(function (p) {
+    var d = geldigeDatum(p.contractEinde);
+    if (!d || CONTRACT_CODES.indexOf(p.code) < 0) return;
+    var naam = (lastCat(p.code) || {}).label || "Contract", v = CONTRACT_VOORAF[p.code] || 2;
+    eenmalig(maandenVoor(d, v), "Beoordeel: " + naam, "Dit contract loopt af op " + fmtDatum(d) + ". Vergelijk nu aanbieders en zeg tijdig op of verleng bewust.");
+    eenmalig(maandenVoor(d, 1), "Laatste kans: " + naam, "Dit contract loopt af op " + fmtDatum(d) + ". Regel de opzegging of verlenging voor het te laat is.");
+  });
+  hypRisico(m).forEach(function (r) {
+    if (!r.datum) return;
+    eenmalig(maandenVoor(r.datum, 6), r.naam + ": vergelijk je renteopties", "De rente wordt herzien op " + fmtDatum(r.datum) + ". Vraag het rentevoorstel op en vergelijk aanbieders.");
+    eenmalig(maandenVoor(r.datum, 2), r.naam + ": beslis over de nieuwe rente", "De rente wordt herzien op " + fmtDatum(r.datum) + ".");
+  });
+  (S.verm.deposito || []).forEach(function (dep) {
+    var pl = depositoPlan(m, dep); if (!pl) return;
+    eenmalig(maandenVoor(pl.eind, 1), "Deposito loopt af", "Een deposito loopt af op " + fmtDatum(pl.eind) + ". Besluit waar het geld naartoe gaat (nieuw deposito of spaarrekening).");
+  });
+  m.personen.forEach(function (p) { if (p.aow) eenmalig(maandenVoor(p.aow, 6), "AOW: controleer je aanvraag", "De AOW-datum is " + fmtDatum(p.aow) + ". Controleer bij de SVB of alles is geregeld."); });
+  (S.grote.boekingen || []).forEach(function (b) {
+    var d = geldigeDatum(b.datum); if (!d || b.type !== "uitgave" || getal(b.bedrag) < 500) return;
+    eenmalig(maandenVoor(d, 1), "Grote uitgave komt eraan", "Controleer of je reservering genoeg is voor de uitgave van " + fmtDatum(d) + ".");
+  });
+  return uit.sort(function (a, b) { return a.d - b.d; });
+}
+
+function icsTekst(t) { return String(t).replace(/\\/g, "\\\\").replace(/;/g, "\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n"); }
+function icsVouw(regel) { var uit = [], r = regel; while (r.length > 73) { uit.push(r.slice(0, 73)); r = " " + r.slice(73); } uit.push(r); return uit.join("\r\n"); }
+function icsDatum(d) { return d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0"); }
+function maakIcs(momenten, nu) {
+  var stempel = nu.getFullYear() + String(nu.getMonth() + 1).padStart(2, "0") + String(nu.getDate()).padStart(2, "0") + "T000000Z";
+  var r = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Inkomensplanning//NL", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "X-WR-CALNAME:Inkomensplanning"];
+  momenten.forEach(function (x, i) {
+    r.push("BEGIN:VEVENT", "UID:ip-" + icsDatum(x.d) + "-" + i + "@inkomensplanning", "DTSTAMP:" + stempel, "DTSTART;VALUE=DATE:" + icsDatum(x.d), "SUMMARY:" + icsTekst(x.titel), "DESCRIPTION:" + icsTekst(x.uitleg));
+    if (x.jaarlijks) r.push("RRULE:FREQ=YEARLY");
+    r.push("TRANSP:TRANSPARENT", "BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:" + icsTekst(x.titel), "TRIGGER;RELATED=START:PT9H", "END:VALARM", "END:VEVENT");
+  });
+  r.push("END:VCALENDAR");
+  return r.map(icsVouw).join("\r\n") + "\r\n";
+}
+function downloadIcs(momenten, nu) {
+  var blob = new Blob([maakIcs(momenten, nu)], { type: "text/calendar;charset=utf-8" });
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = "inkomensplanning-agenda.ics";
+  document.body.appendChild(a); a.click();
+  setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+function AgendaKnop(p) {
+  var c = useC(), mom = agendaMomenten(c), s = useState(""), melding = s[0], setMelding = s[1];
+  return h("div", { className: "noprint", "data-blok": "agenda" },
+    h("div", { className: "rij" }, h(Knop, { onClick: function () { try { downloadIcs(mom, c.m.nu); setMelding("Bestand gemaakt. Open het op je telefoon of computer en kies je agenda."); } catch (e) { setMelding("Het bestand kon niet worden gemaakt."); } }, naam: "agenda-download" }, "Zet actiemomenten in je agenda (" + mom.length + ")")),
+    melding ? h("p", { className: "klein", role: "status" }, melding) : null,
+    h("p", { className: "klein" }, "Je krijgt een .ics-bestand met herinneringen om 9.00 uur, ook voor terugkerende momenten zoals de zorgverzekering. Open het bestand in Google Agenda, Apple Agenda of Outlook. Er staan geen bedragen of namen in. Vul bij vaste lasten de einddatum van het contract in voor een herinnering vlak voordat het afloopt."));
+}
+function AgendaKaart() {
+  var c = useC();
+  if (!(c.S.intake.dashboard || {}).klaar) return null;
+  return h(Kaart, { titel: "Actiemomenten in je agenda" }, h(AgendaKnop, null));
+}
+
 /* ===== Schermen: Dashboard, Inkomen, Toevoeging inkomen, Lijfrente en pensioen, Vaste lasten ===== */
 function KV(p) {
   return h("div", { className: "tabelwrap" }, h("table", null, h("tbody", null, p.rijen.map(function (r, i) {
@@ -4060,6 +4160,7 @@ function SchermDashboard() {
     algemeenKlaar ? h(AdviesOpening, null) : null,
     (algemeenKlaar && (m.bronnen.length || m.potten.length)) ? h(Kaart, { titel: "Netto huishoudinkomen per fase" }, h(FasenTabel, { m: m })) : null,
     algemeenKlaar ? h(KansenKaart, null) : null,
+    algemeenKlaar ? h(AgendaKaart, null) : null,
     algemeenKlaar && punten.length ? h(Kaart, { titel: "Aandachtspunten", id: "aandacht" }, h("ul", { className: "lijst", style: { listStyle: "none", paddingLeft: 0 } }, punten.map(function (a, i) {
       return h("li", { key: i, className: "rij", style: { alignItems: "flex-start", flexWrap: "nowrap" } },
         h("span", { className: "badge " + (a.badge === "Waarschijnlijk recht" ? "goed" : a.soort === "fout" ? "fout" : a.soort === "waarschuw" ? "waarschuw" : ""), style: { flexShrink: 0, maxWidth: "7rem", textAlign: "center" } }, a.badge || (a.soort === "fout" ? "Let op" : a.soort === "waarschuw" ? "Check" : "Info")),

@@ -441,7 +441,7 @@ var FREQ_KEUZES = [["maand", "Per maand"], ["kwartaal", "Per kwartaal"], ["halfj
 function nieuweLast(cat, pid, m, auto) {
   var naam = cat.code === "overig" ? "" : cat.label + (pid && m && m.personen.length > 1 ? " (" + persoonVan(m, pid).naam + ")" : "") + (auto && auto.toon ? " (" + auto.naam + ")" : "");
   var einde = cat.code === "kinderopvang" && m && kindEindDefaults(m).opvang ? isoDatum(kindEindDefaults(m).opvang) : "";
-  return { id: nieuwId(), code: cat.code, persoon: pid || "", autoId: auto ? auto.id : "", naam: naam, bedrag: "", freq: cat.freq || "maand", eersteMaand: 1, index: cat.index || "cpi", indexPct: "", start: "", einde: einde };
+  return { id: nieuwId(), code: cat.code, persoon: pid || "", autoId: auto ? auto.id : "", naam: naam, bedrag: "", freq: cat.freq || "maand", eersteMaand: 1, index: cat.index || "cpi", indexPct: "", start: "", einde: einde, contractEinde: "" };
 }
 function foutenLast(b) {
   var n = b.naam || "Post";
@@ -455,6 +455,7 @@ function LastRij(p) {
     h("div", { className: "raster" },
       h(BedragVeld, { label: "Bedrag per betaling", value: b.bedrag, onChange: function (v) { w({ bedrag: v }); }, naam: "last-bedrag" }),
       h(KeuzeVeld, { label: "Hoe vaak", value: b.freq, opties: FREQ_KEUZES, onChange: function (v) { w({ freq: v }); } })),
+    CONTRACT_CODES.indexOf(b.code) >= 0 ? h(DatumVeld, { label: "Einddatum contract (optioneel)", hint: "Voor een herinnering in je agenda, ruim voor het contract afloopt.", value: b.contractEinde, onChange: function (v) { w({ contractEinde: v }); } }) : null,
     h("details", null, h("summary", { className: "klein" }, "Meer opties (indexatie, start, einde)"),
       h("div", { className: "raster", style: { marginTop: ".4rem" } },
         b.freq !== "maand" ? h(KeuzeVeld, { label: "Eerste betaling in", value: String(b.eersteMaand || 1), opties: MAANDEN.map(function (n, i) { return [String(i + 1), n]; }), onChange: function (v) { w({ eersteMaand: Number(v) }); } }) : null,

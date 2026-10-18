@@ -3,6 +3,7 @@ const { chromium } = require("playwright");
 const { start } = require("./hulp");
 const path = require("path");
 const { opslag } = require("./voorbeeld.js");
+{ const l = JSON.parse(opslag["inkomensplanning_lasten"]); l.forEach(x => { if (x.code === "energie") x.contractEinde = "2027-03-31"; }); l.push({ id: "lg", code: "genot", naam: "Tabak, alcohol en genotmiddelen", bedrag: 100, freq: "maand", eersteMaand: 1, index: "cpi", indexPct: "", start: "", einde: "" }); opslag["inkomensplanning_lasten"] = JSON.stringify(l); }
 const url = "file://" + path.join(__dirname, "..", "index.html");
 let fouten = 0;
 const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undefined ? "  -> " + x : "")); if (!c) { fouten++; process.exitCode = 1; } };
@@ -39,6 +40,18 @@ const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undef
   if (await page.locator("[role=dialog]").count()) await page.keyboard.press("Escape");
   const t2 = await page.textContent('[data-rp="kansen"]');
   ok("marktrente geeft berekend voordeel", /lagere rente dan je beste spaarrekening/.test(t2) && /marktrente die je invulde/.test(t2), (t2.match(/Meer rente op spaargeld.{0,500}/) || [""])[0]);
+  ok("leefstijl: voorzichtig en zonder oordeel", /Leefstijl en gewoontes/.test(t) && /Dit is jouw keuze/.test(t));
+  ok("geen adviseur-reclame", !/hypotheekadviseur|financieel adviseur/i.test(t + kal));
+  // agenda
+  await page.click('[data-knop="menu"]'); await page.click('[data-menu="dashboard"]'); await page.waitForTimeout(150);
+  if (await page.locator("[role=dialog]").count()) await page.keyboard.press("Escape");
+  const [dl] = await Promise.all([page.waitForEvent("download"), page.click('[data-knop="agenda-download"]')]);
+  await dl.saveAs("/tmp/agenda.ics");
+  const ics = require("fs").readFileSync("/tmp/agenda.ics", "utf8");
+  ok("ics: geldig kader en meerdere events", /^BEGIN:VCALENDAR/.test(ics) && /END:VCALENDAR\r\n$/.test(ics) && (ics.match(/BEGIN:VEVENT/g) || []).length >= 8, (ics.match(/BEGIN:VEVENT/g) || []).length);
+  ok("ics: zorgverzekering elke 1 november", /DTSTART;VALUE=DATE:20261101[\s\S]{0,200}?SUMMARY:Beoordeel je zorgverzekering/.test(ics) && /RRULE:FREQ=YEARLY/.test(ics));
+  ok("ics: energiecontract 3 maanden voor einde (31-12-2026)", /DTSTART;VALUE=DATE:20261228[\s\S]{0,200}?Beoordeel\\: Gas/.test(ics) || /20261231|20261228/.test(ics), (ics.match(/DTSTART;VALUE=DATE:2026122\d/g) || []).join());
+  ok("ics: wekker om 9.00 en geen bedragen", /TRIGGER;RELATED=START:PT9H/.test(ics) && !/€/.test(ics));
   ok("geen pageerror", pe.length === 0, pe.join("|"));
   await browser.close(); console.log(fouten ? "FOUTEN" : "Alles OK");
 })();

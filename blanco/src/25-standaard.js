@@ -131,6 +131,8 @@ var LASTEN_CAT = [
   { code: "sport", groep: "Overig", label: "Sport en hobby's", freq: "maand", index: "cpi", per: true, wanneer: function () { return true; } },
   { code: "studieschuld", groep: "Overig", label: "Aflossing studieschuld", freq: "maand", index: "geen", wanneer: function () { return true; } },
   { code: "lening", groep: "Overig", label: "Aflossing lening of krediet", freq: "maand", index: "geen", wanneer: function () { return true; } },
+  { code: "genot", groep: "Overig", label: "Tabak, alcohol en genotmiddelen", freq: "maand", index: "cpi", wanneer: function () { return true; } },
+  { code: "uiteten", groep: "Overig", label: "Afhaal, bezorging en uit eten", freq: "maand", index: "cpi", wanneer: function () { return true; } },
   { code: "contributies", groep: "Overig", label: "Contributies en donaties", freq: "maand", index: "cpi", wanneer: function () { return true; } },
   { code: "bankkosten", groep: "Overig", label: "Bankkosten", freq: "maand", index: "cpi", wanneer: function () { return true; } },
   { code: "belasting_na", groep: "Overig", label: "Belastingaanslagen (voorlopige aanslag, naheffing)", freq: "jaar", index: "geen", wanneer: function () { return true; } }
