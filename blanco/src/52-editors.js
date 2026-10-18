@@ -1,8 +1,19 @@
 /* ===== Invoer-onderdelen die zowel in de menu's als in de intake worden gebruikt ===== */
 function persOpties(m) { return m.personen.map(function (p) { return [p.id, p.naam]; }); }
 function MaandVeld(p) {
-  return h(Veld, { label: p.label, hint: p.hint, fout: p.fout },
-    h("input", { type: "month", value: p.value || "", onChange: function (e) { p.onChange(e.target.value); }, "data-veld": p.naam }));
+  var s = useState(null), tekst = s[0], setTekst = s[1];
+  var m0 = /^(\d{4})-(\d{2})$/.exec(p.value || "");
+  var weergave = tekst !== null ? tekst : (m0 ? m0[2] + "-" + m0[1] : "");
+  var cijfers = (tekst || "").replace(/\D/g, "");
+  var fout = tekst !== null && cijfers.length > 0 ? (cijfers.length < 6 ? "Vul de maand in als maand-jaar, bijvoorbeeld 09-2026." : "Deze maand bestaat niet.") : "";
+  return h(Veld, { label: p.label, hint: p.hint, fout: p.fout || fout },
+    h("input", { type: "text", inputMode: "numeric", placeholder: "mm-jjjj", autoComplete: "off", maxLength: 7, value: weergave, "data-veld": p.naam,
+      onChange: function (e) {
+        var c = e.target.value.replace(/\D/g, "").slice(0, 6);
+        if (c.length === 0) { setTekst(null); p.onChange(""); return; }
+        if (c.length === 6 && Number(c.slice(0, 2)) >= 1 && Number(c.slice(0, 2)) <= 12) { setTekst(null); p.onChange(c.slice(2) + "-" + c.slice(0, 2)); return; }
+        setTekst(maskCijfers(c, [2, 4]));
+      } }));
 }
 function datumFout(w, label) { return w && !geldigeDatum(w) ? label + ": datum is niet geldig." : null; }
 function nietNeg(w, label) { return w !== "" && w != null && getal(w) < 0 ? label + ": mag niet negatief zijn." : null; }

@@ -232,9 +232,33 @@ function OmschrijvingKeuze(p) {
         [h("option", { key: "", value: "" }, "Kies een omschrijving")].concat(opt.map(function (o) { return h("option", { key: o, value: o }, o); })).concat([h("option", { key: "__overig", value: "__overig" }, "Overig (eigen omschrijving)")]))),
     gekozen === "__overig" ? h(TekstVeld, { label: "Eigen omschrijving (zonder namen of nummers)", value: p.value === "Overig" ? "" : p.value, onChange: function (v) { p.onChange(v || "Overig"); }, naam: (p.naam || "omschr") + "-eigen" }) : null);
 }
+// Datum als gewoon tekstveld (dd-mm-jjjj): werkt op elk apparaat, ook waar de ingebouwde datumkiezer ontbreekt.
+function isoNaarTekst(iso) {
+  var d = geldigeDatum(iso);
+  return d ? String(d.getDate()).padStart(2, "0") + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + d.getFullYear() : "";
+}
+function maskCijfers(c, groepen) {
+  var uit = [], i = 0;
+  groepen.forEach(function (g) { var deel = c.slice(i, i + g); i += g; if (deel) uit.push(deel); });
+  return uit.join("-");
+}
 function DatumVeld(p) {
-  return h(Veld, { label: p.label, hint: p.hint, fout: p.fout },
-    h("input", { type: "date", value: p.value || "", min: "1900-01-01", max: "2200-12-31", onChange: function (e) { p.onChange(e.target.value); }, "data-veld": p.naam }));
+  var s = useState(null), tekst = s[0], setTekst = s[1];
+  var weergave = tekst !== null ? tekst : isoNaarTekst(p.value);
+  var cijfers = (tekst || "").replace(/\D/g, "");
+  var fout = "";
+  if (tekst !== null && cijfers.length > 0) fout = cijfers.length < 8 ? "Vul de datum in als dag-maand-jaar, bijvoorbeeld 15-09-1966." : "Deze datum bestaat niet.";
+  return h(Veld, { label: p.label, hint: p.hint, fout: p.fout || fout },
+    h("input", { type: "text", inputMode: "numeric", placeholder: "dd-mm-jjjj", autoComplete: "off", maxLength: 10, value: weergave, "data-veld": p.naam,
+      onChange: function (e) {
+        var c = e.target.value.replace(/\D/g, "").slice(0, 8);
+        if (c.length === 0) { setTekst(null); p.onChange(""); return; }
+        if (c.length === 8) {
+          var iso = c.slice(4) + "-" + c.slice(2, 4) + "-" + c.slice(0, 2);
+          if (geldigeDatum(iso)) { setTekst(null); p.onChange(iso); return; }
+        }
+        setTekst(maskCijfers(c, [2, 2, 4]));
+      } }));
 }
 function KeuzeVeld(p) {
   return h(Veld, { label: p.label, hint: p.hint, fout: p.fout },

@@ -19,9 +19,9 @@ const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undef
   await page.check(`${dlg}input[type=checkbox]`); await volgende();
   await volgende(); ok("huishouden is verplicht", /Kies de samenstelling/.test(await tekst()));
   await page.check(`${dlg}[data-huishouden="man+man"]`); await volgende();
-  await v("geboorteA", "2015-01-01"); await v("geboorteB", "1966-09-15"); await volgende();
+  await v("geboorteA", "01-01-2015"); await v("geboorteB", "15-09-1966"); await volgende();
   ok("jonger dan 18 wordt geweigerd", /jonger dan 18/.test(await tekst()));
-  await v("geboorteA", "1964-11-09"); await volgende();
+  await v("geboorteA", "0911"); ok("onvolledige datum geeft melding", /dag-maand-jaar/.test(await tekst())); await v("geboorteA", "09-11-1964"); await volgende();
   ok("AOW-stap toont datums", /09-02-2032/.test(await tekst()) && /15-12-2033/.test(await tekst()), (await tekst()).slice(0, 200));
   await volgende();
   ok("werkstap noemt Man 1 en Man 2", /Man 1/.test(await tekst()) && /Man 2/.test(await tekst()));
@@ -86,7 +86,7 @@ const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undef
   await page.click('[data-knop="menu"]'); await page.click('[data-menu="dashboard"]');
   await page.click('[data-knop="start-aanvulling"]'); await page.waitForSelector("[role=dialog]");
   await volgende(); ok("aanvulling: bedrag verplicht", /hoeveel aanvulling/i.test(await tekst()));
-  await v("aanv-maand", "1000"); await page.selectOption(`${dlg}[data-veld="aanv-tot"]`, "datum"); await v("aanv-einde", "2028-10-18");
+  await v("aanv-maand", "1000"); await page.selectOption(`${dlg}[data-veld="aanv-tot"]`, "datum"); await v("aanv-einde", "18-10-2028");
   const oordeel = await page.textContent(`${dlg}[data-aanv-oordeel]`);
   ok("aanvulling: oordeel toont nodig en beschikbaar", /Nodig/.test(oordeel) && /Beschikbaar/.test(oordeel) && /Uit spaargeld/.test(oordeel), oordeel.slice(0, 220));
   await page.keyboard.press("Escape");
