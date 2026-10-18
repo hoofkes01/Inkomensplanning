@@ -870,7 +870,7 @@ const MS_PER_JAAR = 1000 * 60 * 60 * 24 * 365.25;
 const FULLTIME_URE = 36;
 // Keuzes voor Man per jaar: "fulltime", "24", "16", "12" (uren per week) of "gestopt".
 // De oude waarde "parttime" blijft werken en betekent 24 uur.
-const MAN_URENKEUZES = [["fulltime", "Fulltime werken (36 uur)"], ["24", "24 uur werken + ABP"], ["16", "16 uur werken + ABP"], ["12", "12 uur werken + ABP"], ["gestopt", "Gestopt — alleen ABP"]];
+const MAN_URENKEUZES = [["fulltime", "Fulltime werken (36 uur)"], ["24", "24 uur werken"], ["16", "16 uur werken"], ["12", "12 uur werken"], ["gestopt", "Gestopt met werken"]];
 // Keuzes voor Vrouw per jaar: uren per week bij Linc, of "stoppen".
 const VROUW_URENKEUZES = [16, 18, 20, 22, 24];
 function manUrenVanKeuze(keuze) {
@@ -9745,7 +9745,7 @@ menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-sl
     }, "AOW ", fmtDate(manAOWDate)));
   })), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-400 mt-1"
-  }, "Elke keuze gaat in op 1 januari van dat jaar. Het salaris schaalt mee met het aantal uren (fulltime = 36 uur); je ABP-pensioen loopt daarnaast door. Extra pensioenopbouw tijdens het werken is niet apart meegerekend. Vanaf je AOW-datum geldt automatisch ABP + AOW.")), /*#__PURE__*/React.createElement("div", {
+  }, "Elke keuze gaat in op 1 januari van dat jaar. Dit gaat alleen over het gemeentesalaris; het salaris schaalt mee met het aantal uren (fulltime = 36 uur). ABP staat apart in de app. Vanaf je AOW-datum geldt automatisch ABP + AOW.")), /*#__PURE__*/React.createElement("div", {
     className: "sm:col-span-2"
   }, /*#__PURE__*/React.createElement("label", {
     className: "text-xs uppercase tracking-wide text-slate-500"
