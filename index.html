@@ -331,6 +331,7 @@ function postCaoFactorCentraal(type, vanDatum, totDatum, pct){
       <div class="sm-actions">
         <button class="sm-secondary" data-tab="inkomen">Inkomen</button>
         <button class="sm-secondary" data-tab="grote_uitgaven">Grote inkomsten en uitgaven</button>
+        <button class="sm-secondary" data-tab="beleggingsadvies">Beleggingsadvies</button>
       </div>
     </div>
 
@@ -4083,7 +4084,7 @@ function nettoMarginaal(bestaandBrutoJaar, extraBrutoJaar, naAOW, datum, metExtr
   }
   const [cpiPrognose, setCpiPrognose] = useOpslag("cpiPrognose", 3);
   const [vmDetail, setVmDetail] = React.useState(null);
-  const [adviesParams, setAdviesParams] = useOpslag("adviesParams", { euribor: 3.2, euriborDatum: "2026-10-16", drempel: 15000, def: 20, neu: 30, off: 50, semisBehouden: true, defMin: 3.1, raisin6: 3.15, raisinDatum: "2026-10-15", defMarge: 0.3, belasting: 36 });
+  const [adviesParams, setAdviesParams] = useOpslag("adviesParams", { euribor: 3.2, euriborDatum: "2026-10-16", drempel: 15000, def: 20, neu: 30, off: 50, semisBehouden: true, defMin: 3.1, raisin6: 3.15, raisinDatum: "2026-10-15", defMarge: 0.3, belasting: 36, wachtTot: 55500, overigDefensief: 180000 });
   const [kortDepoMeetellen, setKortDepoMeetellen] = useOpslag("kortDepoMeetellen", true);
   const [nieuweBron, setNieuweBron] = useOpslag("nieuweBronFormulier", { naam: "", persoon: "man", soort: "werk", bedrag: "", indexType: "vast", index: "", caoTot: "", start: "", eind: "" });
   function voegBronToe() {
@@ -6925,6 +6926,8 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     const waarnemingen = [];
     if (totaalNu > 0) {
       const off = pct(huidig.off, totaalNu);
+      const overigDef = Number(P.overigDefensief != null ? P.overigDefensief : 180000);
+      if (overigDef > 0) waarnemingen.push("Naast dit deel heb je ongeveer " + vmEuro(overigDef) + " defensief in deposito's (" + pct(overigDef, overigDef + totaalNu) + "% van je totale beleggings- en depositovermogen). Daardoor past een offensieve opzet in je vrij beleggen: het risico dat je neemt blijft beperkt tot " + pct(totaalNu, overigDef + totaalNu) + "% van dat totaal, en dat durf je aan.");
       if (defVervangen) waarnemingen.push("Geen defensief fonds levert na kosten meer dan Raisin 6 maanden plus marge (" + vmPct(adviesMinDef(P), 2) + "). Je loopt dan risico en houdt na belasting niet meer over dan veilig sparen. Het defensieve deel (" + defOrigineel + "%) is daarom naar neutraal verschoven; defensief geld hoort in een deposito.");
       waarnemingen.push("Je vrij belegde vermogen (Hoofkes02) is " + vmEuro(totaalNu) + ", waarvan " + off + "% offensief, " + pct(huidig.neu, totaalNu) + "% neutraal en " + pct(huidig.def, totaalNu) + "% defensief (doel " + pct(doel.off, somDoel) + "/" + pct(doel.neu, somDoel) + "/" + pct(doel.def, somDoel) + "% offensief/neutraal/defensief).");
       const grootsteNietChip = grootste.filter(g => !/semiconductor/i.test(g.naam))[0];
@@ -6978,7 +6981,9 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     const stressDoel = stressVan({ def: doelBedrag("def"), neu: doelBedrag("neu"), off: doelBedrag("off") });
     const aanbeveling = afwijking < 5 || verkocht <= 0 ? "niets" : "gefaseerd";
     const richting = gap.off < 0 ? "defensiever" : "offensiever";
-    return { gap, afwijking, S1: verkocht, stap, stressNu, stressDoel, aanbeveling, richting, totaal };
+    const wachtTot = Number((A.P || {}).wachtTot) || 0;
+    const wachten = wachtTot > 0 && totaal < wachtTot && verkocht > 0;
+    return { gap, afwijking, S1: verkocht, stap, stressNu, stressDoel, aanbeveling, richting, totaal, wachten, wachtTot, nogTeGaan: Math.max(0, wachtTot - totaal) };
   }
   // Korte samenvatting voor het openingsscherm en het rapport.
   function adviesSamenvatting(A) {
@@ -6995,7 +7000,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
         const st = plan.stap[0];
         const verkoopTxt = st.verkoop.map(v => (v.isin || v.naam) + " " + vmEuro(v.bedrag)).join(", ");
         const koopTxt = ["def", "neu", "off"].filter(c => st.koop[c] > 0).map(c => { const r = adviesKoopRegels(c, st.koop[c], A.P); return r.length ? r.map(x => x.f.isin + " " + vmEuro(x.bedrag)).join(", ") : "deposito " + vmEuro(st.koop[c]); }).join(", ");
-        regels.push("Bestaande portefeuille, " + plan.richting + " richting " + A.pct(A.doel.off, A.somDoel) + "/" + A.pct(A.doel.neu, A.somDoel) + "/" + A.pct(A.doel.def, A.somDoel) + ". Stap 1: VERKOPEN " + verkoopTxt + ". KOPEN " + koopTxt + ". Niets doen is ook een optie.");
+        regels.push((plan.wachten ? "Bestaande portefeuille: nog niets verkopen. De waarde is " + vmEuro(plan.totaal) + " en je wacht met omzetten tot minimaal " + vmEuro(plan.wachtTot) + " (nog " + vmEuro(plan.nogTeGaan) + " te gaan), want nu verkoop je met verlies. Bij herstel gaat het " : "Bestaande portefeuille, ") + plan.richting + " richting " + A.pct(A.doel.off, A.somDoel) + "/" + A.pct(A.doel.neu, A.somDoel) + "/" + A.pct(A.doel.def, A.somDoel) + ". Stap 1: VERKOPEN " + verkoopTxt + ". KOPEN " + koopTxt + ". Niets doen is ook een optie.");
       } else regels.push("Bestaande portefeuille: je zit dicht bij je doelverdeling. Niets doen is het advies.");
       regels.push("Bij een aandelencorrectie van 25% verlies je nu circa " + vmEuro(-plan.stressNu) + " tegen circa " + vmEuro(-plan.stressDoel) + " bij de doelverdeling.");
     }
@@ -7046,7 +7051,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
             : ruimteNu > 0
               ? "Je direct opneembare spaargeld is " + vmEuro(spaarNu) + ", maar zakt binnen 12 maanden weer onder je drempel van " + vmEuro(drempel) + ". Nu niets beleggen."
               : "Je direct opneembare spaargeld is " + vmEuro(spaarNu) + " en ligt onder je drempel van " + vmEuro(drempel) + ". Nu geen advies om te beleggen."),
-        tekortKomend > 0 && laagsteKomend ? H("p", { className: "text-xs text-rose-700 mt-2 font-semibold" }, "Let op: volgens de prognose zakt je spaargeld onder je drempel. Laagste punt " + vmEuro(laagsteKomend.balans) + " op " + fmtDate(laagsteKomend.datum) + ", dat is " + vmEuro(tekortKomend) + " onder " + vmEuro(drempel) + ". Dat is geen optie: dek dit af (bijvoorbeeld door een deposito eerder te laten vrijvallen of uitgaven te verschuiven) voordat je belegt.") : null,
+        tekortKomend > 0 && laagsteKomend ? H("p", { className: "text-xs text-slate-600 mt-2" }, "Ter info: volgens de prognose komt je spaargeld op " + fmtDate(laagsteKomend.datum) + " tijdelijk uit op " + vmEuro(laagsteKomend.balans) + ", " + vmEuro(tekortKomend) + " onder je drempel van " + vmEuro(drempel) + ". Beleg daarom pas bij als je dat zelf verantwoord vindt; een eerder vrijvallend deposito vult dit aan.") : null,
         H("p", { className: "text-xs text-slate-500 mt-2" }, "Onder " + vmEuro(drempel) + " vrij opneembaar spaargeld komen is geen optie, dus alleen wat blijvend boven die grens blijft telt. Deposito's tellen pas mee zodra ze vrijvallen. Afwegen tegen deposito's doe je zelf.")),
       koopBasis > 0 && H("div", { className: kaart },
         H("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-2" }, "Wat je kunt kopen"),
@@ -7071,10 +7076,10 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
       plan && H("div", { className: kaart },
         H("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-1" }, "Bestaande portefeuille: wat aanpassen?"),
         H("div", { className: "rounded-lg p-3 text-sm font-semibold " + (plan.aanbeveling === "gefaseerd" ? "bg-amber-50 text-amber-900 border border-amber-200" : "bg-emerald-50 text-emerald-900 border border-emerald-200") },
-          plan.aanbeveling === "gefaseerd" ? "Advies: herbalanceer gefaseerd in 4 stappen (per kwartaal). Niets doen is ook een optie." : "Advies: niets doen, je zit dicht bij je doelverdeling."),
+          plan.wachten ? "Advies: nu nog niets verkopen. Je wacht met omzetten tot je portefeuille weer minimaal " + vmEuro(plan.wachtTot) + " waard is (nu " + vmEuro(plan.totaal) + ", nog " + vmEuro(plan.nogTeGaan) + " te gaan). Het onderstaande plan geldt dus pas bij herstel." : plan.aanbeveling === "gefaseerd" ? "Advies: herbalanceer gefaseerd in 4 stappen (per kwartaal). Niets doen is ook een optie." : "Advies: niets doen, je zit dicht bij je doelverdeling."),
         H("p", { className: "text-sm py-1" }, "Doel " + pct(doel.off, somDoel) + "% offensief, " + pct(doel.neu, somDoel) + "% neutraal, " + pct(doel.def, somDoel) + "% defensief. Het verschil met nu: offensief " + (plan.gap.off < 0 ? "−" : "+") + vmEuro(Math.abs(plan.gap.off)) + ", neutraal +" + vmEuro(Math.max(0, plan.gap.neu)) + ", defensief +" + vmEuro(Math.max(0, plan.gap.def)) + "."),
         plan.stap.length ? H("div", { className: "mt-1" },
-          H("div", { className: "font-semibold text-sm" }, "Stap 1 (nu), ongeveer " + vmEuro(plan.S1)),
+          H("div", { className: "font-semibold text-sm" }, (plan.wachten ? "Stap 1 (pas bij herstel), ongeveer " : "Stap 1 (nu), ongeveer ") + vmEuro(plan.S1)),
           plan.stap.map((s, i) => H("div", { key: i, className: "py-1.5 border-t border-slate-100 text-sm" },
             H("div", { className: "font-semibold" }, s.rekening + ": " + vmEuro(s.bedrag)),
             s.verkoop.map((v, j) => H("div", { key: j, className: "text-sm font-mono" }, "VERKOPEN " + (v.isin || "(ISIN onbekend)") + " " + vmEuro(v.bedrag), H("span", { className: "font-sans text-xs text-slate-500" }, " " + v.naam + (v.isin ? "" : ": zoek op naam in DEGIRO")))),
@@ -7101,6 +7106,8 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
         inv("Drempel direct opneembaar spaargeld", drempel, v => zet("drempel", v), "€"),
         inv("Raisin 6-maandsdeposito (hoogste rente)", adviesRaisin(P), v => { zet("raisin6", v); zet("raisinDatum", new Date().toISOString().slice(0, 10)); }, "%", "0.01"),
         inv("Extra rendement na belasting boven Raisin", adviesMargeNetto(P), v => zet("defMarge", v), "%", "0.1"),
+        inv("Herbalanceren pas als portefeuille minimaal", Number(P.wachtTot != null ? P.wachtTot : 55500), v => zet("wachtTot", v), "€"),
+        inv("Overig vermogen defensief (deposito's, ong.)", Number(P.overigDefensief != null ? P.overigDefensief : 180000), v => zet("overigDefensief", v), "€"),
         inv("Belasting over rendement", adviesBelasting(P), v => zet("belasting", v), "%", "1"),
         H("div", { className: "flex gap-2 py-1.5 text-sm" }, [["forfait", "Huidig stelsel (fictief)"], ["werkelijk", "Werkelijk rendement"]].map(([id, nm]) => H("button", { key: id, type: "button", onClick: () => zet("stelsel", id), className: "px-3 py-1.5 rounded-lg border " + (adviesStelsel(P) === id ? "bg-slate-800 text-white border-slate-800" : "bg-white border-slate-300") }, nm))),
         adviesStelsel(P) === "forfait" ? [inv("Fictief rendement sparen (2026, voorlopig)", adviesForfaitSparen(P), v => zet("forfaitSparen", v), "%", "0.01"), inv("Fictief rendement beleggen (2026)", adviesForfaitBeleg(P), v => zet("forfaitBeleg", v), "%", "0.01")] : null,
@@ -8005,7 +8012,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
             ? "Je kunt ongeveer " + vmEuro(Math.round(A.koopBasis / 10) * 10) + " beleggen en blijft boven je drempel van " + vmEuro(A.drempel) + " voor direct opneembaar spaargeld."
             : "Nu niets beleggen: je direct opneembare spaargeld is " + vmEuro(A.spaarNu) + " en blijft niet (blijvend) boven je drempel van " + vmEuro(A.drempel) + ".",
             A.koopBasis > 0 ? { background: "#ecfdf5", borderColor: "#a7f3d0", color: "#065f46" } : { background: "#f8fafc", borderColor: "#cbd5e1", color: "#334155" }),
-          A.tekortKomend > 0 && A.laagsteKomend ? noot("Let op: volgens de prognose komt het spaargeld onder je drempel (laagste punt " + vmEuro(A.laagsteKomend.balans) + " op " + fmtDate(A.laagsteKomend.datum) + ", " + vmEuro(A.tekortKomend) + " onder " + vmEuro(A.drempel) + "). Onder de drempel komen is geen optie.") : null,
+          A.tekortKomend > 0 && A.laagsteKomend ? noot("Ter info: volgens de prognose komt het spaargeld op " + fmtDate(A.laagsteKomend.datum) + " tijdelijk uit op " + vmEuro(A.laagsteKomend.balans) + ", " + vmEuro(A.tekortKomend) + " onder je drempel van " + vmEuro(A.drempel) + ".") : null,
           A.koopBasis > 0 ? H("table", { className: "rp-tabel" },
             H("thead", null, H("tr", null, H("th", null, "Categorie"), H("th", null, "Bedrag"), H("th", { style: { textAlign: "left" } }, "Fonds"), H("th", { style: { textAlign: "left" } }, "ISIN"))),
             H("tbody", null, cat.filter(c => A.koop[c] > 0).map(c => {
@@ -8321,7 +8328,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     className: "font-mono text-xs uppercase tracking-widest bg-slate-700/60 border border-slate-500 rounded-full px-3 py-1"
   }, "peildatum ", fmtDate(PEILDATUM)), /*#__PURE__*/React.createElement("span", {
     className: "w-full text-xs text-slate-400 no-print"
-  }, "App-versie ", "18-10-2026 · 19:15")), /*#__PURE__*/React.createElement("p", {
+  }, "App-versie ", "18-10-2026 · 20:30")), /*#__PURE__*/React.createElement("p", {
     className: "mt-2 text-slate-300 text-sm max-w-2xl"
   }, "Bedragen zijn nominaal per peildatum, tenzij een indexatiepercentage is ingevuld. Alle basisbedragen zijn zelf aanpasbaar bij \"Basisgegevens\"." + (actieveTab === "fiscaliteit" ? " Alle aannames staan onderaan bij \"Aannames & beperkingen\". Bij het openen checkt dit bestand automatisch vier fiscale kerncijfers (zie bovenaan) — bij een afwijking wordt er niets automatisch aangepast, dat blijft een bewuste stap." : "")), /*#__PURE__*/React.createElement("div", {
     className: "mt-4 flex flex-wrap gap-2 items-center no-print"
@@ -10756,11 +10763,8 @@ class OpstartFoutgrens extends React.Component {
       const menuKnop = Array.from(document.querySelectorAll("button")).find(b=>b.textContent && b.textContent.includes("☰ Menu"));
       if(menuKnop) menuKnop.click();
       setTimeout(()=>{
-        const select = Array.from(document.querySelectorAll("select")).find(s=>Array.from(s.options).some(o=>o.value===tab));
-        if(select){
-          select.value = tab;
-          select.dispatchEvent(new Event("change",{bubbles:true}));
-        }
+        const knop = document.querySelector('button[data-menu="'+tab+'"]');
+        if(knop) knop.click();
       },80);
     },50);
   }
