@@ -4083,7 +4083,7 @@ function nettoMarginaal(bestaandBrutoJaar, extraBrutoJaar, naAOW, datum, metExtr
   }
   const [cpiPrognose, setCpiPrognose] = useOpslag("cpiPrognose", 3);
   const [vmDetail, setVmDetail] = React.useState(null);
-  const [adviesParams, setAdviesParams] = useOpslag("adviesParams", { euribor: 3.2, euriborDatum: "2026-10-16", drempel: 15000, def: 20, neu: 30, off: 50, semisBehouden: true, defMin: 3.1, raisin6: 3.15, raisinDatum: "2026-10-15", defMarge: 0.5 });
+  const [adviesParams, setAdviesParams] = useOpslag("adviesParams", { euribor: 3.2, euriborDatum: "2026-10-16", drempel: 15000, def: 20, neu: 30, off: 50, semisBehouden: true, defMin: 3.1, raisin6: 3.15, raisinDatum: "2026-10-15", defMarge: 0.3, belasting: 36 });
   const [kortDepoMeetellen, setKortDepoMeetellen] = useOpslag("kortDepoMeetellen", true);
   const [nieuweBron, setNieuweBron] = useOpslag("nieuweBronFormulier", { naam: "", persoon: "man", soort: "werk", bedrag: "", indexType: "vast", index: "", caoTot: "", start: "", eind: "" });
   function voegBronToe() {
@@ -6723,7 +6723,11 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
   // Alleen fondsen met een gecontroleerd rendement (yield min kosten) boven dat minimum komen in aanmerking.
   function adviesRaisin(P) { return Number((P || {}).raisin6 != null ? P.raisin6 : 3.15); }
   function adviesRaisinDatum(P) { return (P || {}).raisinDatum || "2026-10-15"; }
-  function adviesMinDef(P) { return Math.round((adviesRaisin(P) + Number((P || {}).defMarge != null ? P.defMarge : 0.5)) * 100) / 100; }
+  function adviesBelasting(P) { return Number((P || {}).belasting != null ? P.belasting : 36); }
+  // Marge is netto (na belasting); omgerekend naar bruto: het fonds moet na belasting minstens zoveel méér overhouden dan Raisin.
+  function adviesMargeNetto(P) { return Number((P || {}).defMarge != null ? P.defMarge : 0.3); }
+  function adviesMinDef(P) { return Math.round((adviesRaisin(P) + adviesMargeNetto(P) / (1 - adviesBelasting(P) / 100)) * 100) / 100; }
+  function adviesNetto(bruto, P) { return bruto * (1 - adviesBelasting(P) / 100); }
   function adviesRaisinOud(P) { const d = new Date(adviesRaisinDatum(P) + "T12:00:00"); return (Date.now() - d.getTime()) / 86400000 > 7; }
   function adviesVoldoetMin(f, P) { return f.rend != null && f.rend - f.terNum >= adviesMinDef(P); }
   // Fondsen en bedragen voor een categorie: defensief verdeelt over de fondsen die het minimum halen.
@@ -7006,7 +7010,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     return H("section", null, H("div", { className: "rounded-lg p-4 text-sm bg-white", style: { border: "1px solid #a7f3d0", background: "#f0fdf4" } },
       H("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-1" }, "Beleggingsadvies bij het openen · markt " + ADVIES_MARKT.datum),
       S.regels.map((r, i) => H("p", { key: i, className: "py-1" }, r)),
-      H("p", { className: "py-1" }, "Raisin 6-maandsdeposito: " + vmPct(adviesRaisin(adviesParams), 2) + " (stand " + adviesRaisinDatum(adviesParams).split("-").reverse().join("-") + "). Defensief beleggen heeft pas zin bij minimaal " + vmPct(adviesMinDef(adviesParams), 2) + " (Raisin plus marge); bij een klein verschil is het zinloos, mede door de toekomstige box 3-heffing."),
+      H("p", { className: "py-1" }, "Raisin 6-maandsdeposito: " + vmPct(adviesRaisin(adviesParams), 2) + " bruto (stand " + adviesRaisinDatum(adviesParams).split("-").reverse().join("-") + "), na " + adviesBelasting(adviesParams) + "% belasting " + vmPct(adviesNetto(adviesRaisin(adviesParams), adviesParams), 2) + ". Defensief beleggen heeft pas zin als een fonds bruto minimaal " + vmPct(adviesMinDef(adviesParams), 2) + " haalt (na belasting " + vmPct(adviesMargeNetto(adviesParams), 1) + " méér dan Raisin). Anders neem je risico voor niets."),
       adviesRaisinOud(adviesParams) ? H("p", { className: "py-1 font-semibold", style: { color: "#b45309" } }, "Controleer de Raisin-rente: de stand is ouder dan 7 dagen. De app kan Raisin niet zelf opvragen. Pas de rente aan in het tabblad Beleggingsadvies, of vraag mij hem bij te werken.") : null,
       H("button", { type: "button", className: "underline font-semibold mt-1", onClick: () => setActieveTab("beleggingsadvies") }, "Bekijk het hele advies")));
   }
@@ -7049,7 +7053,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
               H("div", { className: "text-sm" }, f.naam + " · " + vmEuro(bedrag)),
               H("div", { className: "text-xs font-mono text-slate-700" }, "ISIN " + f.isin + " · TER " + f.ter),
               H("div", { className: "text-xs text-slate-500" }, f.soort))),
-            c === "def" && regels.length === 0 ? H("div", { className: "text-sm text-amber-800 mt-1" }, "Geen defensief fonds haalt het minimum van " + vmPct(adviesMinDef(P), 2) + " (Raisin 6 maanden + marge). Het verschil is te klein om defensief te beleggen (ook door de toekomstige box 3-heffing over werkelijk rendement): houd dit bedrag liever in een deposito.") : null,
+            c === "def" && regels.length === 0 ? H("div", { className: "text-sm text-amber-800 mt-1" }, "Geen defensief fonds haalt het minimum van " + vmPct(adviesMinDef(P), 2) + " (Raisin 6 maanden + marge). Na belasting op het rendement is het verschil te klein om defensief te beleggen: houd dit bedrag liever in een deposito.") : null,
             c === "def" && regels.length > 0 ? H("div", { className: "text-xs text-slate-500 mt-1" }, "Alleen fondsen die minimaal " + vmPct(adviesMinDef(P), 2) + " opleveren (yield min kosten): Raisin 6 maanden + marge.") : null,
             c === "off" ? H("div", { className: "text-xs text-slate-500 mt-1" }, "Spreid dit over 3 maandelijkse aankopen van ongeveer " + vmEuro(Math.round(koop[c] / 3 / 10) * 10) + ": de markt is volatiel en de waardering is hoog.") : null);
         }),
@@ -7091,7 +7095,8 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
         H("p", { className: "text-xs text-slate-500" }, "Stand " + P.euriborDatum + ": 3,2% (euribor-rates.eu, global-rates.com). Pas aan als het verandert."),
         inv("Drempel direct opneembaar spaargeld", drempel, v => zet("drempel", v), "€"),
         inv("Raisin 6-maandsdeposito (hoogste rente)", adviesRaisin(P), v => { zet("raisin6", v); zet("raisinDatum", new Date().toISOString().slice(0, 10)); }, "%", "0.01"),
-        inv("Marge boven Raisin (anders zinloos, box 3)", P.defMarge != null ? P.defMarge : 0.5, v => zet("defMarge", v), "%", "0.1"),
+        inv("Extra rendement na belasting boven Raisin", adviesMargeNetto(P), v => zet("defMarge", v), "%", "0.1"),
+        inv("Belasting over rendement", adviesBelasting(P), v => zet("belasting", v), "%", "1"),
         H("label", { className: "flex items-center gap-2 text-sm py-1.5" }, H("input", { type: "checkbox", checked: P.semisBehouden !== false, onChange: e => zet("semisBehouden", e.target.checked) }), "Chipfondsen behouden (niet verkopen)"),
         H("div", { className: "text-xs uppercase tracking-wide text-slate-500 mt-3 mb-1" }, "Doelverdeling vrij beleggen (in %)"),
         inv("Defensief", P.def, v => zet("def", v), "%"), inv("Neutraal", P.neu, v => zet("neu", v), "%"), inv("Offensief", P.off, v => zet("off", v), "%"),
@@ -7145,7 +7150,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
             H("div", { className: "text-sm" }, f.naam + (f.hoofd ? " (hoofdkeuze)" : "")),
             H("div", { className: "text-xs font-mono text-slate-700" }, "ISIN " + f.isin + " · TER " + f.ter),
             H("div", { className: "text-xs text-slate-500" }, f.soort),
-            c === "def" ? H("div", { className: "text-xs " + (adviesVoldoetMin(f, P) ? "text-emerald-700" : "text-rose-700") }, f.rend != null ? "Rendement " + vmPct(f.rend, 2) + " min kosten " + vmPct(f.terNum, 2) + " = " + vmPct(f.rend - f.terNum, 2) + " (" + f.rendBron + "): " + (adviesVoldoetMin(f, P) ? "haalt" : "haalt niet") + " het minimum van " + vmPct(adviesMinDef(P), 2) : "Rendement niet gecontroleerd: wordt niet voorgesteld") : null)))),
+            c === "def" ? H("div", { className: "text-xs " + (adviesVoldoetMin(f, P) ? "text-emerald-700" : "text-rose-700") }, f.rend != null ? "Rendement " + vmPct(f.rend, 2) + " min kosten " + vmPct(f.terNum, 2) + " = " + vmPct(f.rend - f.terNum, 2) + " bruto, " + vmPct(adviesNetto(f.rend - f.terNum, P), 2) + " netto (" + f.rendBron + "): " + (adviesVoldoetMin(f, P) ? "haalt" : "haalt niet") + " het minimum van " + vmPct(adviesMinDef(P), 2) : "Rendement niet gecontroleerd: wordt niet voorgesteld") : null)))),
         H("p", { className: "text-xs text-slate-500 mt-2" }, "Alleen kapitaliserende (accumulating) fondsen. ISIN's en kosten zijn op 18-10-2026 gecontroleerd bij fondsdata-sites. Controleer in DEGIRO of het fonds op jouw beurs beschikbaar is en wat de kosten zijn. Dit is een rekenhulp op basis van je eigen uitgangspunten, geen persoonlijk beleggingsadvies.")));
   }
 
@@ -8309,7 +8314,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     className: "font-mono text-xs uppercase tracking-widest bg-slate-700/60 border border-slate-500 rounded-full px-3 py-1"
   }, "peildatum ", fmtDate(PEILDATUM)), /*#__PURE__*/React.createElement("span", {
     className: "w-full text-xs text-slate-400 no-print"
-  }, "App-versie ", "18-10-2026 · 18:10")), /*#__PURE__*/React.createElement("p", {
+  }, "App-versie ", "18-10-2026 · 18:40")), /*#__PURE__*/React.createElement("p", {
     className: "mt-2 text-slate-300 text-sm max-w-2xl"
   }, "Bedragen zijn nominaal per peildatum, tenzij een indexatiepercentage is ingevuld. Alle basisbedragen zijn zelf aanpasbaar bij \"Basisgegevens\"." + (actieveTab === "fiscaliteit" ? " Alle aannames staan onderaan bij \"Aannames & beperkingen\". Bij het openen checkt dit bestand automatisch vier fiscale kerncijfers (zie bovenaan) — bij een afwijking wordt er niets automatisch aangepast, dat blijft een bewuste stap." : "")), /*#__PURE__*/React.createElement("div", {
     className: "mt-4 flex flex-wrap gap-2 items-center no-print"
