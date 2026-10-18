@@ -410,7 +410,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 })();
 </script>
 <script>
-var APP_VERSIE = "18-10-2026 · 18:27";
+var APP_VERSIE = "18-10-2026 · 18:29";
 /* ===== Basis: hulpfuncties, opslag, invoervelden ===== */
 var h = React.createElement;
 var useState = React.useState, useEffect = React.useEffect, useMemo = React.useMemo, useRef = React.useRef, useContext = React.useContext;
@@ -680,7 +680,7 @@ function KeuzeVeld(p) {
 }
 function Vink(p) {
   return h("label", { className: "vink" },
-    h("input", { type: "checkbox", checked: !!p.value, onChange: function (e) { p.onChange(e.target.checked); } }),
+    h("input", { type: "checkbox", checked: !!p.value, "data-vink": p.naam, onChange: function (e) { p.onChange(e.target.checked); } }),
     h("span", null, p.label, p.hint ? h("small", { className: "klein", style: { display: "block" } }, p.hint) : null));
 }
 function Knop(p) {
@@ -1017,6 +1017,8 @@ var BRON_CAT = [
   { code: "kinderalim_ontv", label: "Kinderalimentatie (ontvangen)", soort: "toeslag", freq: "maand", wanneer: function (L) { return L.kinderen > 0; } },
   { code: "partneralim_ontv", label: "Partneralimentatie (ontvangen, belast)", soort: "overig", freq: "maand", wanneer: function () { return true; } },
   { code: "verhuur", label: "Huurinkomsten uit verhuur", soort: "overig", freq: "maand", wanneer: function () { return true; } },
+  { code: "extra_kb", label: "Extra kinderbijslag bij intensieve zorg (vast bedrag per jaar)", soort: "toeslag", freq: "jaar", wanneer: function (L) { return L.beperking; } },
+  { code: "tegemoetkoming", label: "Tegemoetkoming of vergoeding voor zorg of hulpmiddelen (gemeente, Wlz, Jeugdwet)", soort: "toeslag", freq: "maand", wanneer: function (L) { return L.beperking; } },
   { code: "overig", label: "Overig inkomen (eigen omschrijving)", soort: "overig", freq: "maand", wanneer: function () { return true; } }
 ];
 function bronCat(code) { return BRON_CAT.filter(function (x) { return x.code === code; })[0]; }
@@ -1064,6 +1066,8 @@ var LASTEN_CAT = [
   { code: "studiekosten", groep: "Gezin", label: "Collegegeld en studiekosten", freq: "jaar", index: "cpi", wanneer: function (L) { return L.kinderen > 0 && L.studerend; } },
   { code: "zakgeld", groep: "Gezin", label: "Zakgeld kinderen", freq: "maand", index: "cpi", wanneer: function (L) { return L.kinderen > 0; } },
   { code: "sport_kind", groep: "Gezin", label: "Sport en clubs kinderen", freq: "maand", index: "cpi", wanneer: function (L) { return L.kinderen > 0; } },
+  { code: "zorg_kind", groep: "Gezin", label: "Extra zorgkosten kind (hulpmiddelen, begeleiding, eigen bijdragen)", freq: "maand", index: "cpi", wanneer: function (L) { return L.beperking; } },
+  { code: "vervoer_kind", groep: "Gezin", label: "Aangepast vervoer en reiskosten voor zorg", freq: "maand", index: "cpi", wanneer: function (L) { return L.beperking; } },
   { code: "kinderalim", groep: "Gezin", label: "Kinderalimentatie (betaald)", freq: "maand", index: "cpi", wanneer: function () { return true; } },
   { code: "partneralim", groep: "Gezin", label: "Partneralimentatie (betaald)", freq: "maand", index: "cpi", wanneer: function () { return true; } },
   { code: "huisdier", groep: "Overig", label: "Huisdier (voer, dierenarts, verzekering)", freq: "maand", index: "cpi", wanneer: function (L) { return L.huisdier; } },
@@ -1090,6 +1094,7 @@ function lijstL(profiel) {
   return { woning: l.woning, eigen: eigen, lease: lease, auto: eigen + lease > 0, deel: !!l.deel, geenAuto: eigen + lease === 0, kinderen: n,
     opvang: kids.length ? kids.some(function (k) { return k.opvang; }) : !!l.opvang, studerend: kids.length ? kids.some(function (k) { return k.studerend; }) : !!l.studerend,
     kbAuto: profiel.kinderbijslagAuto !== false && kids.some(function (k) { return !!geldigeDatum(k.geboorte); }),
+    beperking: kids.some(function (k) { return k.beperking; }),
     huisdier: !!l.huisdier, partner: !!profiel.partner };
 }
 // De auto's van het huishouden, elk met een eigen id en naam (voor lasten per auto).
@@ -1234,21 +1239,23 @@ function potSaldoOp(m, pot, d) {
 function kwartaalStart(d) { return new Date(d.getFullYear(), Math.floor(d.getMonth() / 3) * 3, 1); }
 function kwartaalEind(d) { var q = kwartaalStart(d); return new Date(q.getFullYear(), q.getMonth() + 3, 0); }
 // Bedrag voor het kwartaal dat op qStart begint: stopt als het kind op de eerste dag 18 is; leeftijdsgroep naar de leeftijd aan het einde van het kwartaal.
-function kinderbijslagKwartaal(m, geboorte, qStart) {
+function kinderbijslagKwartaal(m, geboorte, qStart, dubbel) {
   var g = geldigeDatum(geboorte); if (!g) return 0;
   var qEind = kwartaalEind(qStart);
   if (g > qEind) return 0;
   if (leeftijdJaren(g, qStart) >= 18) return 0;
   var a = leeftijdJaren(g, qEind), f = fx(m, qEind);
-  return getal(a >= 12 ? f.kinderbijslag_12_17 : a >= 6 ? f.kinderbijslag_6_11 : f.kinderbijslag_0_5);
+  var bedrag = getal(a >= 12 ? f.kinderbijslag_12_17 : a >= 6 ? f.kinderbijslag_6_11 : f.kinderbijslag_0_5);
+  // Dubbele kinderbijslag: kind van 3 tot en met 17 met een beperking en intensieve zorg (Wlz-indicatie of CIZ-advies), thuiswonend.
+  return dubbel && a >= 3 ? bedrag * 2 : bedrag;
 }
 function kinderbijslagMaand(m, d, kas) {
   var kids = (m.profiel.kids || []), L = lijstL(m.profiel);
   if (!L.kbAuto) return 0;
   var kb = 0;
   kids.forEach(function (k) {
-    if (kas) { if (d.getMonth() % 3 === 0) kb += kinderbijslagKwartaal(m, k.geboorte, new Date(d.getFullYear(), d.getMonth() - 3, 1)); }
-    else kb += kinderbijslagKwartaal(m, k.geboorte, kwartaalStart(d)) / 3;
+    if (kas) { if (d.getMonth() % 3 === 0) kb += kinderbijslagKwartaal(m, k.geboorte, new Date(d.getFullYear(), d.getMonth() - 3, 1), k.beperking); }
+    else kb += kinderbijslagKwartaal(m, k.geboorte, kwartaalStart(d), k.beperking) / 3;
   });
   return kb;
 }
@@ -2195,7 +2202,7 @@ function GezinVelden() {
   function zetAantal(n) {
     n = Math.max(0, Math.min(12, Math.round(getal(n))));
     var nieuw = kids.slice(0, n);
-    while (nieuw.length < n) nieuw.push({ id: nieuwId(), geboorte: "", opvang: false, studerend: false });
+    while (nieuw.length < n) nieuw.push({ id: nieuwId(), geboorte: "", opvang: false, studerend: false, beperking: false });
     zetKids(nieuw);
   }
   function wijzigKind(id, patch) { zetKids(kids.map(function (k) { return k.id === id ? Object.assign({}, k, patch) : k; })); }
@@ -2206,7 +2213,8 @@ function GezinVelden() {
         h("b", null, "Kind " + (i + 1)),
         h(DatumVeld, { label: "Geboortedatum kind " + (i + 1), value: k.geboorte, onChange: function (v) { wijzigKind(k.id, { geboorte: v }); }, naam: "kind-geboorte" + (i + 1) }),
         h(Vink, { label: "Dit kind gaat naar kinderopvang of buitenschoolse opvang", value: !!k.opvang, onChange: function (v) { wijzigKind(k.id, { opvang: v }); } }),
-        h(Vink, { label: "Dit kind studeert", value: !!k.studerend, onChange: function (v) { wijzigKind(k.id, { studerend: v }); } }));
+        h(Vink, { label: "Dit kind studeert", value: !!k.studerend, onChange: function (v) { wijzigKind(k.id, { studerend: v }); } }),
+        h(Vink, { label: "Dit kind heeft een beperking met intensieve zorg", hint: "Bijvoorbeeld met een Wlz-indicatie of positief CIZ-advies en minstens 4 nachten per week thuis. De app rekent dan dubbele kinderbijslag (3 tot en met 17 jaar) en biedt extra toeslagen en kosten aan. Controleer de voorwaarden bij de SVB.", value: !!k.beperking, onChange: function (v) { wijzigKind(k.id, { beperking: v }); }, naam: "beperking" + (i + 1) }));
     }),
     kids.length ? h(Vink, { label: "Kinderbijslag automatisch berekenen", hint: "De app rekent per kind met de bedragen van de SVB en stopt het kwartaal waarin je kind 18 wordt. Vink uit als je het bedrag zelf wilt invullen.", value: p.kinderbijslagAuto !== false, onChange: function (v) { c.zet("profiel", { kinderbijslagAuto: v }); } }) : null,
     h(Vink, { label: "We hebben een huisdier", value: !!l.huisdier, onChange: function (v) { c.zetPad("profiel", ["leef"], Object.assign({}, l, { huisdier: v })); } }));
@@ -2963,6 +2971,7 @@ var HELP_ITEMS = [
   ["Bruto en netto", "bruto netto salaris loon heffingskorting", "Bruto is voor belasting, netto is wat je ontvangt. Vul bij voorkeur beide in. Vul je alleen het bruto in, dan schat de app het netto met de fiscale tabel."],
   ["Heffingskorting", "heffingskorting netto korting ouderenkorting arbeidskorting", "Je hoeft niets in te vullen. De app past de heffingskorting automatisch toe op je hoogste inkomen, op basis van je leeftijd (voor of na de AOW-leeftijd), of je werkt (arbeidskorting) en de hoogte van je inkomen. Vul bij elk inkomen het netto in zoals op je specificatie staat."],
   ["Toeslagen en kinderbijslag", "huurtoeslag zorgtoeslag kinderopvangtoeslag kindgebonden budget kinderbijslag toeslag", "Toeslagen en kinderbijslag zijn belastingvrij en tellen volledig mee als inkomen. De kinderbijslag rekent de app zelf uit met de geboortedatum van elk kind (SVB-bedragen per kwartaal, stopt in het kwartaal waarin je kind 18 wordt). Huurtoeslag, zorgtoeslag, kindgebonden budget en kinderopvangtoeslag vul je zelf in: bedrag per betaling en hoe vaak. Pas het bedrag aan zodra de Belastingdienst een nieuw bedrag doorgeeft. Bij kinderopvangtoeslag en kindgebonden budget zet de app een einddatum klaar op basis van de leeftijd van je kinderen; controleer die."],
+  ["Kind met een beperking", "gehandicapt beperking intensieve zorg dubbele kinderbijslag extra kinderbijslag wlz ciz pgb", "Vink bij het kind aan dat het een beperking met intensieve zorg heeft (bijvoorbeeld Wlz-indicatie of positief CIZ-advies, minstens 4 nachten per week thuis). De app rekent dan dubbele kinderbijslag voor 3 tot en met 17 jaar en biedt extra posten aan: extra kinderbijslag (vast bedrag per jaar), een tegemoetkoming of vergoeding, en extra zorg- en vervoerskosten. Voer die bedragen zelf in; de SVB, het CIZ en je gemeente geven ze door. Een persoonsgebonden budget (pgb) is geld voor zorg en telt niet mee als inkomen."],
   ["Auto's", "auto eigen lease deelauto taxi", "Je kunt meer dan één auto hebben: kies het aantal eigen auto's en leaseauto's (ook 0), en of je een deelauto of taxi gebruikt. Per auto komen de passende lasten: verzekering, belasting, onderhoud bij een eigen auto, de leasetermijn bij een leaseauto."],
   ["Huur, koop of geen woning", "woning huur koop hypotheek inwonend", "De vragen en lasten passen zich aan. Huurder: huur, servicekosten en eventueel huurtoeslag. Eigenaar: hypotheek, OZB, opstalverzekering, onderhoud en WOZ-waarde. Geen woning: een eventuele bijdrage voor woonkosten."],
   ["Hypotheek", "hypotheek rente aflossing rentevast", "Alleen bij een koopwoning. Vul openstaand bedrag, rente, maandlast en aflossing in. Na de einddatum van de aflossing rekent de app met alleen rente. De hypotheekrenteaftrek zit niet in de berekening; vul je netto inkomen in zoals je het ontvangt."],
@@ -3187,9 +3196,9 @@ function SchermInkomen() {
     (lijstL(m.profiel).kbAuto) ? h(Kaart, { titel: "Kinderbijslag (automatisch)" },
       h(Tabel, { kop: ["Kind", "Leeftijd", "Per kwartaal", "Laatste kwartaal"], get: [1, 2], rijen: (m.profiel.kids || []).map(function (k, i) {
         var g = geldigeDatum(k.geboorte), l = kinderbijslagLaatsteKwartaalEind(k.geboorte);
-        return ["Kind " + (i + 1), g ? leeftijdJaren(g, m.peil) + " jaar" : "–", eur(kinderbijslagKwartaal(m, k.geboorte, kwartaalStart(m.peil))), l ? fmtMaand(l) : "–"];
+        return ["Kind " + (i + 1) + (k.beperking ? " (dubbel)" : ""), g ? leeftijdJaren(g, m.peil) + " jaar" : "–", eur(kinderbijslagKwartaal(m, k.geboorte, kwartaalStart(m.peil), k.beperking)), l ? fmtMaand(l) : "–"];
       }) }),
-      h("p", { className: "klein" }, "Bedragen van de SVB per kind per kwartaal; ze worden achteraf betaald (januari, april, juli en oktober). Het bedrag stijgt in het kwartaal waarin je kind 6 en 12 wordt en stopt als je kind op de eerste dag van een kwartaal 18 is. Voor 2027 en later houdt de app de bedragen van nu aan met jaarlijkse indexatie.")) : null,
+      h("p", { className: "klein" }, "Bedragen van de SVB per kind per kwartaal; ze worden achteraf betaald (januari, april, juli en oktober). Bij een kind met een beperking en intensieve zorg is de kinderbijslag dubbel (3 tot en met 17 jaar). Het bedrag stijgt in het kwartaal waarin je kind 6 en 12 wordt en stopt als je kind op de eerste dag van een kwartaal 18 is. Voor 2027 en later houdt de app de bedragen van nu aan met jaarlijkse indexatie.")) : null,
     m.bronnen.some(function (b) { return b.soort === "loon"; }) ? h(Kaart, { titel: "Werken of stoppen per jaar" }, h(WerkJarenTabel, null)) : null,
     h(Kaart, { titel: "AOW" }, h(AowKaart, null)),
     h(Kaart, { titel: "Parameters" }, h("p", { className: "klein" }, "Indexatie per bron stel je hierboven in. Het CPI-percentage (nu " + pct(m.inst.cpi, 1) + ") wordt bijgehouden via 'Cijfers bijwerken' op het Dashboard. Inkomen wordt per 1 januari geïndexeerd; vaste lasten per maand."),

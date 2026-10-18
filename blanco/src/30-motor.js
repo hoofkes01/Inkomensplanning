@@ -128,21 +128,23 @@ function potSaldoOp(m, pot, d) {
 function kwartaalStart(d) { return new Date(d.getFullYear(), Math.floor(d.getMonth() / 3) * 3, 1); }
 function kwartaalEind(d) { var q = kwartaalStart(d); return new Date(q.getFullYear(), q.getMonth() + 3, 0); }
 // Bedrag voor het kwartaal dat op qStart begint: stopt als het kind op de eerste dag 18 is; leeftijdsgroep naar de leeftijd aan het einde van het kwartaal.
-function kinderbijslagKwartaal(m, geboorte, qStart) {
+function kinderbijslagKwartaal(m, geboorte, qStart, dubbel) {
   var g = geldigeDatum(geboorte); if (!g) return 0;
   var qEind = kwartaalEind(qStart);
   if (g > qEind) return 0;
   if (leeftijdJaren(g, qStart) >= 18) return 0;
   var a = leeftijdJaren(g, qEind), f = fx(m, qEind);
-  return getal(a >= 12 ? f.kinderbijslag_12_17 : a >= 6 ? f.kinderbijslag_6_11 : f.kinderbijslag_0_5);
+  var bedrag = getal(a >= 12 ? f.kinderbijslag_12_17 : a >= 6 ? f.kinderbijslag_6_11 : f.kinderbijslag_0_5);
+  // Dubbele kinderbijslag: kind van 3 tot en met 17 met een beperking en intensieve zorg (Wlz-indicatie of CIZ-advies), thuiswonend.
+  return dubbel && a >= 3 ? bedrag * 2 : bedrag;
 }
 function kinderbijslagMaand(m, d, kas) {
   var kids = (m.profiel.kids || []), L = lijstL(m.profiel);
   if (!L.kbAuto) return 0;
   var kb = 0;
   kids.forEach(function (k) {
-    if (kas) { if (d.getMonth() % 3 === 0) kb += kinderbijslagKwartaal(m, k.geboorte, new Date(d.getFullYear(), d.getMonth() - 3, 1)); }
-    else kb += kinderbijslagKwartaal(m, k.geboorte, kwartaalStart(d)) / 3;
+    if (kas) { if (d.getMonth() % 3 === 0) kb += kinderbijslagKwartaal(m, k.geboorte, new Date(d.getFullYear(), d.getMonth() - 3, 1), k.beperking); }
+    else kb += kinderbijslagKwartaal(m, k.geboorte, kwartaalStart(d), k.beperking) / 3;
   });
   return kb;
 }

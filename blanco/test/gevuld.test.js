@@ -44,6 +44,8 @@ const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undef
     const lastTekst = await page.textContent("main");
     ok(`[${breedte}] lasten per auto: 2 eigen en 1 lease`, (lastTekst.match(/Autoverzekering \(eigen auto \d\)/g) || []).length === 2 && (lastTekst.match(/Leasetermijn auto \(leaseauto\)/g) || []).length === 1 && (lastTekst.match(/Brandstof of laden \(/g) || []).length === 3, (lastTekst.match(/(Autoverzekering|Leasetermijn auto|Brandstof of laden) \([^)]*\)/g) || []).join("|"));
     ok(`[${breedte}] deelauto-post bij deelauto`, /Deelauto en taxi/.test(lastTekst));
+    await page.click('[data-knop="menu"]'); await page.click('[data-menu="inkomen"]');
+    ok(`[${breedte}] inkomen toont dubbele kinderbijslag`, /Kind 1 \(dubbel\)/.test(await page.textContent("main")));
     // Help, Actualiseren, Cijfers bijwerken (bestand)
     await page.click('[data-knop="help"]'); await page.fill('[data-veld="help-zoek"]', "toeslag");
     ok(`[${breedte}] help vindt toeslagen`, /Toeslagen en kinderbijslag/.test(await page.textContent("[role=dialog]")));

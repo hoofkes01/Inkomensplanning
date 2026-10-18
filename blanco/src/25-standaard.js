@@ -73,6 +73,8 @@ var BRON_CAT = [
   { code: "kinderalim_ontv", label: "Kinderalimentatie (ontvangen)", soort: "toeslag", freq: "maand", wanneer: function (L) { return L.kinderen > 0; } },
   { code: "partneralim_ontv", label: "Partneralimentatie (ontvangen, belast)", soort: "overig", freq: "maand", wanneer: function () { return true; } },
   { code: "verhuur", label: "Huurinkomsten uit verhuur", soort: "overig", freq: "maand", wanneer: function () { return true; } },
+  { code: "extra_kb", label: "Extra kinderbijslag bij intensieve zorg (vast bedrag per jaar)", soort: "toeslag", freq: "jaar", wanneer: function (L) { return L.beperking; } },
+  { code: "tegemoetkoming", label: "Tegemoetkoming of vergoeding voor zorg of hulpmiddelen (gemeente, Wlz, Jeugdwet)", soort: "toeslag", freq: "maand", wanneer: function (L) { return L.beperking; } },
   { code: "overig", label: "Overig inkomen (eigen omschrijving)", soort: "overig", freq: "maand", wanneer: function () { return true; } }
 ];
 function bronCat(code) { return BRON_CAT.filter(function (x) { return x.code === code; })[0]; }
@@ -120,6 +122,8 @@ var LASTEN_CAT = [
   { code: "studiekosten", groep: "Gezin", label: "Collegegeld en studiekosten", freq: "jaar", index: "cpi", wanneer: function (L) { return L.kinderen > 0 && L.studerend; } },
   { code: "zakgeld", groep: "Gezin", label: "Zakgeld kinderen", freq: "maand", index: "cpi", wanneer: function (L) { return L.kinderen > 0; } },
   { code: "sport_kind", groep: "Gezin", label: "Sport en clubs kinderen", freq: "maand", index: "cpi", wanneer: function (L) { return L.kinderen > 0; } },
+  { code: "zorg_kind", groep: "Gezin", label: "Extra zorgkosten kind (hulpmiddelen, begeleiding, eigen bijdragen)", freq: "maand", index: "cpi", wanneer: function (L) { return L.beperking; } },
+  { code: "vervoer_kind", groep: "Gezin", label: "Aangepast vervoer en reiskosten voor zorg", freq: "maand", index: "cpi", wanneer: function (L) { return L.beperking; } },
   { code: "kinderalim", groep: "Gezin", label: "Kinderalimentatie (betaald)", freq: "maand", index: "cpi", wanneer: function () { return true; } },
   { code: "partneralim", groep: "Gezin", label: "Partneralimentatie (betaald)", freq: "maand", index: "cpi", wanneer: function () { return true; } },
   { code: "huisdier", groep: "Overig", label: "Huisdier (voer, dierenarts, verzekering)", freq: "maand", index: "cpi", wanneer: function (L) { return L.huisdier; } },
@@ -146,6 +150,7 @@ function lijstL(profiel) {
   return { woning: l.woning, eigen: eigen, lease: lease, auto: eigen + lease > 0, deel: !!l.deel, geenAuto: eigen + lease === 0, kinderen: n,
     opvang: kids.length ? kids.some(function (k) { return k.opvang; }) : !!l.opvang, studerend: kids.length ? kids.some(function (k) { return k.studerend; }) : !!l.studerend,
     kbAuto: profiel.kinderbijslagAuto !== false && kids.some(function (k) { return !!geldigeDatum(k.geboorte); }),
+    beperking: kids.some(function (k) { return k.beperking; }),
     huisdier: !!l.huisdier, partner: !!profiel.partner };
 }
 // De auto's van het huishouden, elk met een eigen id en naam (voor lasten per auto).

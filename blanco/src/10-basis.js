@@ -267,7 +267,7 @@ function KeuzeVeld(p) {
 }
 function Vink(p) {
   return h("label", { className: "vink" },
-    h("input", { type: "checkbox", checked: !!p.value, onChange: function (e) { p.onChange(e.target.checked); } }),
+    h("input", { type: "checkbox", checked: !!p.value, "data-vink": p.naam, onChange: function (e) { p.onChange(e.target.checked); } }),
     h("span", null, p.label, p.hint ? h("small", { className: "klein", style: { display: "block" } }, p.hint) : null));
 }
 function Knop(p) {

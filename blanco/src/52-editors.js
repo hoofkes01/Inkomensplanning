@@ -106,7 +106,7 @@ function GezinVelden() {
   function zetAantal(n) {
     n = Math.max(0, Math.min(12, Math.round(getal(n))));
     var nieuw = kids.slice(0, n);
-    while (nieuw.length < n) nieuw.push({ id: nieuwId(), geboorte: "", opvang: false, studerend: false });
+    while (nieuw.length < n) nieuw.push({ id: nieuwId(), geboorte: "", opvang: false, studerend: false, beperking: false });
     zetKids(nieuw);
   }
   function wijzigKind(id, patch) { zetKids(kids.map(function (k) { return k.id === id ? Object.assign({}, k, patch) : k; })); }
@@ -117,7 +117,8 @@ function GezinVelden() {
         h("b", null, "Kind " + (i + 1)),
         h(DatumVeld, { label: "Geboortedatum kind " + (i + 1), value: k.geboorte, onChange: function (v) { wijzigKind(k.id, { geboorte: v }); }, naam: "kind-geboorte" + (i + 1) }),
         h(Vink, { label: "Dit kind gaat naar kinderopvang of buitenschoolse opvang", value: !!k.opvang, onChange: function (v) { wijzigKind(k.id, { opvang: v }); } }),
-        h(Vink, { label: "Dit kind studeert", value: !!k.studerend, onChange: function (v) { wijzigKind(k.id, { studerend: v }); } }));
+        h(Vink, { label: "Dit kind studeert", value: !!k.studerend, onChange: function (v) { wijzigKind(k.id, { studerend: v }); } }),
+        h(Vink, { label: "Dit kind heeft een beperking met intensieve zorg", hint: "Bijvoorbeeld met een Wlz-indicatie of positief CIZ-advies en minstens 4 nachten per week thuis. De app rekent dan dubbele kinderbijslag (3 tot en met 17 jaar) en biedt extra toeslagen en kosten aan. Controleer de voorwaarden bij de SVB.", value: !!k.beperking, onChange: function (v) { wijzigKind(k.id, { beperking: v }); }, naam: "beperking" + (i + 1) }));
     }),
     kids.length ? h(Vink, { label: "Kinderbijslag automatisch berekenen", hint: "De app rekent per kind met de bedragen van de SVB en stopt het kwartaal waarin je kind 18 wordt. Vink uit als je het bedrag zelf wilt invullen.", value: p.kinderbijslagAuto !== false, onChange: function (v) { c.zet("profiel", { kinderbijslagAuto: v }); } }) : null,
     h(Vink, { label: "We hebben een huisdier", value: !!l.huisdier, onChange: function (v) { c.zetPad("profiel", ["leef"], Object.assign({}, l, { huisdier: v })); } }));

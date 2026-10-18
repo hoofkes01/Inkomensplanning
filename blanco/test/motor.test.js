@@ -114,3 +114,13 @@ ok("laatste kwartaal kind geboren 15-05-2008 eindigt 30-06-2026", c.fmtDatum(c.k
 ok("BSO-einde kind geboren 10-03-2018: 1-8-2030", c.fmtDatum(c.bsoEindeDatum("2018-03-10")) === "01-08-2030", c.fmtDatum(c.bsoEindeDatum("2018-03-10")));
 SK.profiel.kinderbijslagAuto = false;
 ok("kinderbijslag uit: niets automatisch", c.persoonMaand(c.maakModel(SK, c.geldigeDatum("2026-10-18")), "A", c.geldigeDatum("2027-01-01"), true).netto === 0);
+
+// Dubbele kinderbijslag bij een kind met beperking (3 tot en met 17 jaar)
+const SD = JSON.parse(JSON.stringify(S));
+SD.bronnen = []; SD.profiel.gebruik.aanvulling = false; SD.profiel.kinderbijslagAuto = true;
+SD.profiel.kids = [{ id: "a", geboorte: "2018-03-10", opvang: false, studerend: false, beperking: true }, { id: "b", geboorte: "2025-09-01", opvang: false, studerend: false, beperking: true }];
+const mD = c.maakModel(SD, c.geldigeDatum("2026-10-18"));
+const kd = c.persoonMaand(mD, "A", c.geldigeDatum("2027-01-01"), true).netto;
+ok("dubbele kinderbijslag: kind van 8 = 2 x 362,35, kind van 1 gewoon 298,40", Math.round(kd * 100) / 100 === Math.round((2 * 362.35 + 298.40) * 100) / 100, kd);
+const LL = c.lijstL(mD.profiel);
+ok("beperking schakelt extra posten in", LL.beperking === true && c.BRON_CAT.filter(x => x.wanneer(LL, [])).some(x => x.code === "extra_kb") && c.LASTEN_CAT.filter(x => x.wanneer(LL)).some(x => x.code === "zorg_kind"));

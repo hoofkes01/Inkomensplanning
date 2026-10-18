@@ -33,7 +33,9 @@ const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undef
   await page.selectOption(`${dlg}[data-veld="auto-eigen"]`, "0"); await page.selectOption(`${dlg}[data-veld="auto-lease"]`, "0"); await volgende();
   await v("kinderen", "1");
   await volgende(); ok("geboortedatum kind is verplicht", /geboortedatum van kind 1/.test(await tekst()));
-  await v("kind-geboorte1", "10-03-2018"); await page.check(`${dlg}[data-kind="1"] input[type=checkbox] >> nth=0`); await volgende(); // kinderopvang
+  await v("kind-geboorte1", "10-03-2018"); await page.check(`${dlg}[data-kind="1"] input[type=checkbox] >> nth=0`);
+  ok("beperking-vink aanwezig bij het kind", await page.locator(`${dlg}[data-vink="beperking1"]`).count() === 1);
+  await volgende(); // kinderopvang
   await volgende();
   ok("buffer is verplicht", /minimale buffer/i.test(await tekst()));
   await v("minimum", "12.500"); await volgende();
