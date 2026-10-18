@@ -65,7 +65,7 @@ function SchermDashboard() {
       h("div", { className: "balk" }, h("i", { style: { width: (tot ? klaar / tot * 100 : 0) + "%" } })),
       volgende ? h("div", { className: "rij", style: { marginTop: ".5rem" } }, h(Knop, { onClick: function () { c.nav(volgende.id); c.openIntake(volgende.id); }, naam: "intake-volgende-menu" }, "Verder met: " + volgende.naam)) : h("p", { className: "groen" }, "Alle intakes zijn voltooid.")) : null,
     algemeenKlaar ? h(ActualiseerKaart, null) : null,
-    algemeenKlaar ? h(Kaart, { titel: "Cijfers bijwerken" }, h(CijfersKnop, null)) : null,
+    algemeenKlaar ? h(Kaart, { titel: "Cijfers bijwerken" }, h(CijfersKnop, null), h("details", { style: { marginTop: ".5rem" } }, h("summary", { className: "klein" }, "Bedragen indexeren (toeslagen, inkomen, lasten)"), h(IndexeerKaart, null))) : null,
     algemeenKlaar ? h(UitbreidenKaart, null) : null,
     h(Kaart, { titel: "Basisgegevens" }, h("details", null, h("summary", { className: "klein" }, "Huishouden, geboortedatum en onderdelen aanpassen"), h(BasisGegevens, null), h(PeildatumVeld, null), h(MinimumVeld, null), h(AowKaart, null), h(WoningVelden, null), h(AutoVelden, null), h(GezinVelden, null), h(ProductenVelden, null)),
       h("div", { className: "rij", style: { marginTop: ".4rem" } }, h(Knop, { soort: "sec", klein: true, onClick: function () { c.openIntake("dashboard"); }, naam: "intake-opnieuw" }, "Algemene intake opnieuw"))),

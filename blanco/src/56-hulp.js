@@ -35,8 +35,13 @@ function pasCijfersToe(c, j) {
   if (f) return f;
   var m = c.m, delen = [];
   c.zetPad("cijfers", [], j);
-  if (j.fiscaal) delen.push("belasting, AOW en box 3 (jaren " + Object.keys(j.fiscaal).join(", ") + ")");
+  if (j.fiscaal) delen.push("belasting, AOW, kinderbijslag en box 3 (jaren " + Object.keys(j.fiscaal).join(", ") + ")");
   var inst = { cijfersDatum: isoDatum(vandaag()) };
+  if (j.indexatie) {
+    if (j.indexatie.schijven != null && isFinite(Number(j.indexatie.schijven))) inst.indexSchijven = Number(j.indexatie.schijven);
+    if (j.indexatie.aow != null && isFinite(Number(j.indexatie.aow))) inst.indexAOW = Number(j.indexatie.aow);
+    delen.push("indexatiepercentages");
+  }
   if (j.cpi && j.cpi.maand && Number(j.cpi.pct) >= 0) {
     var ijk = c.S.inst.cpiIjk || isoDatum(m.peil).slice(0, 7);
     if (j.cpi.maand > ijk) { cpiBijwerken(c, j.cpi.maand, Number(j.cpi.pct)); delen.push("inflatie " + pct(j.cpi.pct, 1) + " (" + j.cpi.maand + ")"); }
@@ -95,6 +100,7 @@ var HELP_ITEMS = [
   ["Inkomensaanvulling", "aanvulling overbrugging pot opname", "Een pot waaruit je maandelijks opneemt tot je AOW begint. Alleen zichtbaar als je dit aanzet."],
   ["Box 3", "box 3 vermogensbelasting heffingsvrij forfaitair", "Belasting over spaargeld en beleggingen. De app toont een indicatie met het fictief rendement van de Belastingdienst. Controleer je aangifte altijd zelf."],
   ["Inflatie (CPI) en fiscale cijfers", "cpi inflatie index belasting tabel cijfers bijwerken", "Hier hoef je niets aan te passen. Druk elke maand op 'Cijfers bijwerken' (Dashboard of Fiscaliteit): de app haalt dan de nieuwste cijfers op en past vaste lasten aan op de gemeten inflatie."],
+  ["Bedragen indexeren", "indexeren indexering verhoging toeslagen percentage aanpassen", "Is een bedrag verhoogd, bijvoorbeeld een toeslag of een cao-verhoging? Kies op het Dashboard 'Bedragen indexeren', geef de groep en het percentage op en bevestig. De app past alle bedragen in die groep aan. Kinderbijslag, belasting en AOW worden bijgewerkt met 'Cijfers bijwerken'."],
   ["Actualiseren", "bijwerken saldo actueel maand", "Werk minstens elke maand je saldi bij: spaargeld, deposito's, beleggingen en pensioen. Gebruik 'Nu actualiseren' op het Dashboard; het leidt je stap voor stap langs alles en onthoudt wanneer je bijwerkte."],
   ["Gegevens opslaan en verder gaan", "back-up opslaan terugzetten bestand versie", "Je gegevens staan alleen in deze browser. Tik onderaan op de balk 'Back-up' om je gegevens als bestand op te slaan. Bij een nieuwe versie van de app, of een andere telefoon: open de app en kies 'Gegevens terugzetten'."],
   ["Rapport en PDF", "rapport pdf afdrukken", "Kies Rapport (PDF) en tik op 'Afdrukken of opslaan als PDF'. Kies in het afdrukvenster 'Opslaan als PDF'. In de intake van het rapport kies je welke onderdelen erin komen."],
@@ -120,6 +126,57 @@ function HelpModal(p) {
     lijst.length === 0 ? h("p", null, "Niets gevonden. Probeer een ander woord, of start de intake opnieuw via het menu.") : null);
 }
 
+/* ---------- Bedragen indexeren en toeslagen bijwerken ---------- */
+var INDEX_GROEPEN = [["toeslagen", "Toeslagen en vergoedingen"], ["inkomen", "Inkomen (loon, uitkering, pensioen)"], ["lasten", "Vaste lasten"], ["dagelijks", "Dagelijkse uitgaven"], ["alles", "Alles hierboven"]];
+function r2(x) { return Math.round(x * 100) / 100; }
+function indexeerBedragen(c, groep, pctw) {
+  var f = 1 + getal(pctw) / 100, nu = isoDatum(vandaag());
+  function mul(v) { return v === "" || v == null ? v : r2(getal(v) * f); }
+  var doeT = groep === "toeslagen" || groep === "alles", doeI = groep === "inkomen" || groep === "alles", doeL = groep === "lasten" || groep === "alles", doeD = groep === "dagelijks" || groep === "alles";
+  if (doeT || doeI) {
+    c.zetPad("bronnen", [], c.S.bronnen.map(function (b) {
+      var toeslag = b.soort === "toeslag";
+      if ((toeslag && !doeT) || (!toeslag && !doeI)) return b;
+      return Object.assign({}, b, { bruto: mul(b.bruto), netto: mul(b.netto), wijzigBruto: mul(b.wijzigBruto), wijzigNetto: mul(b.wijzigNetto), bijgewerkt: nu });
+    }));
+  }
+  if (doeL) c.zetPad("lasten", [], c.S.lasten.map(function (x) { return Object.assign({}, x, { bedrag: mul(x.bedrag) }); }));
+  if (doeD && c.S.dagelijks.bedrag !== "") c.zet("dagelijks", { bedrag: mul(c.S.dagelijks.bedrag) });
+}
+function IndexeerKaart() {
+  var c = useC();
+  var s1 = useState("toeslagen"), groep = s1[0], setGroep = s1[1];
+  var s2 = useState(""), p = s2[0], setP = s2[1];
+  var s3 = useState(false), zeker = s3[0], setZeker = s3[1];
+  var s4 = useState(""), melding = s4[0], setMelding = s4[1];
+  return h("div", { "data-indexeer": "1" },
+    h(Uitleg, null, "Is een bedrag verhoogd (bijvoorbeeld de jaarlijkse verhoging van toeslagen of een cao-verhoging)? Vul het percentage in; de app past alle bedragen in de gekozen groep aan."),
+    h("div", { className: "raster" },
+      h(KeuzeVeld, { label: "Welke bedragen", value: groep, opties: INDEX_GROEPEN, onChange: function (v) { setGroep(v); setZeker(false); }, naam: "indexeer-groep" }),
+      h(BedragVeld, { label: "Verhoging (%)", hint: "Een daling kan met een min-teken.", value: p, pct: true, neg: true, onChange: function (v) { setP(v); setZeker(false); setMelding(""); }, naam: "indexeer-pct" })),
+    p !== "" && !zeker ? h(Knop, { soort: "sec", onClick: function () { setZeker(true); }, naam: "indexeer-toepassen" }, "Bedragen aanpassen") : null,
+    zeker ? h("div", { className: "kaart waarschuw" }, h("p", null, "Alle bedragen in deze groep worden met " + pct(p, 1) + " aangepast. Dit kun je terugdraaien door hetzelfde percentage met een min-teken toe te passen."), h("div", { className: "rij" }, h(Knop, { onClick: function () { indexeerBedragen(c, groep, p); setZeker(false); setMelding("Aangepast met " + pct(p, 1) + " (" + INDEX_GROEPEN.filter(function (x) { return x[0] === groep; })[0][1].toLowerCase() + ")."); setP(""); }, naam: "indexeer-bevestig" }, "Ja, aanpassen"), h(Knop, { soort: "sec", onClick: function () { setZeker(false); } }, "Annuleren"))) : null,
+    melding ? h("p", { className: "groen", role: "status" }, melding) : null);
+}
+function ToeslagenActualiseer() {
+  var c = useC(), m = c.m, L = c.lijst("bronnen"), L2 = lijstL(m.profiel);
+  var toeslagen = L.items.filter(function (b) { return b.soort === "toeslag"; });
+  return h("div", null,
+    L2.kbAuto ? h("div", { className: "kaart", style: { background: "#f8fafc" } },
+      h("b", null, "Kinderbijslag (automatisch)"),
+      h(Tabel, { kop: ["Kind", "Per kwartaal"], get: [1], rijen: (m.profiel.kids || []).map(function (k, i) { return ["Kind " + (i + 1) + (k.beperking ? " (dubbel)" : ""), eur(kinderbijslagKwartaal(m, k.geboorte, kwartaalStart(m.peil), k.beperking))]; }) }),
+      h("p", { className: "klein" }, "De SVB past de bedragen in januari en juli aan. Druk op 'Cijfers bijwerken' voor de nieuwste bedragen."),
+      h(CijfersKnop, null)) : null,
+    toeslagen.length ? h("div", { className: "kaart", style: { background: "#f8fafc" } }, h("b", null, "Toeslagen en vergoedingen"),
+      h(Uitleg, null, "Controleer je bedragen op je laatste beschikking van de Belastingdienst, DUO of je gemeente en pas aan wat veranderd is."),
+      toeslagen.map(function (b) {
+        return h("div", { key: b.id, "data-toeslag": b.code },
+          h(BedragVeld, { label: (b.naam || "Toeslag") + " (per betaling, " + (FREQ_KEUZES.filter(function (f) { return f[0] === (b.freq || "maand"); })[0] || ["", "per maand"])[1].toLowerCase() + ")", value: b.netto, onChange: function (v) { L.wijzig(b.id, { netto: v, bijgewerkt: isoDatum(vandaag()) }); }, naam: "toeslag-" + b.code }),
+          h("p", { className: "klein" }, b.bijgewerkt ? "Laatst aangepast op " + fmtDatum(b.bijgewerkt) + "." : "Nog niet aangepast sinds het invullen."));
+      })) : (L2.kbAuto ? null : h("p", { className: "klein" }, "Je hebt geen toeslagen of kinderbijslag ingevuld.")),
+    h("div", { className: "kaart", style: { background: "#f8fafc" } }, h("b", null, "Bedragen indexeren"), h(IndexeerKaart, null)));
+}
+
 /* ---------- Actualiseren ---------- */
 function actualiseerStappen(c) {
   var g = c.S.profiel.gebruik, koop = c.S.profiel.leef.woning === "koop", m = c.m;
@@ -131,6 +188,7 @@ function actualiseerStappen(c) {
     g.aanvulling ? { id: "aanvulling", titel: "Inkomensaanvulling", render: function () { return h(AanvulVelden, null); } } : null,
     koop ? { id: "hypotheek", titel: "Hypotheek", render: function () { return h(HypotheekForm, null); } } : null,
     { id: "inkomen", titel: "Inkomen en toeslagen", render: function () { return h("div", null, m.personen.map(function (p) { return h("div", { key: p.id }, h("h4", null, p.naam), h(BronnenEditor, { persoon: p.id })); })); } },
+    (lijstL(c.S.profiel).kbAuto || c.S.bronnen.some(function (b) { return b.soort === "toeslag"; })) ? { id: "toeslagen", titel: "Kinderbijslag en toeslagen", dagen: 92, render: function () { return h(ToeslagenActualiseer, null); } } : null,
     { id: "lasten", titel: "Vaste lasten en dagelijkse uitgaven", render: function () { return h("div", null, h(DagelijksVeld, null), h(LastenEditor, null)); } },
     { id: "cijfers", titel: "Cijfers bijwerken", render: function () { return h(CijfersKnop, null); } }
   ].filter(function (x) { return x; });
@@ -163,7 +221,7 @@ function ActualiseerKaart() {
     h("p", { className: "klein" }, "Werk minstens elke maand je saldi bij, zodat de planning actueel blijft."),
     h(Tabel, { kop: ["Onderdeel", "Laatst bijgewerkt"], get: [1], rijen: stappen.map(function (x) {
       var l = actualiseerLeeftijd(c, x.id);
-      return [x.titel, l == null ? h("span", { className: "oranje" }, "nog niet") : h("span", { className: l > 31 ? "oranje" : "groen" }, l === 0 ? "vandaag" : l + " dagen geleden")];
+      return [x.titel, l == null ? h("span", { className: "oranje" }, "nog niet") : h("span", { className: l > (x.dagen || 31) ? "oranje" : "groen" }, l === 0 ? "vandaag" : l + " dagen geleden")];
     }) }),
     h("div", { className: "rij", style: { marginTop: ".5rem" } }, h(Knop, { onClick: function () { setOpen(true); }, naam: "actualiseren" }, "Nu actualiseren")),
     open ? h(ActualiseerModal, { sluit: function () { setOpen(false); } }) : null);

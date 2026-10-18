@@ -46,6 +46,14 @@ const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undef
     ok(`[${breedte}] deelauto-post bij deelauto`, /Deelauto en taxi/.test(lastTekst));
     await page.click('[data-knop="menu"]'); await page.click('[data-menu="inkomen"]');
     ok(`[${breedte}] inkomen toont dubbele kinderbijslag`, /Kind 1 \(dubbel\)/.test(await page.textContent("main")));
+    // Indexeren met bevestiging
+    await page.click('[data-knop="menu"]'); await page.click('[data-menu="dashboard"]');
+    await page.click('details summary:has-text("Bedragen indexeren")');
+    await page.selectOption('[data-indexeer] [data-veld="indexeer-groep"]', 'toeslagen');
+    await page.fill('[data-indexeer] [data-veld="indexeer-pct"]', '3');
+    await page.click('[data-knop="indexeer-toepassen"]'); await page.click('[data-knop="indexeer-bevestig"]');
+    const zt = await page.evaluate(() => JSON.parse(localStorage.getItem("inkomensplanning_bronnen")).filter(b => b.code === "zorgtoeslag")[0]);
+    ok(`[${breedte}] indexeren: zorgtoeslag 120 -> 123,60`, zt.netto === 123.6 && !!zt.bijgewerkt, JSON.stringify([zt.netto, zt.bijgewerkt]));
     // Help, Actualiseren, Cijfers bijwerken (bestand)
     await page.click('[data-knop="help"]'); await page.fill('[data-veld="help-zoek"]', "toeslag");
     ok(`[${breedte}] help vindt toeslagen`, /Toeslagen en kinderbijslag/.test(await page.textContent("[role=dialog]")));
