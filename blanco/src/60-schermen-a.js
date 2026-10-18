@@ -55,6 +55,7 @@ function SchermDashboard() {
     !algemeenKlaar ? h("div", { className: "kaart leeg" }, h("h2", null, "Welkom"), h("p", null, "Begin met de algemene intake: een paar vragen over je huishouden, woning en gezin. Daarna stelt de app per onderwerp korte vragen. Alles blijft anoniem."), h(Knop, { onClick: function () { c.openIntake("dashboard"); }, naam: "intake-starten" }, "Intake starten")) : null,
     algemeenKlaar ? h(AdviesOpening, null) : null,
     (algemeenKlaar && (m.bronnen.length || m.potten.length)) ? h(Kaart, { titel: "Netto huishoudinkomen per fase" }, h(FasenTabel, { m: m })) : null,
+    algemeenKlaar ? h(KansenKaart, null) : null,
     algemeenKlaar && punten.length ? h(Kaart, { titel: "Aandachtspunten", id: "aandacht" }, h("ul", { className: "lijst", style: { listStyle: "none", paddingLeft: 0 } }, punten.map(function (a, i) {
       return h("li", { key: i, className: "rij", style: { alignItems: "flex-start", flexWrap: "nowrap" } },
         h("span", { className: "badge " + (a.badge === "Waarschijnlijk recht" ? "goed" : a.soort === "fout" ? "fout" : a.soort === "waarschuw" ? "waarschuw" : ""), style: { flexShrink: 0, maxWidth: "7rem", textAlign: "center" } }, a.badge || (a.soort === "fout" ? "Let op" : a.soort === "waarschuw" ? "Check" : "Info")),

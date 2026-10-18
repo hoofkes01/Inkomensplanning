@@ -657,12 +657,13 @@ function SchuldenEditor() {
   return h(LijstEditor, {
     naam: "schuld", items: L.items, leeg: "Geen schulden of uitstaande leningen.", voegTekst: "Schuld of lening toevoegen",
     kop: function (b) { return (b.naam || "Nieuw") + (b.bedrag !== "" ? " · " + eur(b.bedrag) : ""); },
-    onVoeg: function () { L.voeg({ id: nieuwId(), naam: "", bedrag: "", soort: "schuld" }); }, onWis: L.wis, onWijzig: L.wijzig,
+    onVoeg: function () { L.voeg({ id: nieuwId(), naam: "", bedrag: "", rente: "", soort: "schuld" }); }, onWis: L.wis, onWijzig: L.wijzig,
     velden: function (b, w) {
       return h("div", null,
         h(OmschrijvingKeuze, { label: "Omschrijving", opties: SCHULD_NAMEN, value: b.naam, onChange: function (v) { w({ naam: v }); }, naam: "schuld-naam" }),
         h("div", { className: "raster" },
           h(BedragVeld, { label: "Bedrag", value: b.bedrag, onChange: function (v) { w({ bedrag: v }); } }),
+          b.soort !== "uitstaand" ? h(BedragVeld, { label: "Rente per jaar (%)", hint: "Optioneel; de app laat zien of aflossen loont.", value: b.rente, pct: true, onChange: function (v) { w({ rente: v }); }, naam: "schuld-rente" }) : null,
           h(KeuzeVeld, { label: "Soort", hint: "Vreemd vermogen telt niet mee in je vrije vermogen.", value: b.soort, opties: [["schuld", "Ik ben het schuldig"], ["uitstaand", "Ik heb het uitgeleend"]], onChange: function (v) { w({ soort: v }); } })));
     }
   });

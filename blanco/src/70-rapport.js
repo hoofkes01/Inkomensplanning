@@ -1,6 +1,6 @@
 /* ===== Rapport (PDF via afdrukken) ===== */
 var RAPPORT_ONDERDELEN = [
-  ["watvalt", "Wat valt op"], ["prognose", "Vermogensprognose"], ["vermogenverandering", "Waardoor verandert het vermogen?"], ["spaarverandering", "Waardoor verandert het spaargeld?"],
+  ["watvalt", "Wat valt op"], ["kansen", "Kansen: wat kan het opleveren?"], ["prognose", "Vermogensprognose"], ["vermogenverandering", "Waardoor verandert het vermogen?"], ["spaarverandering", "Waardoor verandert het spaargeld?"],
   ["mutaties", "Belangrijkste mutaties, komende 12 maanden"], ["genoeg", "Heb ik genoeg spaargeld?"], ["deposito", "Deposito's"], ["depositorente", "Rente van deposito's per jaar"],
   ["beleggen", "Beleggen en pensioen"], ["advies", "Beleggingsadvies"], ["fases", "Inkomen per fase"], ["lasten", "Vaste lasten en dagelijkse uitgaven"],
   ["grote", "Grote inkomsten en uitgaven"], ["auto", "Automatische boekingen op het spaargeld"], ["aannames", "Aannames en controles"], ["toelichting", "Toelichting"]
@@ -49,6 +49,12 @@ function RapportInhoud() {
         var idx = vr.reduce(function (best, r, i) { return (r.d.getFullYear() === jaar0 + k && r.d.getMonth() === 11) ? i : best; }, -1);
         if (idx < 0) return null; var r = vr[idx]; return [String(jaar0 + k), eur(r.t.sparen), eur(r.t.deposito), eur(r.t.beleggen), eur(r.t.vrij)];
       }).filter(function (x) { return x; }) })) : null
+  ]));
+  var kl = kansen(c);
+  out.push(secties([
+    rpAan(c, "kansen") ? h(RpSectie, { key: "kansen", id: "kansen", titel: "Kansen: wat kan het opleveren?" },
+      h(KansenLijst, { lijst: kl }),
+      h("p", { className: "klein" }, "Bedragen zijn berekend uit de gegevens in dit rapport en gelden voor een jaar, vóór belasting. Toeslagen worden hier niet uitgerekend: het bedrag volgt uit de proefberekening op toeslagen.nl.")) : null
   ]));
   // Pagina 2
   var tj = vr[j12].t;
