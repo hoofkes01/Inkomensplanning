@@ -410,7 +410,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 })();
 </script>
 <script>
-var APP_VERSIE = "18-10-2026 · 18:32";
+var APP_VERSIE = "18-10-2026 · 18:39";
 /* ===== Basis: hulpfuncties, opslag, invoervelden ===== */
 var h = React.createElement;
 var useState = React.useState, useEffect = React.useEffect, useMemo = React.useMemo, useRef = React.useRef, useContext = React.useContext;
@@ -765,6 +765,7 @@ var FISCAAL_PER_JAAR = {
       aow_bruto_gehuwd_pm: 1139.39, aow_vakantiegeld_gehuwd_pm: 74.85,
       aow_bruto_alleen_pm: 1662.16, aow_vakantiegeld_alleen_pm: 104.78,
       kinderbijslag_0_5: 298.40, kinderbijslag_6_11: 362.35, kinderbijslag_12_17: 426.29,
+      toeslag_inkomen_zorg_alleen: 40857, toeslag_inkomen_zorg_partner: 51142, toeslag_vermogen_alleen: 146011, toeslag_vermogen_partner: 184633, toeslag_vermogen_huur_alleen: 38479,
       box3_tarief: 36, box3_vrij_pp: 59357, box3_sparen_pct: 1.28, box3_beleggen_pct: 6.00, box3_schuld_pct: 2.70
     }
   },
@@ -784,6 +785,7 @@ var FISCAAL_PER_JAAR = {
       aow_bruto_gehuwd_pm: 1139.39, aow_vakantiegeld_gehuwd_pm: 74.85,
       aow_bruto_alleen_pm: 1662.16, aow_vakantiegeld_alleen_pm: 104.78,
       kinderbijslag_0_5: 298.40, kinderbijslag_6_11: 362.35, kinderbijslag_12_17: 426.29,
+      toeslag_inkomen_zorg_alleen: 40857, toeslag_inkomen_zorg_partner: 51142, toeslag_vermogen_alleen: 119122, toeslag_vermogen_partner: 158748, toeslag_vermogen_huur_alleen: 38479,
       box3_tarief: 36, box3_vrij_pp: 59357, box3_sparen_pct: 1.28, box3_beleggen_pct: 6.00, box3_schuld_pct: 2.70
     }
   }
@@ -807,6 +809,7 @@ var FISCAAL_LABELS = {
   aow_bruto_gehuwd_pm: ["AOW bruto per maand, per persoon (met partner)", "b"], aow_vakantiegeld_gehuwd_pm: ["AOW-vakantiegeld per maand, per persoon (met partner)", "b"],
   aow_bruto_alleen_pm: ["AOW bruto per maand (alleenstaand)", "b"], aow_vakantiegeld_alleen_pm: ["AOW-vakantiegeld per maand (alleenstaand)", "b"],
   kinderbijslag_0_5: ["Kinderbijslag per kwartaal, kind van 0 tot en met 5 jaar", "b"], kinderbijslag_6_11: ["Kinderbijslag per kwartaal, kind van 6 tot en met 11 jaar", "b"], kinderbijslag_12_17: ["Kinderbijslag per kwartaal, kind van 12 tot en met 17 jaar", "b"],
+  toeslag_inkomen_zorg_alleen: ["Zorgtoeslag: maximaal toetsingsinkomen alleenstaand", "b"], toeslag_inkomen_zorg_partner: ["Zorgtoeslag: maximaal toetsingsinkomen met partner", "b"], toeslag_vermogen_alleen: ["Zorgtoeslag en kindgebonden budget: maximaal vermogen alleenstaand", "b"], toeslag_vermogen_partner: ["Zorgtoeslag en kindgebonden budget: maximaal vermogen met partner", "b"], toeslag_vermogen_huur_alleen: ["Huurtoeslag: maximaal vermogen alleenstaand", "b"],
   box3_tarief: ["Box 3: tarief (%)", "p"], box3_vrij_pp: ["Box 3: heffingsvrij vermogen per persoon", "b"], box3_sparen_pct: ["Box 3: fictief rendement sparen (%)", "p"], box3_beleggen_pct: ["Box 3: fictief rendement beleggen (%)", "p"], box3_schuld_pct: ["Box 3: rente op schulden (%)", "p"]
 };
 
@@ -967,7 +970,7 @@ var STANDAARD = {
     gebruik: { hypotheek: false, deposito: false, beleggen: false, aanvulling: false, pensioen: false }
   },
   // Marktcijfers en aannames: standaardwaarden zijn voorbeelden. Zolang 'stand' leeg is, meldt de app dat ze nog niet zijn bijgewerkt.
-  inst: { cpi: 2.5, cpiIjk: "", cpiStand: "", spaarrente: 2, spaarrenteStand: "", rendBeleggen: 4, rendPot: 4, rendPotTijdens: 3, indexSchijven: 2, indexAOW: 2, dagInkomen: 25, dagLasten: 1, kortMee: true, kortMaanden: 3, backupDatum: "", cijfersDatum: "" },
+  inst: { cpi: 2.5, cpiIjk: "", cpiStand: "", spaarrente: 2, spaarrenteStand: "", rendBeleggen: 4, rendPot: 4, rendPotTijdens: 3, indexSchijven: 2, indexAOW: 2, dagInkomen: 25, dagLasten: 1, kortMee: true, kortMaanden: 3, backupDatum: "", cijfersDatum: "", cijfersFout: null },
   bronnen: [],
   werkJaren: { A: {}, B: {} },
   aanv: { naam: "Inkomensaanvulling", maand: "", opnameVanaf: "", totType: "aow", totPersoon: "A", einde: "", bron: "sparen", startsaldo: "", rendement: 3, kosten: 0, opnameAan: true, mutaties: [] },
@@ -2001,6 +2004,26 @@ function Uitleg(p) { return h("p", { className: "klein" }, p.children); }
 /* ---------- Aandachtspunten voor het Dashboard ---------- */
 function intakeMenus(profiel) { return actieveMenus(profiel).filter(function (x) { return x.intake; }); }
 function intakeKlaarAantal(S) { return intakeMenus(S.profiel).filter(function (x) { return (S.intake[x.id] || {}).klaar; }).length; }
+// Controle op toeslagen met grenzen van de Belastingdienst: toetsingsinkomen en vermogen. Geen berekening van het bedrag zelf.
+function toeslagWaarschuwingen(c) {
+  var m = c.m, S = c.S, uit = [];
+  var heeft = function (code) { return S.bronnen.some(function (b) { return b.code === code; }); };
+  var zorg = heeft("zorgtoeslag"), kgb = heeft("kgb"), huur = heeft("huurtoeslag");
+  if (!zorg && !kgb && !huur) return uit;
+  var f = fx(m, m.peil), partners = m.profiel.partner && m.profiel.fiscalePartners !== false;
+  var items = c.vr[0].items, t = c.vr[0].t;
+  var bank = t.sparen + t.deposito + t.reserv, overig = items.filter(function (x) { return x.comp === "overig" && x.box3; }).reduce(function (s, x) { return s + x.waarde; }, 0);
+  var vermogen = box3Indicatie(m, bank, t.beleggen, overig, -t.schuld, m.peil).totaal;
+  var gV = getal(partners ? f.toeslag_vermogen_partner : f.toeslag_vermogen_alleen);
+  if ((zorg || kgb) && vermogen > gV) uit.push("Je vermogen (circa " + eur(vermogen) + ") ligt boven de grens van " + eur(gV) + " voor " + [zorg ? "zorgtoeslag" : "", kgb ? "kindgebonden budget" : ""].filter(function (x) { return x; }).join(" en ") + ". Je hebt dan waarschijnlijk geen recht meer. Het vermogen op 1 januari telt.");
+  if (huur && !partners && vermogen > getal(f.toeslag_vermogen_huur_alleen)) uit.push("Je vermogen (circa " + eur(vermogen) + ") ligt boven de vermogensgrens voor huurtoeslag voor een alleenstaande (" + eur(f.toeslag_vermogen_huur_alleen) + "). Je hebt dan waarschijnlijk geen recht meer.");
+  if (zorg) {
+    var gI = getal(partners ? f.toeslag_inkomen_zorg_partner : f.toeslag_inkomen_zorg_alleen);
+    var fasen = fasenLijst(m), eerste = fasen.filter(function (x) { var inkomen = x.personen.reduce(function (s, p) { return s + p.bruto; }, 0) * 12; return inkomen > gI; })[0];
+    if (eerste) uit.push("In de fase '" + eerste.naam + "' (" + fmtMaand(eerste.d) + ") komt je bruto inkomen boven de inkomensgrens voor zorgtoeslag (" + eur(gI) + "). Daarna vervalt de zorgtoeslag waarschijnlijk. Haal hem dan uit je inkomen of zet er een einddatum bij.");
+  }
+  return uit;
+}
 function aandachtspunten(c) {
   var m = c.m, sim = c.sim, S = c.S, nu = m.nu, uit = [];
   function pt(soort, tekst, menu) { uit.push({ soort: soort, tekst: tekst, menu: menu }); }
@@ -2009,6 +2032,9 @@ function aandachtspunten(c) {
   if ((S.grote.minimum === "" || S.grote.minimum == null) && S.profiel.type) pt("waarschuw", "Geef je minimale buffer aan spaargeld aan (Vermogen). Daar rekent de app mee.", "vermogen");
   if (!S.profiel.geboorteA) pt("waarschuw", "Vul de geboortedatum in; zonder die kan de AOW-datum niet worden bepaald.", "dashboard");
   if (ouderDan(S.inst.cijfersDatum, 14, nu)) pt("waarschuw", "De cijfers (belasting, AOW, inflatie, rentes) zijn " + (S.inst.cijfersDatum ? "van " + fmtDatum(S.inst.cijfersDatum) : "nog nooit bijgewerkt") + ". Druk op 'Cijfers bijwerken'.", "dashboard");
+  if (S.inst.cijfersFout) pt("fout", "Het bijwerken van de cijfers is op " + fmtDatum(S.inst.cijfersFout.datum) + " mislukt: " + S.inst.cijfersFout.tekst + " Je rekent nu met oudere cijfers. Probeer het opnieuw of kies een cijferbestand.", "dashboard");
+  else if ((S.cijfers || {}).versie && dagenTussen(geldigeDatum(S.cijfers.versie), nu) > 45) pt("waarschuw", "Het cijferbestand is van " + fmtDatum(S.cijfers.versie) + ": er zijn nog geen nieuwere cijfers beschikbaar. Controleer of er een nieuwe versie van de app is.", "dashboard");
+  toeslagWaarschuwingen(c).forEach(function (t) { pt("waarschuw", t, "inkomen"); });
   if (klaar >= 1) {
     var stale = actualiseerStappen(c).filter(function (x) { var l = actualiseerLeeftijd(c, x.id); return x.id !== "cijfers" && (l == null || l > (x.dagen || 31)); });
     if (stale.length) pt("info", "Actualiseren: " + stale.map(function (x) { return x.titel.toLowerCase(); }).slice(0, 4).join(", ") + (stale.length > 4 ? " en meer" : "") + " zijn niet recent bijgewerkt of nog niet gecontroleerd.", "dashboard");
@@ -2922,11 +2948,12 @@ function cijfersGeldig(j) {
 // Past een cijferbestand toe: fiscale tabel, AOW, box 3, CPI, marktbeeld en fondsrendementen.
 function pasCijfersToe(c, j) {
   var f = cijfersGeldig(j);
-  if (f) return f;
+  if (f) { c.zet("inst", { cijfersFout: { datum: isoDatum(vandaag()), tekst: f } }); return f; }
+  var vorige = (c.S.cijfers || {}).versie;
   var m = c.m, delen = [];
   c.zetPad("cijfers", [], j);
   if (j.fiscaal) delen.push("belasting, AOW, kinderbijslag en box 3 (jaren " + Object.keys(j.fiscaal).join(", ") + ")");
-  var inst = { cijfersDatum: isoDatum(vandaag()) };
+  var inst = { cijfersDatum: isoDatum(vandaag()), cijfersFout: null };
   if (j.indexatie) {
     if (j.indexatie.schijven != null && isFinite(Number(j.indexatie.schijven))) inst.indexSchijven = Number(j.indexatie.schijven);
     if (j.indexatie.aow != null && isFinite(Number(j.indexatie.aow))) inst.indexAOW = Number(j.indexatie.aow);
@@ -2939,7 +2966,14 @@ function pasCijfersToe(c, j) {
   }
   c.zet("inst", inst);
   if (j.markt) delen.push("marktbeeld");
-  return "Bijgewerkt met cijfers van " + fmtDatum(j.versie) + ": " + (delen.join(", ") || "geen nieuwe onderdelen") + ".";
+  var ontbreekt = [];
+  if (!j.fiscaal) ontbreekt.push("belasting en AOW");
+  if (!j.cpi) ontbreekt.push("inflatie");
+  var tekst = "Bijgewerkt met cijfers van " + fmtDatum(j.versie) + ": " + (delen.join(", ") || "geen nieuwe onderdelen") + ".";
+  if (vorige && j.versie <= vorige) tekst += " Let op: dit is niet nieuwer dan de cijfers die je al had (" + fmtDatum(vorige) + "); er zijn nog geen nieuwere cijfers.";
+  if (dagenTussen(geldigeDatum(j.versie), c.m.nu) > 45) tekst += " Let op: het cijferbestand is ouder dan 45 dagen, dus mogelijk zijn de nieuwste bedragen er nog niet in.";
+  if (ontbreekt.length) tekst += " Let op: in het bestand ontbreken: " + ontbreekt.join(" en ") + ".";
+  return tekst;
 }
 function CijfersKnop() {
   var c = useC();
@@ -2950,7 +2984,9 @@ function CijfersKnop() {
   function klik() {
     setBezig(true); setMelding("");
     haalCijfers().then(function (j) { setMelding(pasCijfersToe(c, j)); }).catch(function (e) {
-      setMelding("Bijwerken lukt nu niet (" + (e && e.message || "geen verbinding") + "). Controleer je internetverbinding en probeer het later opnieuw, of kies hieronder een cijferbestand.");
+      var t = "de cijfers konden niet worden opgehaald (" + (e && e.message || "geen verbinding") + ").";
+      c.zet("inst", { cijfersFout: { datum: isoDatum(vandaag()), tekst: t } });
+      setMelding("Bijwerken is mislukt: " + t + " Controleer je internetverbinding en probeer het later opnieuw, of kies een cijferbestand.");
     }).then(function () { setBezig(false); });
   }
   return h("div", { "data-cijfers": "1" },
@@ -2962,7 +2998,8 @@ function CijfersKnop() {
           var f = e.target.files[0]; if (!f) return;
           var r = new FileReader(); r.onload = function () { try { setMelding(pasCijfersToe(c, JSON.parse(String(r.result)))); } catch (x) { setMelding("Het bestand kon niet worden gelezen."); } }; r.readAsText(f); e.target.value = "";
         } }))),
-    melding ? h("p", { className: "klein", role: "status", "data-cijfers-melding": "1" }, melding) : null,
+    (c.S.inst.cijfersFout && !melding) ? h("div", { className: "kaart fout", role: "alert", "data-cijfers-fout": "1" }, h("b", null, "Bijwerken is mislukt"), h("p", null, "Op " + fmtDatum(c.S.inst.cijfersFout.datum) + ": " + c.S.inst.cijfersFout.tekst + " Je rekent met oudere cijfers.")) : null,
+    melding ? h("p", { className: (/mislukt|niet geldig|onvolledig/.test(melding) ? "rood" : "klein"), role: "status", "data-cijfers-melding": "1" }, melding) : null,
     h("p", { className: "klein" }, "Druk hier elke maand op. De app haalt dan de nieuwste cijfers van de Belastingdienst, SVB en het CBS op. Je hoeft zelf niets in te vullen."));
 }
 
@@ -3049,9 +3086,10 @@ function IndexeerKaart() {
     melding ? h("p", { className: "groen", role: "status" }, melding) : null);
 }
 function ToeslagenActualiseer() {
-  var c = useC(), m = c.m, L = c.lijst("bronnen"), L2 = lijstL(m.profiel);
+  var c = useC(), m = c.m, L = c.lijst("bronnen"), L2 = lijstL(m.profiel), tw = toeslagWaarschuwingen(c);
   var toeslagen = L.items.filter(function (b) { return b.soort === "toeslag"; });
   return h("div", null,
+    tw.map(function (t, i) { return h("div", { key: i, className: "kaart waarschuw", "data-toeslag-controle": "1" }, t); }),
     L2.kbAuto ? h("div", { className: "kaart", style: { background: "#f8fafc" } },
       h("b", null, "Kinderbijslag (automatisch)"),
       h(Tabel, { kop: ["Kind", "Per kwartaal"], get: [1], rijen: (m.profiel.kids || []).map(function (k, i) { return ["Kind " + (i + 1) + (k.beperking ? " (dubbel)" : ""), eur(kinderbijslagKwartaal(m, k.geboorte, kwartaalStart(m.peil), k.beperking))]; }) }),
@@ -3111,6 +3149,7 @@ function ActualiseerKaart() {
     h("p", { className: "klein" }, "Werk minstens elke maand je saldi bij, zodat de planning actueel blijft."),
     h(Tabel, { kop: ["Onderdeel", "Laatst bijgewerkt"], get: [1], rijen: stappen.map(function (x) {
       var l = actualiseerLeeftijd(c, x.id);
+      if (x.id === "cijfers" && c.S.inst.cijfersFout) return [x.titel, h("span", { className: "rood" }, "mislukt")];
       return [x.titel, l == null ? h("span", { className: "oranje" }, "nog niet") : h("span", { className: l > (x.dagen || 31) ? "oranje" : "groen" }, l === 0 ? "vandaag" : l + " dagen geleden")];
     }) }),
     h("div", { className: "rij", style: { marginTop: ".5rem" } }, h(Knop, { onClick: function () { setOpen(true); }, naam: "actualiseren" }, "Nu actualiseren")),
@@ -3143,8 +3182,9 @@ function tijdTekst(ms) {
   return dagen === 0 ? "vandaag " + uur : dagen === 1 ? "gisteren " + uur : p2(d.getDate()) + "-" + p2(d.getMonth() + 1) + " " + uur;
 }
 function bewaarBackup() {
-  downloadBackup();
-  try { window.localStorage.setItem(BACKUP_META, JSON.stringify({ hash: opslagHash(opslagStand(false)), tijd: Date.now() })); } catch (e) {}
+  try { downloadBackup(); } catch (e) { meldOpslagprobleem("backup", "Back-up opslaan is mislukt (" + ((e && e.message) || "onbekende fout") + "). Probeer het opnieuw."); return false; }
+  try { delete OPSLAG_MELDINGEN.backup; window.localStorage.setItem(BACKUP_META, JSON.stringify({ hash: opslagHash(opslagStand(false)), tijd: Date.now() })); } catch (e) { meldOpslagprobleem("backup", "De back-up is gemaakt, maar de browser kon de status niet onthouden."); }
+  return true;
 }
 function BackupBalk() {
   var s = useState(0), setTik = s[1];

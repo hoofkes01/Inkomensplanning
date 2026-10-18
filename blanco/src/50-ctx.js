@@ -19,6 +19,26 @@ function Uitleg(p) { return h("p", { className: "klein" }, p.children); }
 /* ---------- Aandachtspunten voor het Dashboard ---------- */
 function intakeMenus(profiel) { return actieveMenus(profiel).filter(function (x) { return x.intake; }); }
 function intakeKlaarAantal(S) { return intakeMenus(S.profiel).filter(function (x) { return (S.intake[x.id] || {}).klaar; }).length; }
+// Controle op toeslagen met grenzen van de Belastingdienst: toetsingsinkomen en vermogen. Geen berekening van het bedrag zelf.
+function toeslagWaarschuwingen(c) {
+  var m = c.m, S = c.S, uit = [];
+  var heeft = function (code) { return S.bronnen.some(function (b) { return b.code === code; }); };
+  var zorg = heeft("zorgtoeslag"), kgb = heeft("kgb"), huur = heeft("huurtoeslag");
+  if (!zorg && !kgb && !huur) return uit;
+  var f = fx(m, m.peil), partners = m.profiel.partner && m.profiel.fiscalePartners !== false;
+  var items = c.vr[0].items, t = c.vr[0].t;
+  var bank = t.sparen + t.deposito + t.reserv, overig = items.filter(function (x) { return x.comp === "overig" && x.box3; }).reduce(function (s, x) { return s + x.waarde; }, 0);
+  var vermogen = box3Indicatie(m, bank, t.beleggen, overig, -t.schuld, m.peil).totaal;
+  var gV = getal(partners ? f.toeslag_vermogen_partner : f.toeslag_vermogen_alleen);
+  if ((zorg || kgb) && vermogen > gV) uit.push("Je vermogen (circa " + eur(vermogen) + ") ligt boven de grens van " + eur(gV) + " voor " + [zorg ? "zorgtoeslag" : "", kgb ? "kindgebonden budget" : ""].filter(function (x) { return x; }).join(" en ") + ". Je hebt dan waarschijnlijk geen recht meer. Het vermogen op 1 januari telt.");
+  if (huur && !partners && vermogen > getal(f.toeslag_vermogen_huur_alleen)) uit.push("Je vermogen (circa " + eur(vermogen) + ") ligt boven de vermogensgrens voor huurtoeslag voor een alleenstaande (" + eur(f.toeslag_vermogen_huur_alleen) + "). Je hebt dan waarschijnlijk geen recht meer.");
+  if (zorg) {
+    var gI = getal(partners ? f.toeslag_inkomen_zorg_partner : f.toeslag_inkomen_zorg_alleen);
+    var fasen = fasenLijst(m), eerste = fasen.filter(function (x) { var inkomen = x.personen.reduce(function (s, p) { return s + p.bruto; }, 0) * 12; return inkomen > gI; })[0];
+    if (eerste) uit.push("In de fase '" + eerste.naam + "' (" + fmtMaand(eerste.d) + ") komt je bruto inkomen boven de inkomensgrens voor zorgtoeslag (" + eur(gI) + "). Daarna vervalt de zorgtoeslag waarschijnlijk. Haal hem dan uit je inkomen of zet er een einddatum bij.");
+  }
+  return uit;
+}
 function aandachtspunten(c) {
   var m = c.m, sim = c.sim, S = c.S, nu = m.nu, uit = [];
   function pt(soort, tekst, menu) { uit.push({ soort: soort, tekst: tekst, menu: menu }); }
@@ -27,6 +47,9 @@ function aandachtspunten(c) {
   if ((S.grote.minimum === "" || S.grote.minimum == null) && S.profiel.type) pt("waarschuw", "Geef je minimale buffer aan spaargeld aan (Vermogen). Daar rekent de app mee.", "vermogen");
   if (!S.profiel.geboorteA) pt("waarschuw", "Vul de geboortedatum in; zonder die kan de AOW-datum niet worden bepaald.", "dashboard");
   if (ouderDan(S.inst.cijfersDatum, 14, nu)) pt("waarschuw", "De cijfers (belasting, AOW, inflatie, rentes) zijn " + (S.inst.cijfersDatum ? "van " + fmtDatum(S.inst.cijfersDatum) : "nog nooit bijgewerkt") + ". Druk op 'Cijfers bijwerken'.", "dashboard");
+  if (S.inst.cijfersFout) pt("fout", "Het bijwerken van de cijfers is op " + fmtDatum(S.inst.cijfersFout.datum) + " mislukt: " + S.inst.cijfersFout.tekst + " Je rekent nu met oudere cijfers. Probeer het opnieuw of kies een cijferbestand.", "dashboard");
+  else if ((S.cijfers || {}).versie && dagenTussen(geldigeDatum(S.cijfers.versie), nu) > 45) pt("waarschuw", "Het cijferbestand is van " + fmtDatum(S.cijfers.versie) + ": er zijn nog geen nieuwere cijfers beschikbaar. Controleer of er een nieuwe versie van de app is.", "dashboard");
+  toeslagWaarschuwingen(c).forEach(function (t) { pt("waarschuw", t, "inkomen"); });
   if (klaar >= 1) {
     var stale = actualiseerStappen(c).filter(function (x) { var l = actualiseerLeeftijd(c, x.id); return x.id !== "cijfers" && (l == null || l > (x.dagen || 31)); });
     if (stale.length) pt("info", "Actualiseren: " + stale.map(function (x) { return x.titel.toLowerCase(); }).slice(0, 4).join(", ") + (stale.length > 4 ? " en meer" : "") + " zijn niet recent bijgewerkt of nog niet gecontroleerd.", "dashboard");

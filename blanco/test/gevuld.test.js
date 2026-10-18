@@ -14,7 +14,7 @@ const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undef
     await ctx.addInitScript(o => { if (!sessionStorage.getItem("gezaaid")) { Object.keys(o).forEach(k => localStorage.setItem(k, o[k])); sessionStorage.setItem("gezaaid", "1"); } }, opslag);
     const page = await ctx.newPage();
     const pe = [], ce = [];
-    page.on("pageerror", e => pe.push(e.message)); page.on("console", m => { if (m.type() === "error") ce.push(m.text()); }); page.on("dialog", d => d.accept());
+    page.on("pageerror", e => pe.push(e.message)); page.on("console", m => { if (m.type() === "error" && !/ERR_FAILED/.test(m.text())) ce.push(m.text()); }); page.on("dialog", d => d.accept());
     await page.goto(url); await page.waitForSelector(".kop");
     for (const id of MENUS) {
       await page.click('[data-knop="menu"]'); await page.click(`[data-menu="${id}"]`); await page.waitForTimeout(150);
@@ -54,6 +54,17 @@ const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undef
     await page.click('[data-knop="indexeer-toepassen"]'); await page.click('[data-knop="indexeer-bevestig"]');
     const zt = await page.evaluate(() => JSON.parse(localStorage.getItem("inkomensplanning_bronnen")).filter(b => b.code === "zorgtoeslag")[0]);
     ok(`[${breedte}] indexeren: zorgtoeslag 120 -> 123,60`, zt.netto === 123.6 && !!zt.bijgewerkt, JSON.stringify([zt.netto, zt.bijgewerkt]));
+    await page.click('[data-knop="menu"]'); await page.click('[data-menu="dashboard"]');
+    ok(`[${breedte}] toeslagcontrole: inkomen boven zorgtoeslaggrens wordt gemeld`, /inkomensgrens voor zorgtoeslag/.test(await page.textContent("#aandacht")), (await page.textContent("#aandacht")).slice(0, 80));
+    // Mislukte actualisatie wordt gemeld en onthouden
+    await page.route("**/cijfers.json*", r => r.abort());
+    await page.click('[data-knop="menu"]'); await page.click('[data-menu="dashboard"]');
+    await page.click('[data-knop="cijfers-bijwerken"] >> nth=0');
+    await page.waitForSelector('[data-cijfers-melding]');
+    ok(`[${breedte}] mislukte actualisatie wordt gemeld`, /Bijwerken is mislukt/.test(await page.textContent('[data-cijfers-melding]')), await page.textContent('[data-cijfers-melding]'));
+    await page.click('[data-knop="menu"]'); await page.click('[data-menu="inkomen"]'); await page.click('[data-knop="menu"]'); await page.click('[data-menu="dashboard"]');
+    ok(`[${breedte}] fout blijft zichtbaar als aandachtspunt`, /Het bijwerken van de cijfers is op .* mislukt/.test(await page.textContent("#aandacht")));
+    await page.unroute("**/cijfers.json*");
     // Help, Actualiseren, Cijfers bijwerken (bestand)
     await page.click('[data-knop="help"]'); await page.fill('[data-veld="help-zoek"]', "toeslag");
     ok(`[${breedte}] help vindt toeslagen`, /Toeslagen en kinderbijslag/.test(await page.textContent("[role=dialog]")));

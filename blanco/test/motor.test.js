@@ -124,3 +124,8 @@ const kd = c.persoonMaand(mD, "A", c.geldigeDatum("2027-01-01"), true).netto;
 ok("dubbele kinderbijslag: kind van 8 = 2 x 362,35, kind van 1 gewoon 298,40", Math.round(kd * 100) / 100 === Math.round((2 * 362.35 + 298.40) * 100) / 100, kd);
 const LL = c.lijstL(mD.profiel);
 ok("beperking schakelt extra posten in", LL.beperking === true && c.BRON_CAT.filter(x => x.wanneer(LL, [])).some(x => x.code === "extra_kb") && c.LASTEN_CAT.filter(x => x.wanneer(LL)).some(x => x.code === "zorg_kind"));
+
+// Toeslaggrenzen
+const f26 = c.fiscaalJaar(c.maakModel(S, c.geldigeDatum("2026-10-18")), 2026), f27 = c.fiscaalJaar(c.maakModel(S, c.geldigeDatum("2027-10-18")), 2027);
+ok("toeslaggrenzen 2026 (zorgtoeslag inkomen, vermogen)", f26.toeslag_inkomen_zorg_alleen === 40857 && f26.toeslag_vermogen_partner === 184633);
+ok("vermogensgrens 2027 lager (119.122 / 158.748)", f27.toeslag_vermogen_alleen === 119122 && f27.toeslag_vermogen_partner === 158748);

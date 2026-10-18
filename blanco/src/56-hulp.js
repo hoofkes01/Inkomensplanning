@@ -32,11 +32,12 @@ function cijfersGeldig(j) {
 // Past een cijferbestand toe: fiscale tabel, AOW, box 3, CPI, marktbeeld en fondsrendementen.
 function pasCijfersToe(c, j) {
   var f = cijfersGeldig(j);
-  if (f) return f;
+  if (f) { c.zet("inst", { cijfersFout: { datum: isoDatum(vandaag()), tekst: f } }); return f; }
+  var vorige = (c.S.cijfers || {}).versie;
   var m = c.m, delen = [];
   c.zetPad("cijfers", [], j);
   if (j.fiscaal) delen.push("belasting, AOW, kinderbijslag en box 3 (jaren " + Object.keys(j.fiscaal).join(", ") + ")");
-  var inst = { cijfersDatum: isoDatum(vandaag()) };
+  var inst = { cijfersDatum: isoDatum(vandaag()), cijfersFout: null };
   if (j.indexatie) {
     if (j.indexatie.schijven != null && isFinite(Number(j.indexatie.schijven))) inst.indexSchijven = Number(j.indexatie.schijven);
     if (j.indexatie.aow != null && isFinite(Number(j.indexatie.aow))) inst.indexAOW = Number(j.indexatie.aow);
@@ -49,7 +50,14 @@ function pasCijfersToe(c, j) {
   }
   c.zet("inst", inst);
   if (j.markt) delen.push("marktbeeld");
-  return "Bijgewerkt met cijfers van " + fmtDatum(j.versie) + ": " + (delen.join(", ") || "geen nieuwe onderdelen") + ".";
+  var ontbreekt = [];
+  if (!j.fiscaal) ontbreekt.push("belasting en AOW");
+  if (!j.cpi) ontbreekt.push("inflatie");
+  var tekst = "Bijgewerkt met cijfers van " + fmtDatum(j.versie) + ": " + (delen.join(", ") || "geen nieuwe onderdelen") + ".";
+  if (vorige && j.versie <= vorige) tekst += " Let op: dit is niet nieuwer dan de cijfers die je al had (" + fmtDatum(vorige) + "); er zijn nog geen nieuwere cijfers.";
+  if (dagenTussen(geldigeDatum(j.versie), c.m.nu) > 45) tekst += " Let op: het cijferbestand is ouder dan 45 dagen, dus mogelijk zijn de nieuwste bedragen er nog niet in.";
+  if (ontbreekt.length) tekst += " Let op: in het bestand ontbreken: " + ontbreekt.join(" en ") + ".";
+  return tekst;
 }
 function CijfersKnop() {
   var c = useC();
@@ -60,7 +68,9 @@ function CijfersKnop() {
   function klik() {
     setBezig(true); setMelding("");
     haalCijfers().then(function (j) { setMelding(pasCijfersToe(c, j)); }).catch(function (e) {
-      setMelding("Bijwerken lukt nu niet (" + (e && e.message || "geen verbinding") + "). Controleer je internetverbinding en probeer het later opnieuw, of kies hieronder een cijferbestand.");
+      var t = "de cijfers konden niet worden opgehaald (" + (e && e.message || "geen verbinding") + ").";
+      c.zet("inst", { cijfersFout: { datum: isoDatum(vandaag()), tekst: t } });
+      setMelding("Bijwerken is mislukt: " + t + " Controleer je internetverbinding en probeer het later opnieuw, of kies een cijferbestand.");
     }).then(function () { setBezig(false); });
   }
   return h("div", { "data-cijfers": "1" },
@@ -72,7 +82,8 @@ function CijfersKnop() {
           var f = e.target.files[0]; if (!f) return;
           var r = new FileReader(); r.onload = function () { try { setMelding(pasCijfersToe(c, JSON.parse(String(r.result)))); } catch (x) { setMelding("Het bestand kon niet worden gelezen."); } }; r.readAsText(f); e.target.value = "";
         } }))),
-    melding ? h("p", { className: "klein", role: "status", "data-cijfers-melding": "1" }, melding) : null,
+    (c.S.inst.cijfersFout && !melding) ? h("div", { className: "kaart fout", role: "alert", "data-cijfers-fout": "1" }, h("b", null, "Bijwerken is mislukt"), h("p", null, "Op " + fmtDatum(c.S.inst.cijfersFout.datum) + ": " + c.S.inst.cijfersFout.tekst + " Je rekent met oudere cijfers.")) : null,
+    melding ? h("p", { className: (/mislukt|niet geldig|onvolledig/.test(melding) ? "rood" : "klein"), role: "status", "data-cijfers-melding": "1" }, melding) : null,
     h("p", { className: "klein" }, "Druk hier elke maand op. De app haalt dan de nieuwste cijfers van de Belastingdienst, SVB en het CBS op. Je hoeft zelf niets in te vullen."));
 }
 
@@ -159,9 +170,10 @@ function IndexeerKaart() {
     melding ? h("p", { className: "groen", role: "status" }, melding) : null);
 }
 function ToeslagenActualiseer() {
-  var c = useC(), m = c.m, L = c.lijst("bronnen"), L2 = lijstL(m.profiel);
+  var c = useC(), m = c.m, L = c.lijst("bronnen"), L2 = lijstL(m.profiel), tw = toeslagWaarschuwingen(c);
   var toeslagen = L.items.filter(function (b) { return b.soort === "toeslag"; });
   return h("div", null,
+    tw.map(function (t, i) { return h("div", { key: i, className: "kaart waarschuw", "data-toeslag-controle": "1" }, t); }),
     L2.kbAuto ? h("div", { className: "kaart", style: { background: "#f8fafc" } },
       h("b", null, "Kinderbijslag (automatisch)"),
       h(Tabel, { kop: ["Kind", "Per kwartaal"], get: [1], rijen: (m.profiel.kids || []).map(function (k, i) { return ["Kind " + (i + 1) + (k.beperking ? " (dubbel)" : ""), eur(kinderbijslagKwartaal(m, k.geboorte, kwartaalStart(m.peil), k.beperking))]; }) }),
@@ -221,6 +233,7 @@ function ActualiseerKaart() {
     h("p", { className: "klein" }, "Werk minstens elke maand je saldi bij, zodat de planning actueel blijft."),
     h(Tabel, { kop: ["Onderdeel", "Laatst bijgewerkt"], get: [1], rijen: stappen.map(function (x) {
       var l = actualiseerLeeftijd(c, x.id);
+      if (x.id === "cijfers" && c.S.inst.cijfersFout) return [x.titel, h("span", { className: "rood" }, "mislukt")];
       return [x.titel, l == null ? h("span", { className: "oranje" }, "nog niet") : h("span", { className: l > (x.dagen || 31) ? "oranje" : "groen" }, l === 0 ? "vandaag" : l + " dagen geleden")];
     }) }),
     h("div", { className: "rij", style: { marginTop: ".5rem" } }, h(Knop, { onClick: function () { setOpen(true); }, naam: "actualiseren" }, "Nu actualiseren")),
@@ -253,8 +266,9 @@ function tijdTekst(ms) {
   return dagen === 0 ? "vandaag " + uur : dagen === 1 ? "gisteren " + uur : p2(d.getDate()) + "-" + p2(d.getMonth() + 1) + " " + uur;
 }
 function bewaarBackup() {
-  downloadBackup();
-  try { window.localStorage.setItem(BACKUP_META, JSON.stringify({ hash: opslagHash(opslagStand(false)), tijd: Date.now() })); } catch (e) {}
+  try { downloadBackup(); } catch (e) { meldOpslagprobleem("backup", "Back-up opslaan is mislukt (" + ((e && e.message) || "onbekende fout") + "). Probeer het opnieuw."); return false; }
+  try { delete OPSLAG_MELDINGEN.backup; window.localStorage.setItem(BACKUP_META, JSON.stringify({ hash: opslagHash(opslagStand(false)), tijd: Date.now() })); } catch (e) { meldOpslagprobleem("backup", "De back-up is gemaakt, maar de browser kon de status niet onthouden."); }
+  return true;
 }
 function BackupBalk() {
   var s = useState(0), setTik = s[1];

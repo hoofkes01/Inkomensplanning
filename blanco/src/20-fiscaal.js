@@ -18,6 +18,7 @@ var FISCAAL_PER_JAAR = {
       aow_bruto_gehuwd_pm: 1139.39, aow_vakantiegeld_gehuwd_pm: 74.85,
       aow_bruto_alleen_pm: 1662.16, aow_vakantiegeld_alleen_pm: 104.78,
       kinderbijslag_0_5: 298.40, kinderbijslag_6_11: 362.35, kinderbijslag_12_17: 426.29,
+      toeslag_inkomen_zorg_alleen: 40857, toeslag_inkomen_zorg_partner: 51142, toeslag_vermogen_alleen: 146011, toeslag_vermogen_partner: 184633, toeslag_vermogen_huur_alleen: 38479,
       box3_tarief: 36, box3_vrij_pp: 59357, box3_sparen_pct: 1.28, box3_beleggen_pct: 6.00, box3_schuld_pct: 2.70
     }
   },
@@ -37,6 +38,7 @@ var FISCAAL_PER_JAAR = {
       aow_bruto_gehuwd_pm: 1139.39, aow_vakantiegeld_gehuwd_pm: 74.85,
       aow_bruto_alleen_pm: 1662.16, aow_vakantiegeld_alleen_pm: 104.78,
       kinderbijslag_0_5: 298.40, kinderbijslag_6_11: 362.35, kinderbijslag_12_17: 426.29,
+      toeslag_inkomen_zorg_alleen: 40857, toeslag_inkomen_zorg_partner: 51142, toeslag_vermogen_alleen: 119122, toeslag_vermogen_partner: 158748, toeslag_vermogen_huur_alleen: 38479,
       box3_tarief: 36, box3_vrij_pp: 59357, box3_sparen_pct: 1.28, box3_beleggen_pct: 6.00, box3_schuld_pct: 2.70
     }
   }
@@ -60,6 +62,7 @@ var FISCAAL_LABELS = {
   aow_bruto_gehuwd_pm: ["AOW bruto per maand, per persoon (met partner)", "b"], aow_vakantiegeld_gehuwd_pm: ["AOW-vakantiegeld per maand, per persoon (met partner)", "b"],
   aow_bruto_alleen_pm: ["AOW bruto per maand (alleenstaand)", "b"], aow_vakantiegeld_alleen_pm: ["AOW-vakantiegeld per maand (alleenstaand)", "b"],
   kinderbijslag_0_5: ["Kinderbijslag per kwartaal, kind van 0 tot en met 5 jaar", "b"], kinderbijslag_6_11: ["Kinderbijslag per kwartaal, kind van 6 tot en met 11 jaar", "b"], kinderbijslag_12_17: ["Kinderbijslag per kwartaal, kind van 12 tot en met 17 jaar", "b"],
+  toeslag_inkomen_zorg_alleen: ["Zorgtoeslag: maximaal toetsingsinkomen alleenstaand", "b"], toeslag_inkomen_zorg_partner: ["Zorgtoeslag: maximaal toetsingsinkomen met partner", "b"], toeslag_vermogen_alleen: ["Zorgtoeslag en kindgebonden budget: maximaal vermogen alleenstaand", "b"], toeslag_vermogen_partner: ["Zorgtoeslag en kindgebonden budget: maximaal vermogen met partner", "b"], toeslag_vermogen_huur_alleen: ["Huurtoeslag: maximaal vermogen alleenstaand", "b"],
   box3_tarief: ["Box 3: tarief (%)", "p"], box3_vrij_pp: ["Box 3: heffingsvrij vermogen per persoon", "b"], box3_sparen_pct: ["Box 3: fictief rendement sparen (%)", "p"], box3_beleggen_pct: ["Box 3: fictief rendement beleggen (%)", "p"], box3_schuld_pct: ["Box 3: rente op schulden (%)", "p"]
 };
 
