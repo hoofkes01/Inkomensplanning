@@ -412,7 +412,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 })();
 </script>
 <script>
-var APP_VERSIE = "18-10-2026 · 19:33";
+var APP_VERSIE = "18-10-2026 · 19:39";
 /* ===== Basis: hulpfuncties, opslag, invoervelden ===== */
 var h = React.createElement;
 var useState = React.useState, useEffect = React.useEffect, useMemo = React.useMemo, useRef = React.useRef, useContext = React.useContext;
@@ -1009,7 +1009,7 @@ var STANDAARD = {
     pf: [], pfDatum: "", rekeningId: "", rend: {},
     markt: { datum: "", punten: [] }
   },
-  rapport: { titel: "Inkomensplanning", onderdelen: {}, advies: true },
+  rapport: { titel: "Inkomensplanning", onderdelen: {}, advies: true, vergoedingPct: 50 },
   intake: {},
   actual: { datum: {} },
   cijfers: {}
@@ -2766,7 +2766,7 @@ var FREQ_KEUZES = [["maand", "Per maand"], ["kwartaal", "Per kwartaal"], ["halfj
 function nieuweLast(cat, pid, m, auto) {
   var naam = cat.code === "overig" ? "" : cat.label + (pid && m && m.personen.length > 1 ? " (" + persoonVan(m, pid).naam + ")" : "") + (auto && auto.toon ? " (" + auto.naam + ")" : "");
   var einde = cat.code === "kinderopvang" && m && kindEindDefaults(m).opvang ? isoDatum(kindEindDefaults(m).opvang) : "";
-  return { id: nieuwId(), code: cat.code, persoon: pid || "", autoId: auto ? auto.id : "", naam: naam, bedrag: "", freq: cat.freq || "maand", eersteMaand: 1, index: cat.index || "cpi", indexPct: "", start: "", einde: einde, contractEinde: "" };
+  return { id: nieuwId(), code: cat.code, persoon: pid || "", autoId: auto ? auto.id : "", naam: naam, bedrag: "", freq: cat.freq || "maand", eersteMaand: 1, index: cat.index || "cpi", indexPct: "", start: "", einde: einde, contractEinde: "", opzeg: "", aanbod: { aanbieder: "", bedrag: "", korting: "", status: "gevonden" } };
 }
 function foutenLast(b) {
   var n = b.naam || "Post";
@@ -2780,7 +2780,16 @@ function LastRij(p) {
     h("div", { className: "raster" },
       h(BedragVeld, { label: "Bedrag per betaling", value: b.bedrag, onChange: function (v) { w({ bedrag: v }); }, naam: "last-bedrag" }),
       h(KeuzeVeld, { label: "Hoe vaak", value: b.freq, opties: FREQ_KEUZES, onChange: function (v) { w({ freq: v }); } })),
-    CONTRACT_CODES.indexOf(b.code) >= 0 ? h(DatumVeld, { label: "Einddatum contract (optioneel)", hint: "Voor een herinnering in je agenda, ruim voor het contract afloopt.", value: b.contractEinde, onChange: function (v) { w({ contractEinde: v }); } }) : null,
+    CONTRACT_CODES.indexOf(b.code) >= 0 ? h("div", { className: "raster" },
+      h(KeuzeVeld, { label: "Opzegbaarheid", hint: "Verzekeringen en mobiele abonnementen zijn na het eerste jaar meestal direct opzegbaar, met maximaal 1 maand opzegtermijn.", value: b.opzeg || "", opties: [["", "Weet ik niet"], ["direct", "Nu al opzegbaar"], ["einddatum", "Pas op de einddatum"]], onChange: function (v) { w({ opzeg: v }); }, naam: "last-opzeg" }),
+      b.opzeg !== "direct" ? h(DatumVeld, { label: "Einddatum contract", hint: "Voor een herinnering in je agenda, ruim voor het afloopt.", value: b.contractEinde, onChange: function (v) { w({ contractEinde: v }); } }) : null) : null,
+    OFFERTE_CODES.indexOf(b.code) >= 0 ? h("details", { "data-blok": "aanbod" }, h("summary", { className: "klein" }, "Nieuw aanbod vergelijken" + (b.aanbod && b.aanbod.bedrag !== "" && b.aanbod.bedrag != null ? " ✓" : "")),
+      h("div", { className: "raster", style: { marginTop: ".4rem" } },
+        h(TekstVeld, { label: "Aanbieder (naam van het bedrijf)", value: (b.aanbod || {}).aanbieder, onChange: function (v) { w({ aanbod: Object.assign({}, b.aanbod, { aanbieder: v }) }); }, naam: "aanbod-aanbieder" }),
+        h(BedragVeld, { label: "Nieuw bedrag per betaling", hint: "Zelfde dekking en zelfde betaalritme als nu.", value: (b.aanbod || {}).bedrag, onChange: function (v) { w({ aanbod: Object.assign({}, b.aanbod, { bedrag: v }) }); }, naam: "aanbod-bedrag" }),
+        h(BedragVeld, { label: "Eenmalige korting in het eerste jaar (totaal)", hint: "Welkomstkorting of cashback. Die telt alleen in jaar 1.", value: (b.aanbod || {}).korting, onChange: function (v) { w({ aanbod: Object.assign({}, b.aanbod, { korting: v }) }); }, naam: "aanbod-korting" }),
+        h(KeuzeVeld, { label: "Stand", value: (b.aanbod || {}).status || "gevonden", opties: [["gevonden", "Gevonden, nog niet afgesloten"], ["afgesloten", "Afgesloten"]], onChange: function (v) { w({ aanbod: Object.assign({}, b.aanbod, { status: v }) }); }, naam: "aanbod-status" })),
+      aanbodBesparing(b) ? h("p", { className: "klein" }, "Besparing eerste jaar: " + eur(aanbodBesparing(b).jaar1) + ", vanaf jaar 2: " + eur(aanbodBesparing(b).vanaf2) + " per jaar.") : null) : null,
     h("details", null, h("summary", { className: "klein" }, "Meer opties (indexatie, start, einde)"),
       h("div", { className: "raster", style: { marginTop: ".4rem" } },
         b.freq !== "maand" ? h(KeuzeVeld, { label: "Eerste betaling in", value: String(b.eersteMaand || 1), opties: MAANDEN.map(function (n, i) { return [String(i + 1), n]; }), onChange: function (v) { w({ eersteMaand: Number(v) }); } }) : null,
@@ -3694,6 +3703,19 @@ function kansenExtra(c, add) {
   if (aowFase && aowFase.personen.reduce(function (s, p) { return s + p.bruto; }, 0) * 12 <= vi.grensInkomen * 0.8 && vi.vermogen <= vi.grens)
     add("toeslag", "AOW is laag: onderzoek de aanvullende inkomensvoorziening (AIO)", "In de fase '" + aowFase.naam + "' ligt je inkomen laag. Heb je een gekorte AOW, bijvoorbeeld doordat je niet de volle 50 jaar in Nederland woonde, of weinig pensioen? Dan kun je recht hebben op een aanvulling van de SVB.", { sterkte: "midden", menu: "pensioen", actie: "Laat de SVB je recht berekenen, ruim voor de AOW-datum.", waar: "svb.nl" });
 
+  // ----- Contracten: einddatum, opzegbaarheid en nieuwe aanbiedingen
+  var zonderDatum = [], direct = [];
+  (m.lasten || []).forEach(function (p) {
+    if (CONTRACT_CODES.indexOf(p.code) < 0 || !(getal(p.bedrag) > 0)) return;
+    var lab = (lastCat(p.code) || {}).label || p.naam || p.code;
+    if (p.opzeg === "direct") { if (!(p.aanbod && p.aanbod.bedrag !== "" && p.aanbod.bedrag != null)) direct.push(lab); }
+    else if (!geldigeDatum(p.contractEinde)) zonderDatum.push(lab);
+  });
+  if (direct.length) add("tijd", "Nu al over te stappen: " + direct.join(", "), "Deze contracten zijn nu al opzegbaar, meestal met maximaal één maand opzegtermijn. Je hoeft dus niet op een einddatum te wachten: vergelijk aanbieders en stap over zodra je iets beters hebt gevonden. Check wel dat dekking en voorwaarden gelijk zijn.", { sterkte: "hoog", menu: "lasten", actie: "Vraag nieuwe offertes op met dezelfde dekking en vul het nieuwe bedrag in bij 'Nieuw aanbod vergelijken'." });
+  if (zonderDatum.length) add("lasten", "Vul de einddatum van je contracten in", "Van deze vaste lasten ontbreekt nog de einddatum of opzegbaarheid: " + zonderDatum.slice(0, 8).join(", ") + (zonderDatum.length > 8 ? " en meer" : "") + ". Met de einddatum plant de app een herinnering vlak voor het contract afloopt, zodat je op het juiste moment kunt overstappen.", { menu: "lasten", actie: "Zoek de einddatum op in je polis of contract of in je online omgeving, en vul die in bij de vaste last." });
+  var AB = aanbiedingen(m, 50);
+  AB.rijen.forEach(function (r) { add("lasten", r.naam + ": nieuw aanbod bespaart " + eur(r.vanaf2) + " per jaar", "Nu " + eur(r.oud) + " per jaar, nieuw " + eur(r.nieuw) + " per jaar" + (r.korting > 0 ? ", plus " + eur(r.korting) + " eenmalige korting in jaar 1" : "") + (r.afgesloten ? " (afgesloten)." : " (nog niet afgesloten)."), { jaar: r.vanaf2, sterkte: r.afgesloten ? "midden" : "hoog", menu: "lasten" }); });
+
   // ----- Belasting en aftrek
   if (koop && m.hyp && (m.hyp.delen || []).some(function (d) { return d.box === "1" && getal(d.bedrag) > 0; }))
     add("belasting", "Vraag voorlopige teruggaaf aan voor de hypotheekrenteaftrek", "Het voordeel van de hypotheekrenteaftrek krijg je anders pas na de aangifte. Met een voorlopige teruggaaf ontvang je het elke maand, wat je maandelijkse ruimte vergroot.", { sterkte: "midden", menu: "pensioen", actie: "Vraag voorlopige teruggaaf aan of pas je voorlopige aanslag aan.", waar: "belastingdienst.nl (Mijn Belastingdienst)" });
@@ -4014,7 +4036,8 @@ function Klantenlijst(p) {
 }
 
 /* ===== Agenda: actiemomenten als .ics-bestand voor de agenda van de klant (Google, Apple, Outlook) ===== */
-var CONTRACT_CODES = ["energie", "internet", "mobiel", "opstal", "inboedel", "aansprakelijk", "rechtsbijstand", "auto_verz", "levensverz", "arbeidsong", "zorg_aanv", "auto_lease", "abonnementen"];
+var CONTRACT_CODES = ["energie", "internet", "mobiel", "opstal", "inboedel", "aansprakelijk", "rechtsbijstand", "auto_verz", "levensverz", "arbeidsong", "zorg_aanv", "auto_lease", "abonnementen", "sport", "ov"];
+var OFFERTE_CODES = CONTRACT_CODES.concat(["zorgverz", "sport", "ov", "bankkosten"]);
 var CONTRACT_VOORAF = { energie: 3, auto_lease: 6 }; // maanden vooraf; overige contracten: 2
 var JAAR_CHECK = { energie: [9, 1, "Beoordeel je energiecontract", "Vast of variabel, past het voorschot bij je verbruik, is er een beter aanbod?"], internet: [2, 1, "Beoordeel internet en tv", "Vergelijk aanbieders en zeg pakketten op die je niet gebruikt."], mobiel: [3, 1, "Beoordeel je mobiele abonnement", "Past de databundel bij je gebruik? Overweeg sim-only."], abonnementen: [5, 1, "Loop je abonnementen langs", "Zeg op wat je niet of nauwelijks gebruikt."], bankkosten: [8, 1, "Beoordeel de kosten van je bankrekening", "Vergelijk betaalrekeningen en kosten."] };
 var VERZ_CODES = ["opstal", "inboedel", "aansprakelijk", "rechtsbijstand", "auto_verz", "levensverz", "arbeidsong"];
@@ -4046,7 +4069,7 @@ function agendaMomenten(c) {
 
   (m.lasten || []).forEach(function (p) {
     var d = geldigeDatum(p.contractEinde);
-    if (!d || CONTRACT_CODES.indexOf(p.code) < 0) return;
+    if (!d || CONTRACT_CODES.indexOf(p.code) < 0 || p.opzeg === "direct") return;
     var naam = (lastCat(p.code) || {}).label || "Contract", v = CONTRACT_VOORAF[p.code] || 2;
     eenmalig(maandenVoor(d, v), "Beoordeel: " + naam, "Dit contract loopt af op " + fmtDatum(d) + ". Vergelijk nu aanbieders en zeg tijdig op of verleng bewust.");
     eenmalig(maandenVoor(d, 1), "Laatste kans: " + naam, "Dit contract loopt af op " + fmtDatum(d) + ". Regel de opzegging of verlenging voor het te laat is.");
@@ -4100,6 +4123,37 @@ function AgendaKaart() {
   var c = useC();
   if (!(c.S.intake.dashboard || {}).klaar) return null;
   return h(Kaart, { titel: "Actiemomenten in je agenda" }, h(AgendaKnop, null));
+}
+
+/* ---------- Nieuwe aanbiedingen: besparing en vergoeding ---------- */
+function aanbodBesparing(p) {
+  var a = p.aanbod;
+  if (!a || a.bedrag === "" || a.bedrag == null || !(getal(p.bedrag) > 0)) return null;
+  var f = FREQ_PER_JAAR[p.freq || "maand"] || 12;
+  var oud = getal(p.bedrag) * f, nieuw = getal(a.bedrag) * f, korting = getal(a.korting);
+  return { oud: oud, nieuw: nieuw, korting: korting, jaar1: oud - nieuw + korting, vanaf2: oud - nieuw, afgesloten: a.status === "afgesloten" };
+}
+function aanbiedingen(m, pct) {
+  var rijen = [];
+  (m.lasten || []).forEach(function (p) {
+    var b = aanbodBesparing(p);
+    if (!b || b.jaar1 <= 0) return;
+    var cat = lastCat(p.code), naam = (cat && cat.label) || p.naam || "Vaste last";
+    rijen.push(Object.assign({ naam: naam, aanbieder: (p.aanbod || {}).aanbieder || "", vergoeding: Math.max(0, b.jaar1) * pct / 100, opzeg: p.opzeg, einde: geldigeDatum(p.contractEinde) }, b));
+  });
+  var som = function (k, alleenAfgesloten) { return rijen.filter(function (r) { return !alleenAfgesloten || r.afgesloten; }).reduce(function (a, r) { return a + r[k]; }, 0); };
+  return { rijen: rijen, pct: pct, jaar1: som("jaar1"), vanaf2: som("vanaf2"), vergoeding: som("vergoeding"), vergoedingAfgesloten: som("vergoeding", true), jaar1Afgesloten: som("jaar1", true) };
+}
+function AanbiedingenRapport(p) {
+  var m = p.m, pct = getal((m.rapport || {}).vergoedingPct), A = aanbiedingen(m, pct === 0 && (m.rapport || {}).vergoedingPct === "" ? 50 : pct);
+  if (!A.rijen.length) return h("p", null, "Er zijn nog geen nieuwe aanbiedingen vergeleken.");
+  return h("div", { "data-blok": "aanbiedingen" },
+    h(Tabel, { className: "rp-tabel", kop: ["Vaste last", "Nu per jaar", "Nieuw per jaar", "Besparing jaar 1", "Vanaf jaar 2", "Stand"], get: [1, 2, 3, 4], rijen: A.rijen.map(function (r) {
+      return [r.naam + (r.aanbieder ? " (" + r.aanbieder + ")" : "") + (r.opzeg === "direct" ? " · nu al over te stappen" : r.einde ? " · loopt af " + fmtDatum(r.einde) : ""), eur(r.oud), eur(r.nieuw), eur(r.jaar1), eur(r.vanaf2), r.afgesloten ? "Afgesloten" : "Gevonden"];
+    }) }),
+    h("p", null, h("b", null, "Samen: " + eur(A.jaar1) + " besparing in jaar 1 en " + eur(A.vanaf2) + " per jaar vanaf jaar 2.")),
+    h("p", null, "Vergoeding voor het zoeken en regelen: " + A.pct + "% van de besparing in jaar 1, eenmalig. Over de afgesloten aanbiedingen is dat " + eur(A.vergoedingAfgesloten) + (A.vergoeding > A.vergoedingAfgesloten ? " (nog " + eur(A.vergoeding - A.vergoedingAfgesloten) + " voor aanbiedingen die nog niet zijn afgesloten)" : "") + ". Je houdt dus " + eur(A.jaar1Afgesloten - A.vergoedingAfgesloten) + " in jaar 1 over van wat al is afgesloten. Vanaf jaar 2 is de hele besparing voor jou."),
+    A.rijen.some(function (r) { return r.korting > 0; }) ? h("p", { className: "klein" }, "In jaar 1 zit eenmalige korting. Vanaf jaar 2 geldt de besparing zonder die korting. Controleer na een jaar of de prijs nog klopt; de aanbieder mag de prijs verhogen.") : null);
 }
 
 /* ===== Schermen: Dashboard, Inkomen, Toevoeging inkomen, Lijfrente en pensioen, Vaste lasten ===== */
@@ -4730,7 +4784,7 @@ function SchermAdvies() {
 
 /* ===== Rapport (PDF via afdrukken) ===== */
 var RAPPORT_ONDERDELEN = [
-  ["watvalt", "Wat valt op"], ["kansen", "Kansen: wat kan het opleveren?"], ["kalender", "Jaarkalender"], ["prognose", "Vermogensprognose"], ["vermogenverandering", "Waardoor verandert het vermogen?"], ["spaarverandering", "Waardoor verandert het spaargeld?"],
+  ["watvalt", "Wat valt op"], ["kansen", "Kansen: wat kan het opleveren?"], ["aanbiedingen", "Nieuwe aanbiedingen en besparing"], ["kalender", "Jaarkalender"], ["prognose", "Vermogensprognose"], ["vermogenverandering", "Waardoor verandert het vermogen?"], ["spaarverandering", "Waardoor verandert het spaargeld?"],
   ["mutaties", "Belangrijkste mutaties, komende 12 maanden"], ["genoeg", "Heb ik genoeg spaargeld?"], ["deposito", "Deposito's"], ["depositorente", "Rente van deposito's per jaar"],
   ["beleggen", "Beleggen en pensioen"], ["advies", "Beleggingsadvies"], ["fases", "Inkomen per fase"], ["lasten", "Vaste lasten en dagelijkse uitgaven"],
   ["grote", "Grote inkomsten en uitgaven"], ["auto", "Automatische boekingen op het spaargeld"], ["aannames", "Aannames en controles"], ["toelichting", "Toelichting"]
@@ -4786,6 +4840,9 @@ function RapportInhoud() {
       h(KansenSamenvatting, { lijst: kl }),
       h(KansenLijst, { lijst: kl, vinkjes: true }),
       h("p", { className: "klein" }, "Bedragen zijn berekend uit de gegevens in dit rapport en gelden voor een jaar, vóór belasting. Toeslagen worden hier niet uitgerekend: het bedrag volgt uit de proefberekening op toeslagen.nl.")) : null
+  ]));
+  if (aanbiedingen(m, 50).rijen.length) out.push(secties([
+    rpAan(c, "aanbiedingen") ? h(RpSectie, { key: "aanb", id: "aanbiedingen", titel: "Nieuwe aanbiedingen en besparing" }, h(AanbiedingenRapport, { m: Object.assign({}, m, { rapport: S.rapport }) })) : null
   ]));
   out.push(secties([
     rpAan(c, "kalender") ? h(RpSectie, { key: "kalender", id: "kalender", titel: "Jaarkalender: wanneer doe je wat?" }, h(KalenderBlok, { c: c })) : null
@@ -4887,7 +4944,7 @@ function SchermRapport() {
       h("div", { className: "rij" },
         h(Knop, { onClick: function () { window.print(); }, naam: "afdrukken" }, "Afdrukken of opslaan als PDF"),
         h("span", { className: "klein" }, "Kies in het afdrukvenster 'Opslaan als PDF'. Formaat A4.")),
-      h("details", { style: { marginTop: ".5rem" } }, h("summary", { className: "klein" }, "Wat staat er in het rapport?"), h(TekstVeld, { label: "Titel", value: S.rapport.titel, onChange: function (v) { c.zet("rapport", { titel: v }); }, naam: "rapport-titel" }), h(RapportKeuzes, null))),
+      h("details", { style: { marginTop: ".5rem" } }, h("summary", { className: "klein" }, "Wat staat er in het rapport?"), h(BedragVeld, { label: "Vergoeding nieuwe aanbiedingen (% van de besparing in jaar 1)", value: S.rapport.vergoedingPct, pct: true, onChange: function (v) { c.zet("rapport", { vergoedingPct: v }); }, naam: "vergoeding-pct" }), h(TekstVeld, { label: "Titel", value: S.rapport.titel, onChange: function (v) { c.zet("rapport", { titel: v }); }, naam: "rapport-titel" }), h(RapportKeuzes, null))),
     h("style", null, "@media print{@page{size:A4;margin:18mm 14mm 16mm 14mm;@top-left{content:\"" + String((S.rapport.titel || "Inkomensplanning") + " · peildatum " + fmtDatum(m.peil)).replace(/[\\"\n]/g, " ") + "\";font-size:8.5pt;color:#475569}@bottom-center{content:\"Pagina \" counter(page) \" van \" counter(pages);font-size:8.5pt;color:#475569}}}"),
     h("div", { className: "rp-kopblok", style: { marginBottom: ".6rem" } }, h("h1", null, S.rapport.titel || "Inkomensplanning"), h("p", { className: "klein" }, "Peildatum " + fmtDatum(m.peil) + " · " + m.personen.map(function (p) { return p.naam; }).join(" en ") + " · versie " + APP_VERSIE)),
     h(RapportInhoud, null));

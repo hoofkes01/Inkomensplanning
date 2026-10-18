@@ -441,7 +441,7 @@ var FREQ_KEUZES = [["maand", "Per maand"], ["kwartaal", "Per kwartaal"], ["halfj
 function nieuweLast(cat, pid, m, auto) {
   var naam = cat.code === "overig" ? "" : cat.label + (pid && m && m.personen.length > 1 ? " (" + persoonVan(m, pid).naam + ")" : "") + (auto && auto.toon ? " (" + auto.naam + ")" : "");
   var einde = cat.code === "kinderopvang" && m && kindEindDefaults(m).opvang ? isoDatum(kindEindDefaults(m).opvang) : "";
-  return { id: nieuwId(), code: cat.code, persoon: pid || "", autoId: auto ? auto.id : "", naam: naam, bedrag: "", freq: cat.freq || "maand", eersteMaand: 1, index: cat.index || "cpi", indexPct: "", start: "", einde: einde, contractEinde: "" };
+  return { id: nieuwId(), code: cat.code, persoon: pid || "", autoId: auto ? auto.id : "", naam: naam, bedrag: "", freq: cat.freq || "maand", eersteMaand: 1, index: cat.index || "cpi", indexPct: "", start: "", einde: einde, contractEinde: "", opzeg: "", aanbod: { aanbieder: "", bedrag: "", korting: "", status: "gevonden" } };
 }
 function foutenLast(b) {
   var n = b.naam || "Post";
@@ -455,7 +455,16 @@ function LastRij(p) {
     h("div", { className: "raster" },
       h(BedragVeld, { label: "Bedrag per betaling", value: b.bedrag, onChange: function (v) { w({ bedrag: v }); }, naam: "last-bedrag" }),
       h(KeuzeVeld, { label: "Hoe vaak", value: b.freq, opties: FREQ_KEUZES, onChange: function (v) { w({ freq: v }); } })),
-    CONTRACT_CODES.indexOf(b.code) >= 0 ? h(DatumVeld, { label: "Einddatum contract (optioneel)", hint: "Voor een herinnering in je agenda, ruim voor het contract afloopt.", value: b.contractEinde, onChange: function (v) { w({ contractEinde: v }); } }) : null,
+    CONTRACT_CODES.indexOf(b.code) >= 0 ? h("div", { className: "raster" },
+      h(KeuzeVeld, { label: "Opzegbaarheid", hint: "Verzekeringen en mobiele abonnementen zijn na het eerste jaar meestal direct opzegbaar, met maximaal 1 maand opzegtermijn.", value: b.opzeg || "", opties: [["", "Weet ik niet"], ["direct", "Nu al opzegbaar"], ["einddatum", "Pas op de einddatum"]], onChange: function (v) { w({ opzeg: v }); }, naam: "last-opzeg" }),
+      b.opzeg !== "direct" ? h(DatumVeld, { label: "Einddatum contract", hint: "Voor een herinnering in je agenda, ruim voor het afloopt.", value: b.contractEinde, onChange: function (v) { w({ contractEinde: v }); } }) : null) : null,
+    OFFERTE_CODES.indexOf(b.code) >= 0 ? h("details", { "data-blok": "aanbod" }, h("summary", { className: "klein" }, "Nieuw aanbod vergelijken" + (b.aanbod && b.aanbod.bedrag !== "" && b.aanbod.bedrag != null ? " ✓" : "")),
+      h("div", { className: "raster", style: { marginTop: ".4rem" } },
+        h(TekstVeld, { label: "Aanbieder (naam van het bedrijf)", value: (b.aanbod || {}).aanbieder, onChange: function (v) { w({ aanbod: Object.assign({}, b.aanbod, { aanbieder: v }) }); }, naam: "aanbod-aanbieder" }),
+        h(BedragVeld, { label: "Nieuw bedrag per betaling", hint: "Zelfde dekking en zelfde betaalritme als nu.", value: (b.aanbod || {}).bedrag, onChange: function (v) { w({ aanbod: Object.assign({}, b.aanbod, { bedrag: v }) }); }, naam: "aanbod-bedrag" }),
+        h(BedragVeld, { label: "Eenmalige korting in het eerste jaar (totaal)", hint: "Welkomstkorting of cashback. Die telt alleen in jaar 1.", value: (b.aanbod || {}).korting, onChange: function (v) { w({ aanbod: Object.assign({}, b.aanbod, { korting: v }) }); }, naam: "aanbod-korting" }),
+        h(KeuzeVeld, { label: "Stand", value: (b.aanbod || {}).status || "gevonden", opties: [["gevonden", "Gevonden, nog niet afgesloten"], ["afgesloten", "Afgesloten"]], onChange: function (v) { w({ aanbod: Object.assign({}, b.aanbod, { status: v }) }); }, naam: "aanbod-status" })),
+      aanbodBesparing(b) ? h("p", { className: "klein" }, "Besparing eerste jaar: " + eur(aanbodBesparing(b).jaar1) + ", vanaf jaar 2: " + eur(aanbodBesparing(b).vanaf2) + " per jaar.") : null) : null,
     h("details", null, h("summary", { className: "klein" }, "Meer opties (indexatie, start, einde)"),
       h("div", { className: "raster", style: { marginTop: ".4rem" } },
         b.freq !== "maand" ? h(KeuzeVeld, { label: "Eerste betaling in", value: String(b.eersteMaand || 1), opties: MAANDEN.map(function (n, i) { return [String(i + 1), n]; }), onChange: function (v) { w({ eersteMaand: Number(v) }); } }) : null,

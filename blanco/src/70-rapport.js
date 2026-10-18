@@ -1,6 +1,6 @@
 /* ===== Rapport (PDF via afdrukken) ===== */
 var RAPPORT_ONDERDELEN = [
-  ["watvalt", "Wat valt op"], ["kansen", "Kansen: wat kan het opleveren?"], ["kalender", "Jaarkalender"], ["prognose", "Vermogensprognose"], ["vermogenverandering", "Waardoor verandert het vermogen?"], ["spaarverandering", "Waardoor verandert het spaargeld?"],
+  ["watvalt", "Wat valt op"], ["kansen", "Kansen: wat kan het opleveren?"], ["aanbiedingen", "Nieuwe aanbiedingen en besparing"], ["kalender", "Jaarkalender"], ["prognose", "Vermogensprognose"], ["vermogenverandering", "Waardoor verandert het vermogen?"], ["spaarverandering", "Waardoor verandert het spaargeld?"],
   ["mutaties", "Belangrijkste mutaties, komende 12 maanden"], ["genoeg", "Heb ik genoeg spaargeld?"], ["deposito", "Deposito's"], ["depositorente", "Rente van deposito's per jaar"],
   ["beleggen", "Beleggen en pensioen"], ["advies", "Beleggingsadvies"], ["fases", "Inkomen per fase"], ["lasten", "Vaste lasten en dagelijkse uitgaven"],
   ["grote", "Grote inkomsten en uitgaven"], ["auto", "Automatische boekingen op het spaargeld"], ["aannames", "Aannames en controles"], ["toelichting", "Toelichting"]
@@ -56,6 +56,9 @@ function RapportInhoud() {
       h(KansenSamenvatting, { lijst: kl }),
       h(KansenLijst, { lijst: kl, vinkjes: true }),
       h("p", { className: "klein" }, "Bedragen zijn berekend uit de gegevens in dit rapport en gelden voor een jaar, vóór belasting. Toeslagen worden hier niet uitgerekend: het bedrag volgt uit de proefberekening op toeslagen.nl.")) : null
+  ]));
+  if (aanbiedingen(m, 50).rijen.length) out.push(secties([
+    rpAan(c, "aanbiedingen") ? h(RpSectie, { key: "aanb", id: "aanbiedingen", titel: "Nieuwe aanbiedingen en besparing" }, h(AanbiedingenRapport, { m: Object.assign({}, m, { rapport: S.rapport }) })) : null
   ]));
   out.push(secties([
     rpAan(c, "kalender") ? h(RpSectie, { key: "kalender", id: "kalender", titel: "Jaarkalender: wanneer doe je wat?" }, h(KalenderBlok, { c: c })) : null
@@ -157,7 +160,7 @@ function SchermRapport() {
       h("div", { className: "rij" },
         h(Knop, { onClick: function () { window.print(); }, naam: "afdrukken" }, "Afdrukken of opslaan als PDF"),
         h("span", { className: "klein" }, "Kies in het afdrukvenster 'Opslaan als PDF'. Formaat A4.")),
-      h("details", { style: { marginTop: ".5rem" } }, h("summary", { className: "klein" }, "Wat staat er in het rapport?"), h(TekstVeld, { label: "Titel", value: S.rapport.titel, onChange: function (v) { c.zet("rapport", { titel: v }); }, naam: "rapport-titel" }), h(RapportKeuzes, null))),
+      h("details", { style: { marginTop: ".5rem" } }, h("summary", { className: "klein" }, "Wat staat er in het rapport?"), h(BedragVeld, { label: "Vergoeding nieuwe aanbiedingen (% van de besparing in jaar 1)", value: S.rapport.vergoedingPct, pct: true, onChange: function (v) { c.zet("rapport", { vergoedingPct: v }); }, naam: "vergoeding-pct" }), h(TekstVeld, { label: "Titel", value: S.rapport.titel, onChange: function (v) { c.zet("rapport", { titel: v }); }, naam: "rapport-titel" }), h(RapportKeuzes, null))),
     h("style", null, "@media print{@page{size:A4;margin:18mm 14mm 16mm 14mm;@top-left{content:\"" + String((S.rapport.titel || "Inkomensplanning") + " · peildatum " + fmtDatum(m.peil)).replace(/[\\"\n]/g, " ") + "\";font-size:8.5pt;color:#475569}@bottom-center{content:\"Pagina \" counter(page) \" van \" counter(pages);font-size:8.5pt;color:#475569}}}"),
     h("div", { className: "rp-kopblok", style: { marginBottom: ".6rem" } }, h("h1", null, S.rapport.titel || "Inkomensplanning"), h("p", { className: "klein" }, "Peildatum " + fmtDatum(m.peil) + " · " + m.personen.map(function (p) { return p.naam; }).join(" en ") + " · versie " + APP_VERSIE)),
     h(RapportInhoud, null));

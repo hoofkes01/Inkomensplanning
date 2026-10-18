@@ -3,7 +3,7 @@ const { chromium } = require("playwright");
 const { start } = require("./hulp");
 const path = require("path");
 const { opslag } = require("./voorbeeld.js");
-{ const l = JSON.parse(opslag["inkomensplanning_lasten"]); l.forEach(x => { if (x.code === "energie") x.contractEinde = "2027-03-31"; }); l.push({ id: "lg", code: "genot", naam: "Tabak, alcohol en genotmiddelen", bedrag: 100, freq: "maand", eersteMaand: 1, index: "cpi", indexPct: "", start: "", einde: "" }); opslag["inkomensplanning_lasten"] = JSON.stringify(l); }
+{ const l = JSON.parse(opslag["inkomensplanning_lasten"]); l.forEach(x => { if (x.code === "energie") { x.contractEinde = "2027-03-31"; x.aanbod = { aanbieder: "Nieuwe Energie", bedrag: 1000, korting: 120, status: "afgesloten" }; } if (x.code === "aansprakelijk") x.opzeg = "direct"; }); l.push({ id: "lg", code: "genot", naam: "Tabak, alcohol en genotmiddelen", bedrag: 100, freq: "maand", eersteMaand: 1, index: "cpi", indexPct: "", start: "", einde: "" }); opslag["inkomensplanning_lasten"] = JSON.stringify(l); }
 const url = "file://" + path.join(__dirname, "..", "index.html");
 let fouten = 0;
 const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undefined ? "  -> " + x : "")); if (!c) { fouten++; process.exitCode = 1; } };
@@ -52,6 +52,12 @@ const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undef
   ok("ics: zorgverzekering elke 1 november", /DTSTART;VALUE=DATE:20261101[\s\S]{0,200}?SUMMARY:Beoordeel je zorgverzekering/.test(ics) && /RRULE:FREQ=YEARLY/.test(ics));
   ok("ics: energiecontract 3 maanden voor einde (31-12-2026)", /DTSTART;VALUE=DATE:20261228[\s\S]{0,200}?Beoordeel\\: Gas/.test(ics) || /20261231|20261228/.test(ics), (ics.match(/DTSTART;VALUE=DATE:2026122\d/g) || []).join());
   ok("ics: wekker om 9.00 en geen bedragen", /TRIGGER;RELATED=START:PT9H/.test(ics) && !/€/.test(ics));
+  await page.click('[data-knop="menu"]'); await page.click('[data-menu="rapport"]'); await page.waitForTimeout(200);
+  if (await page.locator("[role=dialog]").count()) await page.keyboard.press("Escape");
+  const ab = await page.textContent('[data-rp="aanbiedingen"]');
+  ok("aanbiedingen: besparing jaar 1 en vanaf jaar 2", /€ 1\.320/.test(ab) && /€ 1\.200/.test(ab), ab.replace(/\s+/g, " ").slice(0, 400));
+  ok("aanbiedingen: vergoeding 50% = 660, rest 660", /€ 660/.test(ab));
+  ok("direct opzegbaar genoemd", /Nu al over te stappen/.test(t));
   ok("geen pageerror", pe.length === 0, pe.join("|"));
   await browser.close(); console.log(fouten ? "FOUTEN" : "Alles OK");
 })();

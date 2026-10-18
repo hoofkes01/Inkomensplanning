@@ -41,7 +41,7 @@ var STANDAARD = {
     pf: [], pfDatum: "", rekeningId: "", rend: {},
     markt: { datum: "", punten: [] }
   },
-  rapport: { titel: "Inkomensplanning", onderdelen: {}, advies: true },
+  rapport: { titel: "Inkomensplanning", onderdelen: {}, advies: true, vergoedingPct: 50 },
   intake: {},
   actual: { datum: {} },
   cijfers: {}

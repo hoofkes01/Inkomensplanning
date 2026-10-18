@@ -180,6 +180,19 @@ function kansenExtra(c, add) {
   if (aowFase && aowFase.personen.reduce(function (s, p) { return s + p.bruto; }, 0) * 12 <= vi.grensInkomen * 0.8 && vi.vermogen <= vi.grens)
     add("toeslag", "AOW is laag: onderzoek de aanvullende inkomensvoorziening (AIO)", "In de fase '" + aowFase.naam + "' ligt je inkomen laag. Heb je een gekorte AOW, bijvoorbeeld doordat je niet de volle 50 jaar in Nederland woonde, of weinig pensioen? Dan kun je recht hebben op een aanvulling van de SVB.", { sterkte: "midden", menu: "pensioen", actie: "Laat de SVB je recht berekenen, ruim voor de AOW-datum.", waar: "svb.nl" });
 
+  // ----- Contracten: einddatum, opzegbaarheid en nieuwe aanbiedingen
+  var zonderDatum = [], direct = [];
+  (m.lasten || []).forEach(function (p) {
+    if (CONTRACT_CODES.indexOf(p.code) < 0 || !(getal(p.bedrag) > 0)) return;
+    var lab = (lastCat(p.code) || {}).label || p.naam || p.code;
+    if (p.opzeg === "direct") { if (!(p.aanbod && p.aanbod.bedrag !== "" && p.aanbod.bedrag != null)) direct.push(lab); }
+    else if (!geldigeDatum(p.contractEinde)) zonderDatum.push(lab);
+  });
+  if (direct.length) add("tijd", "Nu al over te stappen: " + direct.join(", "), "Deze contracten zijn nu al opzegbaar, meestal met maximaal één maand opzegtermijn. Je hoeft dus niet op een einddatum te wachten: vergelijk aanbieders en stap over zodra je iets beters hebt gevonden. Check wel dat dekking en voorwaarden gelijk zijn.", { sterkte: "hoog", menu: "lasten", actie: "Vraag nieuwe offertes op met dezelfde dekking en vul het nieuwe bedrag in bij 'Nieuw aanbod vergelijken'." });
+  if (zonderDatum.length) add("lasten", "Vul de einddatum van je contracten in", "Van deze vaste lasten ontbreekt nog de einddatum of opzegbaarheid: " + zonderDatum.slice(0, 8).join(", ") + (zonderDatum.length > 8 ? " en meer" : "") + ". Met de einddatum plant de app een herinnering vlak voor het contract afloopt, zodat je op het juiste moment kunt overstappen.", { menu: "lasten", actie: "Zoek de einddatum op in je polis of contract of in je online omgeving, en vul die in bij de vaste last." });
+  var AB = aanbiedingen(m, 50);
+  AB.rijen.forEach(function (r) { add("lasten", r.naam + ": nieuw aanbod bespaart " + eur(r.vanaf2) + " per jaar", "Nu " + eur(r.oud) + " per jaar, nieuw " + eur(r.nieuw) + " per jaar" + (r.korting > 0 ? ", plus " + eur(r.korting) + " eenmalige korting in jaar 1" : "") + (r.afgesloten ? " (afgesloten)." : " (nog niet afgesloten)."), { jaar: r.vanaf2, sterkte: r.afgesloten ? "midden" : "hoog", menu: "lasten" }); });
+
   // ----- Belasting en aftrek
   if (koop && m.hyp && (m.hyp.delen || []).some(function (d) { return d.box === "1" && getal(d.bedrag) > 0; }))
     add("belasting", "Vraag voorlopige teruggaaf aan voor de hypotheekrenteaftrek", "Het voordeel van de hypotheekrenteaftrek krijg je anders pas na de aangifte. Met een voorlopige teruggaaf ontvang je het elke maand, wat je maandelijkse ruimte vergroot.", { sterkte: "midden", menu: "pensioen", actie: "Vraag voorlopige teruggaaf aan of pas je voorlopige aanslag aan.", waar: "belastingdienst.nl (Mijn Belastingdienst)" });

@@ -1,5 +1,6 @@
 /* ===== Agenda: actiemomenten als .ics-bestand voor de agenda van de klant (Google, Apple, Outlook) ===== */
-var CONTRACT_CODES = ["energie", "internet", "mobiel", "opstal", "inboedel", "aansprakelijk", "rechtsbijstand", "auto_verz", "levensverz", "arbeidsong", "zorg_aanv", "auto_lease", "abonnementen"];
+var CONTRACT_CODES = ["energie", "internet", "mobiel", "opstal", "inboedel", "aansprakelijk", "rechtsbijstand", "auto_verz", "levensverz", "arbeidsong", "zorg_aanv", "auto_lease", "abonnementen", "sport", "ov"];
+var OFFERTE_CODES = CONTRACT_CODES.concat(["zorgverz", "sport", "ov", "bankkosten"]);
 var CONTRACT_VOORAF = { energie: 3, auto_lease: 6 }; // maanden vooraf; overige contracten: 2
 var JAAR_CHECK = { energie: [9, 1, "Beoordeel je energiecontract", "Vast of variabel, past het voorschot bij je verbruik, is er een beter aanbod?"], internet: [2, 1, "Beoordeel internet en tv", "Vergelijk aanbieders en zeg pakketten op die je niet gebruikt."], mobiel: [3, 1, "Beoordeel je mobiele abonnement", "Past de databundel bij je gebruik? Overweeg sim-only."], abonnementen: [5, 1, "Loop je abonnementen langs", "Zeg op wat je niet of nauwelijks gebruikt."], bankkosten: [8, 1, "Beoordeel de kosten van je bankrekening", "Vergelijk betaalrekeningen en kosten."] };
 var VERZ_CODES = ["opstal", "inboedel", "aansprakelijk", "rechtsbijstand", "auto_verz", "levensverz", "arbeidsong"];
@@ -31,7 +32,7 @@ function agendaMomenten(c) {
 
   (m.lasten || []).forEach(function (p) {
     var d = geldigeDatum(p.contractEinde);
-    if (!d || CONTRACT_CODES.indexOf(p.code) < 0) return;
+    if (!d || CONTRACT_CODES.indexOf(p.code) < 0 || p.opzeg === "direct") return;
     var naam = (lastCat(p.code) || {}).label || "Contract", v = CONTRACT_VOORAF[p.code] || 2;
     eenmalig(maandenVoor(d, v), "Beoordeel: " + naam, "Dit contract loopt af op " + fmtDatum(d) + ". Vergelijk nu aanbieders en zeg tijdig op of verleng bewust.");
     eenmalig(maandenVoor(d, 1), "Laatste kans: " + naam, "Dit contract loopt af op " + fmtDatum(d) + ". Regel de opzegging of verlenging voor het te laat is.");
@@ -85,4 +86,35 @@ function AgendaKaart() {
   var c = useC();
   if (!(c.S.intake.dashboard || {}).klaar) return null;
   return h(Kaart, { titel: "Actiemomenten in je agenda" }, h(AgendaKnop, null));
+}
+
+/* ---------- Nieuwe aanbiedingen: besparing en vergoeding ---------- */
+function aanbodBesparing(p) {
+  var a = p.aanbod;
+  if (!a || a.bedrag === "" || a.bedrag == null || !(getal(p.bedrag) > 0)) return null;
+  var f = FREQ_PER_JAAR[p.freq || "maand"] || 12;
+  var oud = getal(p.bedrag) * f, nieuw = getal(a.bedrag) * f, korting = getal(a.korting);
+  return { oud: oud, nieuw: nieuw, korting: korting, jaar1: oud - nieuw + korting, vanaf2: oud - nieuw, afgesloten: a.status === "afgesloten" };
+}
+function aanbiedingen(m, pct) {
+  var rijen = [];
+  (m.lasten || []).forEach(function (p) {
+    var b = aanbodBesparing(p);
+    if (!b || b.jaar1 <= 0) return;
+    var cat = lastCat(p.code), naam = (cat && cat.label) || p.naam || "Vaste last";
+    rijen.push(Object.assign({ naam: naam, aanbieder: (p.aanbod || {}).aanbieder || "", vergoeding: Math.max(0, b.jaar1) * pct / 100, opzeg: p.opzeg, einde: geldigeDatum(p.contractEinde) }, b));
+  });
+  var som = function (k, alleenAfgesloten) { return rijen.filter(function (r) { return !alleenAfgesloten || r.afgesloten; }).reduce(function (a, r) { return a + r[k]; }, 0); };
+  return { rijen: rijen, pct: pct, jaar1: som("jaar1"), vanaf2: som("vanaf2"), vergoeding: som("vergoeding"), vergoedingAfgesloten: som("vergoeding", true), jaar1Afgesloten: som("jaar1", true) };
+}
+function AanbiedingenRapport(p) {
+  var m = p.m, pct = getal((m.rapport || {}).vergoedingPct), A = aanbiedingen(m, pct === 0 && (m.rapport || {}).vergoedingPct === "" ? 50 : pct);
+  if (!A.rijen.length) return h("p", null, "Er zijn nog geen nieuwe aanbiedingen vergeleken.");
+  return h("div", { "data-blok": "aanbiedingen" },
+    h(Tabel, { className: "rp-tabel", kop: ["Vaste last", "Nu per jaar", "Nieuw per jaar", "Besparing jaar 1", "Vanaf jaar 2", "Stand"], get: [1, 2, 3, 4], rijen: A.rijen.map(function (r) {
+      return [r.naam + (r.aanbieder ? " (" + r.aanbieder + ")" : "") + (r.opzeg === "direct" ? " · nu al over te stappen" : r.einde ? " · loopt af " + fmtDatum(r.einde) : ""), eur(r.oud), eur(r.nieuw), eur(r.jaar1), eur(r.vanaf2), r.afgesloten ? "Afgesloten" : "Gevonden"];
+    }) }),
+    h("p", null, h("b", null, "Samen: " + eur(A.jaar1) + " besparing in jaar 1 en " + eur(A.vanaf2) + " per jaar vanaf jaar 2.")),
+    h("p", null, "Vergoeding voor het zoeken en regelen: " + A.pct + "% van de besparing in jaar 1, eenmalig. Over de afgesloten aanbiedingen is dat " + eur(A.vergoedingAfgesloten) + (A.vergoeding > A.vergoedingAfgesloten ? " (nog " + eur(A.vergoeding - A.vergoedingAfgesloten) + " voor aanbiedingen die nog niet zijn afgesloten)" : "") + ". Je houdt dus " + eur(A.jaar1Afgesloten - A.vergoedingAfgesloten) + " in jaar 1 over van wat al is afgesloten. Vanaf jaar 2 is de hele besparing voor jou."),
+    A.rijen.some(function (r) { return r.korting > 0; }) ? h("p", { className: "klein" }, "In jaar 1 zit eenmalige korting. Vanaf jaar 2 geldt de besparing zonder die korting. Controleer na een jaar of de prijs nog klopt; de aanbieder mag de prijs verhogen.") : null);
 }
