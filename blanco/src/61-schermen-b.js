@@ -101,16 +101,17 @@ function SchermVermogen() {
         ["Pensioen, lijfrente en aanvulling", eur(t.gebonden)], ["Overige bezittingen", eur(t.overig)], ["Uitgeleend aan anderen (vreemd vermogen)", eur(t.uitstaand)],
         ["Schulden", eur(t.schuld)], ["Hypotheek", eur(t.hypotheek)], ["Totaal vermogen", eur(t.totaal), true]] }),
       snel.lijst.length ? h("p", { className: "klein" }, "Snel beschikbaar bevat: " + snel.lijst.map(function (x) { return x.naam + " (" + fmtDatum(x.eind) + ", " + eur(x.bedrag) + ")"; }).join("; ") + ".") : null) : null,
-    h(Kaart, { titel: "Spaargeld en rente" }, h(SpaarVeld, null), h(SnelBeschikbaarVelden, null)),
-    h(Kaart, { titel: "Deposito's" }, h(DepositoEditor, null)),
-    h(Kaart, { titel: "Beleggingen" }, h(BeleggingenEditor, null)),
+    h(Kaart, { titel: "Spaargeld en rente" }, h(SpaarVeld, null), m.profiel.gebruik.deposito ? h(SnelBeschikbaarVelden, null) : null),
+    m.profiel.gebruik.deposito ? h(Kaart, { titel: "Deposito's" }, h(DepositoEditor, null)) : null,
+    m.profiel.gebruik.beleggen ? h(Kaart, { titel: "Beleggingen" }, h(BeleggingenEditor, null)) : null,
     h(Kaart, { titel: "Overige bezittingen" }, h(OverigEditor, null)),
     h(Kaart, { titel: "Schulden en uitstaande leningen" }, h(SchuldenEditor, null)),
-    h(Kaart, { titel: "Aannames voor de prognose" },
+    m.profiel.gebruik.beleggen ? h(Kaart, { titel: "Aannames voor de prognose" },
       h("div", { className: "raster" },
         h(BedragVeld, { label: "Rendement beleggingen per jaar (%)", value: m.inst.rendBeleggen, pct: true, onChange: function (v) { c.zet("inst", { rendBeleggen: v }); }, naam: "rendBeleggen" }),
         h(BedragVeld, { label: "Rendement pensioenbeleggingen per jaar (%)", value: m.inst.rendPot, pct: true, onChange: function (v) { c.zet("inst", { rendPot: v }); } })),
-      h(Uitleg, null, "Dit is een rekenaanname voor de toekomst, geen belofte. De rente van een deposito blijft de rente die je bij het deposito hebt ingevuld.")),
+      h(Uitleg, null, "Dit is een rekenaanname voor de toekomst, geen belofte. De rente van een deposito blijft de rente die je bij het deposito hebt ingevuld.")) : null,
+    h(UitbreidenKaart, null),
     heeft ? h(Kaart, { titel: "Prognose komende 24 maanden (in duizenden euro's)" },
       h(Staafgrafiek, { reeksen: VM_REEKS, punten: punten.map(function (r) { return { label: fmtMaandKort(r.d), waarden: VM_REEKS.map(function (s) { return s.comp.reduce(function (a, k) { return a + r.t[k]; }, 0); }) }; }), onKlik: function (i) { if (i > 0) setUitval({ i: i, comp: "vrij" }); }, titel: "Vermogen per maand" }),
       h(Legenda, { reeksen: VM_REEKS }),
@@ -171,14 +172,14 @@ function SchermGrote() {
 
 /* ----- Fiscaliteit & AOW ----- */
 function FiscaalSamenvatting() {
-  var c = useC(), m = c.m, jaar = m.peil.getFullYear();
-  var f = fiscaalJaar(m, jaar), basis = FISCAAL_PER_JAAR[f._basisjaar];
+  var c = useC(), m = c.m, jaar = m.peil.getFullYear(), T = fiscaalTabel(m);
+  var f = fiscaalJaar(m, jaar);
   var rijen = [
-    ["Jaar", String(jaar)], ["Status van de cijfers", f._geindexeerd ? "Geschat (indexatie na " + FISCAAL_LAATSTE_JAAR + ")" : basis.status], ["Bron", basis.bron],
-    ["Stand van de tabel", fmtDatum(FISCAAL_TABEL_STAND)],
+    ["Jaar", String(jaar)], ["Status van de cijfers", f._geindexeerd ? "Geschat (indexatie na " + T.laatste + ")" : f._status], ["Bron", f._bron || "Belastingdienst, SVB"],
+    ["Stand van de tabel", fmtDatum(T.stand)],
     ["Belasting eerste schijf voor / vanaf AOW", pct(f.tarief1, 2) + " / " + pct(f.tarief1_aow, 2)], ["Einde eerste schijf", eur(f.schijf1_max)],
     ["Algemene heffingskorting, maximaal", eur(f.algemene_heffingskorting_max)],
-    ["AOW bruto per maand" + (m.profiel.partner ? " (per persoon, met partner)" : " (alleenstaand)"), eur(aowBrutoMaand(m, m.peil))]
+    ["AOW bruto per maand" + (m.profiel.partner && m.profiel.fiscalePartners !== false ? " (per persoon, met partner)" : " (alleenstaand)"), eur(aowBrutoMaand(m, m.peil))]
   ];
   var w = fiscaalWaarschuwingen(m, m.nu);
   return h("div", null, h(KV, { rijen: rijen }), w.map(function (t, i) { return h("p", { key: i, className: "oranje klein" }, t); }));
@@ -196,13 +197,13 @@ function Box3Velden() {
       h(BedragVeld, { label: "Fictief rendement beleggen (%)", hint: "Standaard " + pct(f.box3_beleggen_pct, 2), value: b.beleggenPct, pct: true, onChange: function (v) { z({ beleggenPct: v }); } })));
 }
 function FiscaalOverrides() {
-  var c = useC(), m = c.m;
-  var s = useState(String(FISCAAL_LAATSTE_JAAR)), jaar = s[0], setJaar = s[1];
-  var o = (c.S.fiscOverride || {})[jaar] || {}, basis = FISCAAL_PER_JAAR[jaar].w;
+  var c = useC(), m = c.m, T = fiscaalTabel(m);
+  var s = useState(String(T.laatste)), jaar = s[0], setJaar = s[1];
+  var o = (c.S.fiscOverride || {})[jaar] || {}, basis = T.perJaar[jaar].w;
   var velden = Object.keys(FISCAAL_LABELS);
   return h("div", null,
-    h(KeuzeVeld, { label: "Jaar", value: jaar, opties: FISCAAL_JAREN.map(function (j) { return [String(j), String(j) + " (" + FISCAAL_PER_JAAR[j].status + ")"]; }), onChange: setJaar }),
-    h(Uitleg, null, "Leeg laten = de standaardwaarde van de app. Vul alleen in als jouw situatie afwijkt of de app achterloopt."),
+    h(KeuzeVeld, { label: "Jaar", value: jaar, opties: T.jaren.map(function (j) { return [String(j), String(j) + " (" + T.perJaar[j].status + ")"]; }), onChange: setJaar }),
+    h(Uitleg, null, "Leeg laten = de standaardwaarde van de app. Vul alleen in als je zeker weet dat de app afwijkt."),
     h("div", { className: "raster" }, velden.map(function (k) {
       var lab = FISCAAL_LABELS[k];
       return h(Veld, { key: k, label: lab[0], hint: "Standaard " + (lab[1] === "p" ? pct(basis[k], 2) : eur(basis[k])) },
@@ -211,38 +212,40 @@ function FiscaalOverrides() {
     h(Knop, { soort: "gevaar", klein: true, onClick: function () { c.zetPad("fiscOverride", [jaar], undefined); }, naam: "fiscaal-reset" }, "Terug naar standaardwaarden voor " + jaar));
 }
 function SchermFiscaal() {
-  var c = useC(), m = c.m, t = c.vr[0].t, items = c.vr[0].items;
+  var c = useC(), m = c.m, t = c.vr[0].t, items = c.vr[0].items, T = fiscaalTabel(m);
   var bank = t.sparen + t.deposito + t.reserv, beleg = t.beleggen;
   var overig = items.filter(function (x) { return x.comp === "overig" && x.box3; }).reduce(function (s, x) { return s + x.waarde; }, 0);
   var schuld = -t.schuld;
   var b3 = box3Indicatie(m, bank, beleg, overig, schuld, m.peil);
-  var jaar = m.peil.getFullYear(), f = fiscaalJaar(m, jaar);
+  var jaar = m.peil.getFullYear();
   var tabelRijen = [];
   [jaar, jaar + 1].forEach(function (j) {
-    var fj = fiscaalJaar(m, j), bs = FISCAAL_PER_JAAR[fj._basisjaar];
-    tabelRijen.push([String(j) + (fj._geindexeerd ? " (geschat)" : " (" + bs.status + ")"), pct(fj.tarief1, 2) + " / " + pct(fj.tarief1_aow, 2), eur(fj.schijf1_max) + " / " + eur(fj.schijf2_max), eur(fj.algemene_heffingskorting_max), eur(aowBrutoMaand({ inst: m.inst, profiel: m.profiel, fiscOverride: m.fiscOverride }, new Date(j, 6, 1)))]);
+    var fj = fiscaalJaar(m, j);
+    tabelRijen.push([String(j) + (fj._geindexeerd ? " (geschat)" : " (" + fj._status + ")"), pct(fj.tarief1, 2) + " / " + pct(fj.tarief1_aow, 2), eur(fj.schijf1_max) + " / " + eur(fj.schijf2_max), eur(fj.algemene_heffingskorting_max), eur(aowBrutoMaand(m, new Date(j, 6, 1)))]);
   });
   return h("div", null,
-    h(IntakeKnop, { menu: "fiscaal" }),
+    h(Kaart, { titel: "Cijfers actueel houden" }, h("p", null, "Je hoeft hier niets in te vullen. Druk periodiek (elke maand) op de knop: de app haalt dan de nieuwste belastingcijfers, AOW-bedragen, inflatie en rentes op."), h(CijfersKnop, null)),
     h(Kaart, { titel: "Controle fiscale tabel" }, h(FiscaalSamenvatting, null)),
     h(Kaart, { titel: "Tarieven en AOW" },
       h(Tabel, { kop: ["Jaar", "Tarief 1e schijf (voor / vanaf AOW)", "Schijfgrenzen", "Alg. heffingskorting", "AOW per maand bruto"], rijen: tabelRijen }),
-      h("p", { className: "klein" }, "Tarieven en kortingen: Belastingdienst. AOW-bedragen: SVB (elk halfjaar). Jaren na " + FISCAAL_LAATSTE_JAAR + " worden geschat met indexatie:"),
-      h("div", { className: "raster" },
-        h(BedragVeld, { label: "Indexatie schijven en kortingen per jaar (%)", value: m.inst.indexSchijven, pct: true, onChange: function (v) { c.zet("inst", { indexSchijven: v }); } }),
-        h(BedragVeld, { label: "Indexatie AOW per jaar (%)", value: m.inst.indexAOW, pct: true, onChange: function (v) { c.zet("inst", { indexAOW: v }); } }))),
-    h(Kaart, { titel: "Box 3" }, h(Box3Velden, null),
-      h("h4", { style: { marginTop: ".6rem" } }, "Indicatie op " + fmtDatum(m.peil)),
+      h("p", { className: "klein" }, "Tarieven en kortingen: Belastingdienst. AOW-bedragen: SVB (elk halfjaar). Jaren na " + T.laatste + " worden geschat met indexatie.")),
+    h(Kaart, { titel: "Box 3 (indicatie)" },
       h(KV, { rijen: [["Banktegoeden (sparen, deposito's, reserveringen)", eur(bank)], ["Beleggingen en overige bezittingen", eur(beleg + overig)], ["Schulden", eur(schuld)], ["Heffingsvrij vermogen", eur(b3.vrij)],
         ["Rendement (" + (b3.werkelijk ? "werkelijk, indicatief" : "fictief") + ")", eur(b3.rendement)], ["Geschatte box 3-belasting per jaar", eur(b3.belasting), true]] }),
       h("p", { className: "klein" }, "Dit is een indicatie met vereenvoudigingen (geen schuldendrempel, geen groene beleggingen, geen verdeling tussen partners). Controleer je aangifte bij de Belastingdienst.")),
-    h(Kaart, { titel: "Afwijkende fiscale waarden" }, h("details", null, h("summary", null, "Waarden bekijken of aanpassen"), h(FiscaalOverrides, null))),
     h(Kaart, { titel: "Aannames en beperkingen" }, h("ul", { className: "lijst" },
       h("li", null, "Belasting wordt per persoon over box 1 berekend, met algemene heffingskorting, ouderenkorting, arbeidskorting en Zvw-bijdrage op pensioen."),
+      h("li", null, "Hypotheekrenteaftrek en eigenwoningforfait zijn niet gemodelleerd; vul bij inkomen het netto in dat je werkelijk ontvangt."),
       h("li", null, "Arbeidskorting rekent alleen het afbouwtraject door: bij lagere inkomens is dit een bovengrens. Vul bij loon bij voorkeur zelf het netto in."),
-      h("li", null, "AOW-bedragen gelden per persoon met partner of alleenstaand en worden per jaar geïndexeerd; de AOW telt vanaf de maand van de AOW-datum."),
-      h("li", null, "Hebben bron of pot geen netto bedrag, dan berekent de app het netto marginaal bovenop de bronnen met een opgegeven netto."),
-      h("li", null, "Cijfers voor jaren na " + FISCAAL_LAATSTE_JAAR + " zijn schattingen met de indexatie hierboven. De AOW-leeftijd voor latere geboortejaren is verwacht, niet vastgesteld."),
+      h("li", null, "AOW-bedragen gelden per persoon met partner of alleenstaand en worden per jaar geïndexeerd; de AOW telt vanaf de maand van de AOW-datum. De kostendelersnorm is niet gemodelleerd."),
+      h("li", null, "Toeslagen en kinderbijslag tellen volledig mee als belastingvrij inkomen; de app berekent niet of je er recht op hebt."),
+      h("li", null, "De AOW-leeftijd voor latere geboortejaren is verwacht, niet vastgesteld."),
       h("li", null, "De app geeft rekenvoorbeelden, geen persoonlijk fiscaal advies."))),
+    h("details", null, h("summary", { className: "klein" }, "Geavanceerd (niet nodig voor gewoon gebruik)"),
+      h("div", { className: "kaart waarschuw", style: { marginTop: ".4rem" } }, h("p", null, "Hier wijzig je de rekenregels. Doe dat alleen als je weet wat je doet; 'Cijfers bijwerken' overschrijft de tabel niet met jouw aanpassingen."),
+        h("div", { className: "raster" },
+          h(BedragVeld, { label: "Indexatie schijven en kortingen per jaar (%)", value: m.inst.indexSchijven, pct: true, onChange: function (v) { c.zet("inst", { indexSchijven: v }); } }),
+          h(BedragVeld, { label: "Indexatie AOW per jaar (%)", value: m.inst.indexAOW, pct: true, onChange: function (v) { c.zet("inst", { indexAOW: v }); } })),
+        h(Box3Velden, null), h("h4", null, "Afwijkende fiscale waarden"), h(FiscaalOverrides, null))),
     h("p", { className: "klein" }, "Bronnen: Belastingdienst (belastingdienst.nl), SVB (svb.nl), CBS (cbs.nl), Rijksoverheid (rijksoverheid.nl)."));
 }

@@ -17,33 +17,42 @@ function LijstEditor(p) {
 function Uitleg(p) { return h("p", { className: "klein" }, p.children); }
 
 /* ---------- Aandachtspunten voor het Dashboard ---------- */
+function intakeMenus(profiel) { return actieveMenus(profiel).filter(function (x) { return x.intake; }); }
+function intakeKlaarAantal(S) { return intakeMenus(S.profiel).filter(function (x) { return (S.intake[x.id] || {}).klaar; }).length; }
 function aandachtspunten(c) {
   var m = c.m, sim = c.sim, S = c.S, nu = m.nu, uit = [];
   function pt(soort, tekst, menu) { uit.push({ soort: soort, tekst: tekst, menu: menu }); }
-  var klaar = MENUS.filter(function (x) { return (S.intake[x.id] || {}).klaar; }).length;
-  if (klaar < MENUS.length) pt("info", "Intake: " + klaar + " van " + MENUS.length + " menu's voltooid. Zonder intake kan de app niet alles berekenen.", "dashboard");
+  var tot = intakeMenus(S.profiel).length, klaar = intakeKlaarAantal(S);
+  if (klaar < tot) pt("info", "Intake: " + klaar + " van " + tot + " menu's voltooid. Zonder intake kan de app niet alles berekenen.", "dashboard");
   if (!S.profiel.geboorteA) pt("waarschuw", "Vul de geboortedatum in; zonder die kan de AOW-datum niet worden bepaald.", "dashboard");
-  if (ouderDan(S.inst.cpiStand, 31, nu)) pt("waarschuw", "De prijsindex (CPI) is langer dan een maand niet gecontroleerd" + (S.inst.cpiStand ? " (laatst op " + fmtDatum(S.inst.cpiStand) + ")" : " (nog nooit)") + ". Controleer de CPI van de laatste maand bij Vaste lasten.", "lasten");
-  if (ouderDan(S.inst.spaarrenteStand, 7, nu)) pt("waarschuw", "De spaarrente is ouder dan 7 dagen" + (S.inst.spaarrenteStand ? " (stand " + fmtDatum(S.inst.spaarrenteStand) + ")" : " of nog niet gecontroleerd") + ". Controleer hem bij Vermogen; de app kan hem niet zelf ophalen.", "vermogen");
+  if (ouderDan(S.inst.cijfersDatum, 14, nu)) pt("waarschuw", "De cijfers (belasting, AOW, inflatie, rentes) zijn " + (S.inst.cijfersDatum ? "van " + fmtDatum(S.inst.cijfersDatum) : "nog nooit bijgewerkt") + ". Druk op 'Cijfers bijwerken'.", "dashboard");
+  if (klaar >= 1) {
+    var stale = actualiseerStappen(c).filter(function (x) { var l = actualiseerLeeftijd(c, x.id); return x.id !== "cijfers" && (l == null || l > 31); });
+    if (stale.length) pt("info", "Actualiseren: " + stale.map(function (x) { return x.titel.toLowerCase(); }).slice(0, 4).join(", ") + (stale.length > 4 ? " en meer" : "") + " zijn langer dan een maand niet bijgewerkt of nog niet gecontroleerd.", "dashboard");
+  }
   if (S.profiel.gebruik.deposito) (S.verm.deposito || []).forEach(function (dep) {
     var pl = depositoPlan(m, dep); if (!pl) return;
-    var dagen = dagenTussen(nu, pl.eind);
-    if (dagen < 0) pt("fout", "Deposito '" + (dep.naam || "zonder naam") + "' is verlopen op " + fmtDatum(pl.eind) + ". Boek het bedrag zelf over en verwijder of werk het deposito bij.", "vermogen");
-    else if (dagen <= 60) pt("waarschuw", "Deposito '" + (dep.naam || "zonder naam") + "' vervalt over " + dagen + " dagen (" + fmtDatum(pl.eind) + "). Beslis zelf of je een nieuw deposito afsluit vanaf de spaarrekening.", "vermogen");
+    var dagen = dagenTussen(nu, pl.eind), nm = dep.bank || dep.naam || "zonder naam";
+    if (dagen < 0) pt("fout", "Deposito '" + nm + "' is verlopen op " + fmtDatum(pl.eind) + ". Boek het bedrag zelf over en verwijder of werk het deposito bij.", "vermogen");
+    else if (dagen <= 60) pt("waarschuw", "Deposito '" + nm + "' vervalt over " + dagen + " dagen (" + fmtDatum(pl.eind) + "). Beslis zelf of je een nieuw deposito afsluit vanaf de spaarrekening.", "vermogen");
   });
   if (m.profiel.gebruik.hypotheek && geldigeDatum(m.hyp.renteVastTot)) {
     var dg = dagenTussen(nu, geldigeDatum(m.hyp.renteVastTot));
     if (dg >= 0 && dg <= 365) pt("waarschuw", "De rentevaste periode van de hypotheek eindigt op " + fmtDatum(m.hyp.renteVastTot) + ".", "pensioen");
   }
-  if (getal(S.verm.spaar) > 0 || (S.verm.deposito || []).length) {
+  if (getal(m.verm.spaar) > 0 || (S.verm.deposito || []).length) {
     var min = getal(S.grote.minimum), lag = null;
     sim.maand.slice(0, 13).forEach(function (r) { if (r.min < min && (!lag || r.min < lag.min)) lag = r; });
     if (lag) pt("waarschuw", "Het spaargeld komt in de komende 12 maanden onder je minimum van " + eur(min) + " (laagste punt " + eur(lag.min) + " in " + fmtMaand(lag.d) + ").", "grote");
   }
-  var pfd = geldigeDatum((S.advies || {}).pfDatum);
-  if ((S.advies.pf || []).length && (!pfd || dagenTussen(pfd, nu) > 30)) pt("waarschuw", "De portefeuille bij Beleggingsadvies is ouder dan een maand. Upload hem opnieuw.", "advies");
+  if (S.profiel.gebruik.beleggen) {
+    var pfd = geldigeDatum((S.advies || {}).pfDatum);
+    if ((S.advies.pf || []).length && (!pfd || dagenTussen(pfd, nu) > 30)) pt("waarschuw", "De portefeuille bij Beleggingsadvies is ouder dan een maand. Upload hem opnieuw.", "advies");
+    if ((S.advies.pf || []).length && ouderDan(S.advies.raisinStand, 7, nu)) pt("info", "De Raisin-rente en Euribor zijn ouder dan 7 dagen. Druk op 'Cijfers bijwerken'.", "advies");
+  }
   fiscaalWaarschuwingen(m, nu).forEach(function (t) { pt("info", t, "fiscaal"); });
-  if (ouderDan(S.inst.backupDatum, 30, nu) && (S.bronnen.length || getal(S.verm.spaar))) pt("info", "Je hebt langer dan een maand geen back-up gemaakt. Sla je gegevens op als bestand (onderaan het Dashboard).", "dashboard");
+  var bm = backupMeta();
+  if ((S.bronnen.length || getal(m.verm.spaar)) && (!bm || dagenTussen(new Date(bm.tijd), nu) > 30)) pt("info", "Je hebt langer dan een maand geen back-up gemaakt. Tik linksonder op de balk om je gegevens op te slaan.", "dashboard");
   return uit;
 }
 
@@ -52,11 +61,15 @@ function aandachtspunten(c) {
 var INTAKE = {};
 function intakeStatus(c, menu) { return c.S.intake[menu] || {}; }
 function IntakeModal(p) {
-  var c = useC(), menu = p.menu, def = INTAKE[menu];
+  var c = useC(), menu = p.menu, def0 = INTAKE[menu];
   var st = intakeStatus(c, menu);
-  var s0 = useState(Math.min(st.stap || 0, def.stappen.length - 1)), stap = s0[0], setStap = s0[1];
+  var lijstS = typeof def0.stappen === "function" ? def0.stappen(c) : def0.stappen;
+  var def = { titel: def0.titel, stappen: lijstS };
+  var s0 = useState(Math.max(0, Math.min(st.stap || 0, def.stappen.length - 1))), stap = s0[0], setStap = s0[1];
   var s1 = useState([]), fouten = s1[0], setFouten = s1[1];
   var stapDef = def.stappen[stap];
+  useEffect(function () { if (!def.stappen.length) { c.zetPad("intake", [menu], { gezien: true, klaar: true, stap: 0, overgeslagen: [] }); p.sluit(); } }, []);
+  if (!stapDef) return null;
   function bewaar(patch) { c.zetPad("intake", [menu], Object.assign({}, intakeStatus(c, menu), { gezien: true }, patch)); }
   function ga(naar, overgeslagen) {
     var ov = (st.overgeslagen || []).filter(function (x) { return x !== stapDef.id; });
@@ -93,6 +106,7 @@ function LegeStaat(p) {
 }
 function IntakeKnop(p) {
   var c = useC(), st = intakeStatus(c, p.menu);
+  if (!INTAKE[p.menu]) return null;
   return h("div", { className: "rij tussen noprint", style: { marginBottom: ".6rem" } },
     h("span", { className: "klein" }, st.klaar ? "Intake voltooid" + ((st.overgeslagen || []).length ? " (met " + st.overgeslagen.length + " overgeslagen onderdeel/onderdelen)" : "") : "Intake nog niet voltooid"),
     h(Knop, { soort: "sec", klein: true, onClick: function () { c.openIntake(p.menu); }, naam: "intake-opnieuw" }, st.klaar ? "Intake opnieuw" : "Intake starten"));

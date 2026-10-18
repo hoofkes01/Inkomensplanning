@@ -142,7 +142,6 @@ function downloadBackup() {
   a.download = "inkomensplanning-back-up-" + isoDatum(vandaag()) + ".json";
   document.body.appendChild(a); a.click();
   setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
-  try { window.localStorage.setItem(OPSLAG_VOORVOEGSEL + "backupDatum", JSON.stringify(isoDatum(vandaag()))); } catch (e) {}
 }
 function zetBackupTerug(bestand, klaar) {
   var lezer = new FileReader();
@@ -199,9 +198,39 @@ function Veld(p) {
 function BedragVeld(p) {
   return h(Veld, { label: p.label, hint: p.hint, fout: p.fout }, h(NumInput, { value: p.value, onChange: p.onChange, pct: p.pct, neg: p.neg, max: p.max, placeholder: p.placeholder, naam: p.naam }));
 }
+/* ---------- Anoniem blijven: geen persoonsgegevens in tekstvelden ---------- */
+function anoniemFout(t) {
+  var x = String(t || "");
+  if (!x) return "";
+  var kaal = x.replace(/[\s.\-]/g, "");
+  if (/\S+@\S+\.\S+/.test(x)) return "een e-mailadres";
+  if (/\b[A-Za-z]{2}\d{2}\s?[A-Za-z0-9]{4}[\s\d]{6,}/.test(x)) return "een rekeningnummer (IBAN)";
+  if (/\b\d{4}\s?[A-Za-z]{2}\b/.test(x)) return "een postcode";
+  if (/\d{9,}/.test(kaal)) return "een nummer met 9 of meer cijfers (BSN, telefoon of rekening)";
+  if (/(\+31|\b06[\s-]?\d|\b0\d{2}[\s-]?\d{6,7})/.test(x) && /\d{6,}/.test(kaal)) return "een telefoonnummer";
+  if (/\b[A-Za-zÀ-ÿ]+(straat|laan|weg|plein|gracht|singel|kade|hof|dijk|steeg|park|baan)\s+\d+/i.test(x)) return "een adres";
+  return "";
+}
 function TekstVeld(p) {
-  return h(Veld, { label: p.label, hint: p.hint, fout: p.fout },
-    h("input", { type: "text", value: p.value || "", placeholder: p.placeholder || "", onChange: function (e) { p.onChange(e.target.value); }, "data-veld": p.naam }));
+  var s = useState(""), melding = s[0], setMelding = s[1];
+  return h(Veld, { label: p.label, hint: p.hint, fout: p.fout || melding },
+    h("input", { type: "text", value: p.value || "", placeholder: p.placeholder || "", autoComplete: "off", list: p.lijst || undefined, maxLength: 80,
+      onChange: function (e) {
+        var f = anoniemFout(e.target.value);
+        if (f) { setMelding("Dit is niet toegestaan: de app bewaart geen persoonsgegevens (je typt " + f + "). Laat dit weg."); return; }
+        setMelding(""); p.onChange(e.target.value);
+      }, "data-veld": p.naam }));
+}
+var BANKEN = ["ING", "Rabobank", "ABN AMRO", "SNS Bank", "ASN Bank", "RegioBank", "Triodos Bank", "Knab", "bunq", "Bank Nagelmackers", "Raisin", "DEGIRO", "BinckBank", "Saxo", "Brand New Day", "Nationale-Nederlanden", "Aegon", "a.s.r.", "Achmea", "Volksbank", "Moneyou", "Lloyds Bank", "Santander", "Deutsche Bank", "Commerzbank", "Wise", "Revolut"];
+function BankenLijst() { return h("datalist", { id: "bankenlijst" }, BANKEN.map(function (b) { return h("option", { key: b, value: b }); })); }
+// Vaste omschrijvingen met een uitweg 'Overig' (eigen omschrijving, zonder persoonsgegevens).
+function OmschrijvingKeuze(p) {
+  var opt = p.opties, gekozen = opt.indexOf(p.value) >= 0 ? p.value : (p.value ? "__overig" : "");
+  return h("div", null,
+    h(Veld, { label: p.label, hint: p.hint, fout: p.fout },
+      h("select", { value: gekozen, "data-veld": p.naam, onChange: function (e) { var v = e.target.value; p.onChange(v === "__overig" ? "Overig" : v); } },
+        [h("option", { key: "", value: "" }, "Kies een omschrijving")].concat(opt.map(function (o) { return h("option", { key: o, value: o }, o); })).concat([h("option", { key: "__overig", value: "__overig" }, "Overig (eigen omschrijving)")]))),
+    gekozen === "__overig" ? h(TekstVeld, { label: "Eigen omschrijving (zonder namen of nummers)", value: p.value === "Overig" ? "" : p.value, onChange: function (v) { p.onChange(v || "Overig"); }, naam: (p.naam || "omschr") + "-eigen" }) : null);
 }
 function DatumVeld(p) {
   return h(Veld, { label: p.label, hint: p.hint, fout: p.fout },

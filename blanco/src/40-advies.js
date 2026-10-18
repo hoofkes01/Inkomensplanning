@@ -36,6 +36,8 @@ function adviesParams(m) {
 function fondsRend(m, f) {
   var o = ((m.advies || {}).rend || {})[f.isin];
   if (o && o.rend !== "" && o.rend != null) return { rend: Number(o.rend), datum: o.datum || "", eigen: true };
+  var ext = ((m.cijfers || {}).fondsen || {})[f.isin];
+  if (ext && ext.rend != null) return { rend: Number(ext.rend), datum: ext.datum || (m.cijfers || {}).versie || "", eigen: false };
   return { rend: f.rend, datum: f.rend != null ? ADVIES_CHECK_DATUM : "", eigen: false };
 }
 function adviesNettoRaisin(P) { var t = P.belasting / 100; return P.stelsel === "forfait" ? P.raisin - t * P.fSparen : P.raisin * (1 - t); }

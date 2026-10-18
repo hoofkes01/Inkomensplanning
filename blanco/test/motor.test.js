@@ -5,14 +5,14 @@ const ok = (naam, cond, extra) => { console.log((cond ? "OK   " : "FOUT ") + naa
 // Voorbeeldhuishouden (verzonnen)
 c.S = JSON.parse(JSON.stringify(c.STANDAARD));
 const S = c.S;
-S.profiel.geboorteA = "1966-09-15"; S.profiel.geboorteB = "1964-11-09";
+S.profiel.type = "man+vrouw"; S.profiel.partner = true; S.profiel.geboorteA = "1966-09-15"; S.profiel.geboorteB = "1964-11-09"; S.profiel.leef.woning = "huur"; S.profiel.gebruik.deposito = true; S.profiel.gebruik.beleggen = true;
 S.profiel.peildatum = "2026-10-18";
 S.bronnen = [
   { id: "1", persoon: "A", naam: "Salaris A", soort: "loon", bruto: 5000, netto: 3300, start: "", einde: "2027-01-01", werktijd: 100, index: "geen", indexPct: "", kortingInNetto: true },
   { id: "2", persoon: "B", naam: "Salaris B", soort: "loon", bruto: 3000, netto: 2300, start: "", einde: "", werktijd: 100, index: "cpi", indexPct: "", kortingInNetto: true },
   { id: "3", persoon: "A", naam: "Pensioen A", soort: "pensioen", bruto: 1500, netto: "", start: "2033-12-15", einde: "", index: "vast", indexPct: 1, kortingInNetto: true }
 ];
-S.verm.spaar = 40000;
+S.verm.rekeningen = [{ id: "k", bank: "ING", naam: "Spaarrekening", saldo: 40000, rente: "" }];
 S.verm.deposito = [{ id: "d1", naam: "Dep 1", bedrag: 20000, rente: 3, start: "2026-06-01", looptijd: 12, eind: "2027-06-01", uitkering: "einde" }];
 S.lasten = [{ id: "l1", naam: "Wonen", bedrag: 1800, freq: "maand", index: "cpi", start: "", einde: "" }, { id: "l2", naam: "Verzekering", bedrag: 1200, freq: "jaar", eersteMaand: 3, index: "geen" }];
 S.dagelijks = { bedrag: 1500 };
@@ -36,6 +36,13 @@ const jun = sim.maand.filter(r => r.d.getFullYear() === 2027 && r.d.getMonth() =
 const mei = sim.maand.filter(r => r.d.getFullYear() === 2027 && r.d.getMonth() === 4)[0];
 console.log("mei 2027:", Math.round(mei.spaar), "jun 2027:", Math.round(jun.spaar), "verschil:", Math.round(jun.spaar - mei.spaar));
 ok("Deposito: +20.000 +600 rente in juni", jun.events.some(e => /Vrijval deposito Dep 1/.test(e.label) && e.delta === 20000) && jun.events.some(e => /Rente deposito/.test(e.label) && Math.abs(e.delta - 600) < 1));
+S.bronnen.push({ id: "t1", persoon: "A", code: "kinderbijslag", naam: "Kinderbijslag", soort: "toeslag", bruto: "", netto: 300, freq: "kwartaal", eersteMaand: 1, start: "", einde: "", index: "geen", indexPct: "" });
+const mT = c.maakModel(S, c.geldigeDatum("2026-10-18"));
+ok("Kinderbijslag per kwartaal: kas in januari 300", Math.round(c.persoonMaand(mT, "A", c.geldigeDatum("2027-01-01"), true).netto - c.persoonMaand(mT, "A", c.geldigeDatum("2027-02-01"), true).netto) === 300);
+ok("Kinderbijslag gemiddeld 100 per maand", Math.round(c.persoonMaand(mT, "A", c.geldigeDatum("2027-02-01"), false).netto - c.persoonMaand(mT, "A", c.geldigeDatum("2027-02-01"), true).netto) === 100);
+["jan@x.nl", "NL91ABNA0417164300", "1234 AB", "Spoorweglaan 6c", "123456789", "06 12345678"].forEach(t => ok("anoniem: weigert " + t, c.anoniemFout(t) !== ""));
+["ING", "Rabobank", "Spaarrekening 2"].forEach(t => ok("anoniem: laat toe " + t, c.anoniemFout(t) === ""));
+ok("Labels man+man", c.labelsVoorType("man+man").join() === "Man 1,Man 2" && c.labelsVoorType("vrouw+vrouw").join() === "Vrouw 1,Vrouw 2");
 const fasen = c.fasenLijst(m);
 fasen.forEach(f => console.log("fase", c.fmtDatum(f.d), f.naam, Math.round(f.netto), Math.round(f.lasten.totaal), Math.round(f.saldo)));
 // belasting sanity: netto pensioen 1.500 bruto na AOW

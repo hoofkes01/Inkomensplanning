@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Inkomensplanning</title>
 <style>
-:root{--tekst:#1e293b;--zacht:#64748b;--lijn:#e2e8f0;--vlak:#f8fafc;--kaart:#fff;--merk:#0f766e;--merk2:#115e59;--waarschuw:#b45309;--waarschuwvlak:#fffbeb;--fout:#b91c1c;--foutvlak:#fef2f2;--goed:#047857;--goedvlak:#ecfdf5;--info:#1d4ed8;--infovlak:#eff6ff}
+:root{--tekst:#1e293b;--zacht:#64748b;--lijn:#e2e8f0;--vlak:#f8fafc;--kaart:#fff;--merk:#0f172a;--merk2:#0f172a;--accent:#0f766e;--waarschuw:#b45309;--waarschuwvlak:#fffbeb;--fout:#b91c1c;--foutvlak:#fef2f2;--goed:#047857;--goedvlak:#ecfdf5;--info:#1d4ed8;--infovlak:#eff6ff}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;font-size:15px;line-height:1.45;color:var(--tekst);background:var(--vlak);overflow-x:hidden}
@@ -15,17 +15,18 @@ h1{font-size:1.25rem}h2{font-size:1.1rem}h3{font-size:1rem}h4{font-size:.9rem}
 p{margin:.35rem 0}
 button,input,select,textarea{font:inherit;color:inherit;max-width:100%}
 input,select,textarea{width:100%;padding:.5rem .6rem;border:1px solid #cbd5e1;border-radius:.5rem;background:#fff;min-height:2.5rem}
-input[type=checkbox],input[type=radio]{width:1.15rem;height:1.15rem;min-height:0;padding:0;accent-color:var(--merk)}
+input[type=checkbox],input[type=radio]{width:1.15rem;height:1.15rem;min-height:0;padding:0;accent-color:#0f172a}
 input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--merk);outline-offset:1px}
-.kop{position:sticky;top:0;z-index:30;background:var(--merk);color:#fff;padding:.55rem 1rem;display:flex;align-items:center;gap:.6rem}
+.kop{position:sticky;top:0;z-index:30;background:#0f172a;color:#f1f5f9;padding:.55rem 1rem;display:flex;align-items:center;gap:.5rem}
 .kop .titel{flex:1;min-width:0}
 .kop .titel b{display:block;font-size:1.05rem}
 .kop .titel small{display:block;opacity:.85;font-size:.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.menuknop{background:#fff;color:var(--merk2);border:0;border-radius:.5rem;padding:.5rem .8rem;font-weight:700;cursor:pointer;white-space:nowrap}
-.menulaag{position:fixed;inset:0;z-index:50;background:rgba(15,23,42,.45);display:flex;justify-content:flex-end}
-.menulijst{background:#fff;width:min(20rem,88vw);height:100%;overflow-y:auto;padding:.8rem}
-.menulijst button.item{display:flex;width:100%;justify-content:space-between;align-items:center;gap:.5rem;text-align:left;background:#fff;border:1px solid var(--lijn);border-radius:.6rem;padding:.7rem .8rem;margin:0 0 .4rem;font-weight:600;cursor:pointer}
-.menulijst button.item.actief{background:var(--goedvlak);border-color:#6ee7b7}
+.menuknop{background:#334155;color:#f1f5f9;border:0;border-radius:999px;padding:.4rem .85rem;font-weight:600;cursor:pointer;white-space:nowrap;font-size:.85rem}
+.menuknop.licht{background:#1e293b}
+.menulaag{max-width:46rem;margin:.5rem auto 0;padding:0 1rem}
+.menulijst{background:#fff;border:1px solid var(--lijn);border-radius:.75rem;padding:.7rem;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.menulijst button.item{display:flex;width:100%;justify-content:space-between;align-items:center;gap:.5rem;text-align:left;background:#fff;border:1px solid var(--lijn);border-radius:.6rem;padding:.65rem .8rem;margin:0 0 .3rem;font-weight:500;cursor:pointer}
+.menulijst button.item.actief{background:#0f172a;color:#fff;border-color:#0f172a}
 .menulijst .klein{font-size:.75rem;color:var(--zacht);font-weight:400}
 .pagina{max-width:46rem;margin:0 auto;padding:1rem 1rem 5rem}
 .kaart{background:var(--kaart);border:1px solid var(--lijn);border-radius:.8rem;padding:.9rem;margin:0 0 .8rem}
@@ -35,9 +36,9 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .kaart.info{background:var(--infovlak);border-color:#93c5fd}
 .klein{font-size:.8rem;color:var(--zacht)}
 .rood{color:var(--fout)}.groen{color:var(--goed)}.oranje{color:var(--waarschuw)}
-.knop{background:var(--merk);color:#fff;border:0;border-radius:.55rem;padding:.55rem .9rem;font-weight:600;cursor:pointer;min-height:2.5rem}
+.knop{background:#0f172a;color:#fff;border:0;border-radius:999px;padding:.5rem 1rem;font-weight:600;cursor:pointer;min-height:2.5rem}
 .knop:disabled{opacity:.45;cursor:default}
-.knop.sec{background:#fff;color:var(--merk2);border:1px solid #99a6b3}
+.knop.sec{background:#fff;color:#0f172a;border:1px solid #94a3b8}
 .knop.gevaar{background:#fff;color:var(--fout);border:1px solid #fca5a5}
 .knop.klein2{padding:.3rem .6rem;min-height:2rem;font-size:.85rem}
 .rij{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
@@ -62,7 +63,7 @@ tr.klik td{cursor:pointer}
 .badge{display:inline-block;border-radius:999px;padding:.05rem .5rem;font-size:.72rem;font-weight:700;background:#e2e8f0}
 .badge.goed{background:#d1fae5;color:#065f46}.badge.waarschuw{background:#fef3c7;color:#92400e}.badge.fout{background:#fee2e2;color:#991b1b}
 .balk{height:.6rem;background:#e2e8f0;border-radius:999px;overflow:hidden}
-.balk>i{display:block;height:100%;background:var(--merk)}
+.balk>i{display:block;height:100%;background:var(--accent)}
 .lijst{margin:.2rem 0;padding-left:1.1rem}
 .lijst li{margin:.2rem 0}
 .modaal{position:fixed;inset:0;z-index:80;background:rgba(15,23,42,.5);display:flex;align-items:flex-end;justify-content:center}
@@ -76,8 +77,8 @@ tr.klik td{cursor:pointer}
 .leeg p{color:var(--zacht)}
 .tabs{display:flex;gap:.3rem;overflow-x:auto;margin:0 0 .8rem;padding-bottom:.2rem}
 .tabs button{flex:0 0 auto;border:1px solid var(--lijn);background:#fff;border-radius:999px;padding:.35rem .8rem;font-weight:600;cursor:pointer}
-.tabs button.actief{background:var(--merk);color:#fff;border-color:var(--merk)}
-.linkknop{background:none;border:0;color:var(--merk);text-decoration:underline;cursor:pointer;padding:0;font:inherit;white-space:nowrap}
+.tabs button.actief{background:#0f172a;color:#fff;border-color:#0f172a}
+.linkknop{background:none;border:0;color:var(--accent);text-decoration:underline;cursor:pointer;padding:0;font:inherit;white-space:nowrap}
 .kleurpunt{display:inline-block;width:.7rem;height:.7rem;border-radius:2px;margin-right:.3rem;vertical-align:baseline}
 .melding{position:fixed;left:.5rem;right:.5rem;bottom:.5rem;z-index:90;background:var(--foutvlak);border:1px solid #fca5a5;border-radius:.6rem;padding:.6rem .8rem;font-size:.85rem}
 /* Rapport */
@@ -86,7 +87,7 @@ tr.klik td{cursor:pointer}
 .rp-tabel tr{break-inside:avoid}
 .rp-lijst{margin:.2rem 0;padding-left:1.1rem}
 .rp-sectie{margin:0 0 1rem}
-.rp-sectie h2{border-bottom:2px solid var(--merk);padding-bottom:.2rem}
+.rp-sectie h2{border-bottom:2px solid #0f172a;padding-bottom:.2rem}
 @media print{
   body{background:#fff;font-size:10.5pt;overflow:visible}
   .noprint,.kop,.menulaag,.melding{display:none!important}
@@ -100,6 +101,10 @@ tr.klik td{cursor:pointer}
   .kaart{break-inside:avoid;border-color:#cbd5e1}
   svg{max-width:100%}
 }
+.balkje{position:fixed;left:6px;bottom:6px;z-index:60;font:12px/1.35 system-ui,sans-serif;border-radius:8px;padding:6px 9px;border:1px solid #ddd;background:rgba(255,255,255,.96);max-width:72vw;text-align:left;cursor:pointer}
+.sticky-ruimte{height:3rem}
+.stap-kaart{border-left:4px solid #0f172a}
+@media print{.balkje{display:none!important}}
 </style>
 </head>
 <body>

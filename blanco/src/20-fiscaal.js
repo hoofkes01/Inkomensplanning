@@ -60,13 +60,25 @@ var FISCAAL_LABELS = {
   box3_tarief: ["Box 3: tarief (%)", "p"], box3_vrij_pp: ["Box 3: heffingsvrij vermogen per persoon", "b"], box3_sparen_pct: ["Box 3: fictief rendement sparen (%)", "p"], box3_beleggen_pct: ["Box 3: fictief rendement beleggen (%)", "p"], box3_schuld_pct: ["Box 3: rente op schulden (%)", "p"]
 };
 
-// De tabel voor een kalenderjaar, met eigen aanpassingen en indexatie na het laatste jaar.
+// De tabel: ingebouwde cijfers, aangevuld of vervangen door nieuwere cijfers die via 'Cijfers bijwerken' zijn opgehaald.
+function fiscaalTabel(m) {
+  if (m._ft) return m._ft;
+  var perJaar = Object.assign({}, FISCAAL_PER_JAAR), stand = FISCAAL_TABEL_STAND, c = m.cijfers || {};
+  if (c.fiscaal && c.versie && c.versie >= FISCAAL_TABEL_STAND) {
+    Object.keys(c.fiscaal).forEach(function (j) { if (c.fiscaal[j] && c.fiscaal[j].w) perJaar[j] = c.fiscaal[j]; });
+    stand = c.versie;
+  }
+  var jaren = Object.keys(perJaar).map(Number).sort(function (a, b) { return a - b; });
+  m._ft = { perJaar: perJaar, jaren: jaren, laatste: jaren[jaren.length - 1], stand: stand };
+  return m._ft;
+}
 function fiscaalJaar(m, jaar) {
   m._fx = m._fx || {};
   if (m._fx[jaar]) return m._fx[jaar];
-  var kies = FISCAAL_JAREN[0];
-  FISCAAL_JAREN.forEach(function (j) { if (j <= jaar) kies = j; });
-  var w = Object.assign({}, FISCAAL_PER_JAAR[kies].w, (m.fiscOverride || {})[kies] || {});
+  var T = fiscaalTabel(m);
+  var kies = T.jaren[0];
+  T.jaren.forEach(function (j) { if (j <= jaar) kies = j; });
+  var w = Object.assign({}, T.perJaar[kies].w, (m.fiscOverride || {})[kies] || {});
   var f = 1, fAow = 1;
   for (var j = kies + 1; j <= jaar; j++) {
     var bz = FISCAAL_INDEXATIE_BIJZONDER[j];
@@ -76,7 +88,7 @@ function fiscaalJaar(m, jaar) {
   var uit = Object.assign({}, w);
   FISCAAL_BEDRAGVELDEN.forEach(function (k) { uit[k] = getal(w[k]) * f; });
   FISCAAL_AOWVELDEN.forEach(function (k) { uit[k] = getal(w[k]) * fAow; });
-  uit._basisjaar = kies; uit._status = FISCAAL_PER_JAAR[kies].status; uit._geindexeerd = jaar > kies;
+  uit._basisjaar = kies; uit._status = T.perJaar[kies].status; uit._geindexeerd = jaar > kies; uit._bron = T.perJaar[kies].bron;
   m._fx[jaar] = uit;
   return uit;
 }
@@ -145,19 +157,18 @@ function aowStatusTekst(geb, nu) {
   return a.getFullYear() > nu.getFullYear() + 5 ? "Verwacht: de AOW-leeftijd voor jouw geboortejaar wordt pas vijf jaar van tevoren vastgesteld." : "";
 }
 function aowBrutoMaand(m, datum) {
-  var f = fx(m, datum), partner = m.profiel.partner;
+  var f = fx(m, datum), partner = m.profiel.partner && m.profiel.fiscalePartners !== false;
   return getal(partner ? f.aow_bruto_gehuwd_pm : f.aow_bruto_alleen_pm) + getal(partner ? f.aow_vakantiegeld_gehuwd_pm : f.aow_vakantiegeld_alleen_pm);
 }
 
 function fiscaalWaarschuwingen(m, nu) {
-  var uit = [];
+  var uit = [], T = fiscaalTabel(m);
   var jaar = nu.getFullYear(), nodig = nu.getMonth() >= 8 ? jaar + 1 : jaar;
-  if (FISCAAL_LAATSTE_JAAR < nodig) uit.push("De fiscale tabel loopt tot " + FISCAAL_LAATSTE_JAAR + ". Cijfers voor " + nodig + " ontbreken; de app rekent met indexatie.");
-  var f = FISCAAL_PER_JAAR[Math.min(jaar, FISCAAL_LAATSTE_JAAR)];
-  if (f && f.status !== "definitief") uit.push("Fiscale cijfers voor " + Math.min(jaar, FISCAAL_LAATSTE_JAAR) + " staan als '" + f.status + "'. Controleer of ze definitief zijn.");
-  var nxt = FISCAAL_PER_JAAR[jaar + 1];
+  if (T.laatste < nodig) uit.push("De fiscale tabel loopt tot " + T.laatste + ". Cijfers voor " + nodig + " ontbreken; de app rekent met indexatie. Druk op 'Cijfers bijwerken'.");
+  var bezig = T.perJaar[Math.min(jaar, T.laatste)];
+  if (bezig && bezig.status !== "definitief") uit.push("Fiscale cijfers voor " + Math.min(jaar, T.laatste) + " staan als '" + bezig.status + "'. Druk later op 'Cijfers bijwerken' om te controleren of ze definitief zijn.");
+  var nxt = T.perJaar[jaar + 1];
   if (nxt && nxt.status !== "definitief") uit.push("De cijfers voor " + (jaar + 1) + " zijn nog een voorstel (Belastingplan). Ze worden definitief na akkoord van beide Kamers.");
-  if (ouderDan(FISCAAL_TABEL_STAND, 200, nu)) uit.push("De fiscale tabel is bijgewerkt op " + fmtDatum(FISCAAL_TABEL_STAND) + ". Controleer of er een nieuwere app-versie is.");
   return uit;
 }
 

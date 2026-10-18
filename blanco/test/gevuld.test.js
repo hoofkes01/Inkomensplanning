@@ -37,6 +37,17 @@ const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undef
     ok(`[${breedte}] uitvalscherm toont namen`, /Netto inkomen|Vaste lasten/.test(modalTekst), modalTekst.slice(0, 160));
     if (breedte === 411) await page.screenshot({ path: `${uit}/uitval.png` });
     await page.keyboard.press("Escape");
+    // Help, Actualiseren, Cijfers bijwerken (bestand)
+    await page.click('[data-knop="help"]'); await page.fill('[data-veld="help-zoek"]', "toeslag");
+    ok(`[${breedte}] help vindt toeslagen`, /Toeslagen en kinderbijslag/.test(await page.textContent("[role=dialog]")));
+    await page.keyboard.press("Escape");
+    await page.click('[data-knop="menu"]'); await page.click('[data-menu="dashboard"]');
+    await page.click('[data-knop="actualiseren"]'); await page.waitForSelector("[role=dialog]");
+    ok(`[${breedte}] actualiseren opent`, /Actualiseren/.test(await page.textContent("[role=dialog]")));
+    await page.click('[data-knop="actualiseer-klaar"]'); await page.keyboard.press("Escape");
+    await page.setInputFiles('[data-veld="cijfers-bestand"]', require("path").join(__dirname, "..", "cijfers.json"));
+    await page.waitForSelector('[data-cijfers-melding]');
+    ok(`[${breedte}] cijfers bijwerken uit bestand`, /Bijgewerkt met cijfers van 18-10-2026/.test(await page.textContent('[data-cijfers-melding]')), await page.textContent('[data-cijfers-melding]'));
     ok(`[${breedte}] geen pageerror`, pe.length === 0, pe.join("|")); ok(`[${breedte}] geen console-fouten`, ce.length === 0, ce.join("|"));
     if (breedte === 411) {
       await page.click('[data-knop="menu"]'); await page.click('[data-menu="rapport"]'); await page.waitForTimeout(150);

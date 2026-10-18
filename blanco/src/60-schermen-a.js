@@ -23,16 +23,17 @@ function AdviesOpening() {
 function GegevensKaart() {
   var c = useC();
   var s = useState(""), melding = s[0], setMelding = s[1];
-  return h(Kaart, { titel: "Je gegevens" },
-    h("p", { className: "klein" }, "Alles staat alleen in deze browser, op dit apparaat. Maak regelmatig een back-up. Een nieuwe versie van de app is een nieuw bestand: zet daarna je back-up terug."),
+  var bm = backupMeta();
+  return h(Kaart, { titel: "Je gegevens opslaan en verder gaan" },
+    h("p", { className: "klein" }, "Alles staat alleen in deze browser, op dit apparaat. Sla je gegevens regelmatig op als bestand (ook via de balk linksonder). Een nieuwe versie van de app is een nieuw bestand: zet daarna je laatste bestand terug en ga verder met je actuele gegevens."),
     h("div", { className: "rij" },
-      h(Knop, { onClick: function () { downloadBackup(); c.zet("inst", { backupDatum: isoDatum(vandaag()) }); setMelding("Back-up opgeslagen."); }, naam: "backup-opslaan" }, "Gegevens opslaan als bestand"),
+      h(Knop, { onClick: function () { bewaarBackup(); setMelding("Back-up opgeslagen."); }, naam: "backup-opslaan" }, "Gegevens opslaan als bestand"),
       h("label", { className: "knop sec", style: { display: "inline-block", cursor: "pointer" } }, "Gegevens terugzetten",
         h("input", { type: "file", accept: "application/json,.json", style: { display: "none" }, "data-veld": "backup-bestand", onChange: function (e) { var f = e.target.files[0]; if (f) zetBackupTerug(f, setMelding); e.target.value = ""; } }))),
     melding ? h("p", { className: "klein", role: "status" }, melding) : null,
-    h("p", { className: "klein" }, "Laatste back-up: " + (c.S.inst.backupDatum ? fmtDatum(c.S.inst.backupDatum) : "nog niet gemaakt") + "."),
+    h("p", { className: "klein" }, "Laatste back-up: " + (bm ? tijdTekst(bm.tijd) : "nog niet gemaakt") + "."),
     h("details", null, h("summary", { className: "klein" }, "Alle gegevens wissen"),
-      h(Knop, { soort: "gevaar", onClick: function () { if (window.confirm("Alle ingevulde gegevens definitief wissen? Maak eerst een back-up.")) { try { Object.keys(window.localStorage).filter(function (k) { return k.indexOf(OPSLAG_VOORVOEGSEL) === 0; }).forEach(function (k) { window.localStorage.removeItem(k); }); } catch (e) {} window.location.reload(); } }, naam: "wis-alles" }, "Alles wissen")));
+      h(Knop, { soort: "gevaar", onClick: function () { if (window.confirm("Alle ingevulde gegevens definitief wissen? Maak eerst een back-up.")) { try { Object.keys(window.localStorage).filter(function (k) { return k.indexOf(OPSLAG_VOORVOEGSEL) === 0 || k === BACKUP_META; }).forEach(function (k) { window.localStorage.removeItem(k); }); } catch (e) {} window.location.reload(); } }, naam: "wis-alles" }, "Alles wissen")));
 }
 function FasenTabel(p) {
   var m = p.m, fasen = useMemo(function () { return fasenLijst(m); }, [m]);
@@ -44,27 +45,31 @@ function FasenTabel(p) {
 }
 function SchermDashboard() {
   var c = useC(), m = c.m, S = c.S;
-  var punten = useMemo(function () { return aandachtspunten(c); }, [c.m, c.sim, c.S.intake]);
-  var klaar = MENUS.filter(function (x) { return (S.intake[x.id] || {}).klaar; }).length;
-  var volgende = MENUS.filter(function (x) { return !(S.intake[x.id] || {}).klaar; })[0];
-  var nogLeeg = !S.profiel.geboorteA && !S.bronnen.length && !getal(S.verm.spaar);
+  var punten = useMemo(function () { return aandachtspunten(c); }, [c.m, c.sim, c.S.intake, c.S.actual]);
+  var tot = intakeMenus(S.profiel).length, klaar = intakeKlaarAantal(S);
+  var volgende = intakeMenus(S.profiel).filter(function (x) { return !(S.intake[x.id] || {}).klaar; })[0];
+  var algemeenKlaar = (S.intake.dashboard || {}).klaar;
   var t0 = c.vr[0].t;
   var min12 = Math.min.apply(null, c.sim.maand.slice(0, 13).map(function (r) { return r.min; }));
   return h("div", null,
-    h(Kaart, { titel: "Voortgang intake" },
-      h("p", null, "Intake: " + klaar + " van " + MENUS.length + " menu's voltooid"),
-      h("div", { className: "balk" }, h("i", { style: { width: (klaar / MENUS.length * 100) + "%" } })),
-      volgende ? h("div", { className: "rij", style: { marginTop: ".5rem" } }, h(Knop, { onClick: function () { c.nav(volgende.id); c.openIntake(volgende.id); }, naam: "intake-volgende-menu" }, "Verder met: " + volgende.naam)) : h("p", { className: "groen" }, "Alle intakes zijn voltooid.")),
-    nogLeeg ? h("div", { className: "kaart leeg" }, h("h2", null, "Welkom"), h("p", null, "De app is nog leeg. Begin met de intake van het Dashboard; daarna kies je via ☰ Menu de andere onderwerpen."), h(Knop, { onClick: function () { c.openIntake("dashboard"); }, naam: "intake-starten" }, "Intake starten")) : null,
-    punten.length ? h(Kaart, { titel: "Aandachtspunten", id: "aandacht" }, h("ul", { className: "lijst", style: { listStyle: "none", paddingLeft: 0 } }, punten.map(function (a, i) {
+    !algemeenKlaar ? h("div", { className: "kaart leeg" }, h("h2", null, "Welkom"), h("p", null, "Begin met de algemene intake: een paar vragen over je huishouden, woning en gezin. Daarna stelt de app per onderwerp korte vragen. Alles blijft anoniem."), h(Knop, { onClick: function () { c.openIntake("dashboard"); }, naam: "intake-starten" }, "Intake starten")) : null,
+    algemeenKlaar ? h(AdviesOpening, null) : null,
+    (algemeenKlaar && (m.bronnen.length || m.potten.length)) ? h(Kaart, { titel: "Netto huishoudinkomen per fase" }, h(FasenTabel, { m: m })) : null,
+    algemeenKlaar && punten.length ? h(Kaart, { titel: "Aandachtspunten", id: "aandacht" }, h("ul", { className: "lijst", style: { listStyle: "none", paddingLeft: 0 } }, punten.map(function (a, i) {
       return h("li", { key: i, className: "rij", style: { alignItems: "flex-start", flexWrap: "nowrap" } },
         h("span", { className: "badge " + (a.soort === "fout" ? "fout" : a.soort === "waarschuw" ? "waarschuw" : "") }, a.soort === "fout" ? "Let op" : a.soort === "waarschuw" ? "Check" : "Info"),
         h("span", { style: { flex: 1 } }, a.tekst, " ", a.menu !== "dashboard" ? h("a", { href: "#", onClick: function (e) { e.preventDefault(); c.nav(a.menu); }, style: { color: "#0f766e" } }, "Open") : null));
     }))) : null,
-    h(AdviesOpening, null),
-    heeftGegevens(m, "vermogen") ? h(Kaart, { titel: "Kerncijfers nu" }, h(KV, { rijen: [["Spaargeld (direct opneembaar)", eur(t0.sparen)], ["Totaal vrij vermogen", eur(t0.vrij)], ["Totaal vermogen", eur(t0.totaal)], ["Laagste spaargeld komende 12 maanden", eur(min12)]] })) : null,
-    (m.bronnen.length || m.potten.length) ? h(Kaart, { titel: "Netto huishoudinkomen per fase" }, h(FasenTabel, { m: m })) : null,
-    h(Kaart, { titel: "Basisgegevens" }, h(BasisGegevens, null), h(PeildatumVeld, null), h(GebruikSchakelaars, null), h(AowKaart, null)),
+    (algemeenKlaar && heeftGegevens(m, "vermogen")) ? h(Kaart, { titel: "Kerncijfers nu" }, h(KV, { rijen: [["Spaargeld (direct opneembaar)", eur(t0.sparen)], ["Totaal vrij vermogen", eur(t0.vrij)], ["Totaal vermogen", eur(t0.totaal)], ["Laagste spaargeld komende 12 maanden", eur(min12)]] })) : null,
+    algemeenKlaar ? h(Kaart, { titel: "Voortgang intake" },
+      h("p", null, "Intake: " + klaar + " van " + tot + " menu's voltooid"),
+      h("div", { className: "balk" }, h("i", { style: { width: (tot ? klaar / tot * 100 : 0) + "%" } })),
+      volgende ? h("div", { className: "rij", style: { marginTop: ".5rem" } }, h(Knop, { onClick: function () { c.nav(volgende.id); c.openIntake(volgende.id); }, naam: "intake-volgende-menu" }, "Verder met: " + volgende.naam)) : h("p", { className: "groen" }, "Alle intakes zijn voltooid.")) : null,
+    algemeenKlaar ? h(ActualiseerKaart, null) : null,
+    algemeenKlaar ? h(Kaart, { titel: "Cijfers bijwerken" }, h(CijfersKnop, null)) : null,
+    algemeenKlaar ? h(UitbreidenKaart, null) : null,
+    h(Kaart, { titel: "Basisgegevens" }, h("details", null, h("summary", { className: "klein" }, "Huishouden, geboortedatum en onderdelen aanpassen"), h(BasisGegevens, null), h(PeildatumVeld, null), h(AowKaart, null), h(WoningVelden, null), h(AutoVelden, null), h(GezinVelden, null), h(ProductenVelden, null)),
+      h("div", { className: "rij", style: { marginTop: ".4rem" } }, h(Knop, { soort: "sec", klein: true, onClick: function () { c.openIntake("dashboard"); }, naam: "intake-opnieuw" }, "Algemene intake opnieuw"))),
     h(GegevensKaart, null));
 }
 
@@ -73,7 +78,7 @@ function SchermInkomen() {
   var c = useC(), m = c.m, d0 = nuMaand(m);
   return h("div", null,
     h(IntakeKnop, { menu: "inkomen" }),
-    !m.bronnen.length ? h(LegeStaat, { menu: "inkomen", tekst: "Er zijn nog geen inkomensbronnen. Start de intake om loon, uitkeringen en pensioen in te vullen." }) : null,
+    !m.bronnen.length ? h(LegeStaat, { menu: "inkomen", tekst: "Er zijn nog geen inkomsten ingevuld. Start de intake om loon, uitkeringen, pensioen en toeslagen in te vullen." }) : null,
     m.personen.map(function (p) {
       var pm = persoonMaand(m, p.id, d0);
       return h(Kaart, { key: p.id, titel: p.naam },
@@ -82,9 +87,9 @@ function SchermInkomen() {
         pm.lijst.length ? h("div", { style: { marginTop: ".6rem" } }, h("h4", null, "Nu per maand"),
           h(Tabel, { kop: ["Bron", "Bruto", "Netto"], get: [1, 2], rijen: pm.lijst.map(function (x) { return [x.naam, eur(x.bruto), eur(x.netto)]; }).concat([{ klasse: "totaal", cellen: ["Totaal", eur(pm.bruto), eur(pm.netto)] }]) })) : null);
     }),
-    m.bronnen.length ? h(Kaart, { titel: "Werken of stoppen per jaar" }, h(WerkJarenTabel, null)) : null,
+    m.bronnen.some(function (b) { return b.soort === "loon"; }) ? h(Kaart, { titel: "Werken of stoppen per jaar" }, h(WerkJarenTabel, null)) : null,
     h(Kaart, { titel: "AOW" }, h(AowKaart, null)),
-    h(Kaart, { titel: "Parameters" }, h("p", { className: "klein" }, "Indexatie per bron stel je hierboven in. Het CPI-percentage (nu " + pct(m.inst.cpi, 1) + ") pas je aan bij Vaste lasten en dagelijkse uitgaven. Inkomen wordt per 1 januari geïndexeerd; vaste lasten per maand."),
+    h(Kaart, { titel: "Parameters" }, h("p", { className: "klein" }, "Indexatie per bron stel je hierboven in. Het CPI-percentage (nu " + pct(m.inst.cpi, 1) + ") wordt bijgehouden via 'Cijfers bijwerken' op het Dashboard. Inkomen wordt per 1 januari geïndexeerd; vaste lasten per maand."),
       h("p", { className: "klein" }, "Een bron telt voor hele maanden mee. Loon telt niet meer mee vanaf de maand van de AOW-datum; de AOW telt vanaf die maand wel mee.")));
 }
 
@@ -114,15 +119,15 @@ function SchermPensioen() {
   var hy = hypOp(m, m.peil);
   return h("div", null,
     h(IntakeKnop, { menu: "pensioen" }),
-    (!m.potten.length && !getal(m.hyp.bedrag)) ? h(LegeStaat, { menu: "pensioen", tekst: "Er zijn nog geen lijfrentes, pensioenpotten of hypotheek ingevuld." }) : null,
-    m.profiel.gebruik.pensioen ? h(Kaart, { titel: "Lijfrente en pensioenpotten" }, h(PottenEditor, null)) : h(Kaart, { titel: "Lijfrente en pensioenpotten" }, h("p", { className: "klein" }, "Je hebt aangegeven geen potten te hebben."), h(Knop, { soort: "sec", klein: true, onClick: function () { c.zetPad("profiel", ["gebruik", "pensioen"], true); } }, "Toch potten invullen")),
+    ((m.profiel.gebruik.pensioen || m.profiel.leef.woning === "koop") && !m.potten.length && !getal(m.hyp.bedrag)) ? h(LegeStaat, { menu: "pensioen", tekst: "Er zijn nog geen lijfrentes, pensioenpotten of hypotheek ingevuld." }) : null,
+    m.profiel.gebruik.pensioen ? h(Kaart, { titel: "Lijfrente en pensioenpotten" }, h(PottenEditor, null)) : h(Kaart, { titel: "Lijfrente en pensioenpotten" }, h("p", { className: "klein" }, "Je hebt aangegeven geen lijfrente of pensioenpotten te hebben die je zelf opneemt."), h(Knop, { soort: "sec", klein: true, onClick: function () { c.zetPad("profiel", ["gebruik", "pensioen"], true); c.openIntake("pensioen"); }, naam: "start-pensioen" }, "Lijfrente of pensioenpot toevoegen")),
     m.potten.length ? h(Kaart, { titel: "Netto-opbouw van het inkomen na de AOW" }, m.personen.map(function (p) {
       if (!p.aow) return h("p", { key: p.id, className: "klein" }, p.naam + ": geen AOW-datum bekend.");
       var d = plusMaanden(eerstVanMaand(p.aow), 1), pm = persoonMaand(m, p.id, d);
       return h("div", { key: p.id }, h("h4", null, p.naam + " vanaf " + fmtMaand(d)),
         h(Tabel, { kop: ["Bron", "Bruto", "Netto"], get: [1, 2], rijen: pm.lijst.map(function (x) { return [x.naam, eur(x.bruto), eur(x.netto)]; }).concat([{ klasse: "totaal", cellen: ["Totaal per maand", eur(pm.bruto), eur(pm.netto)] }]) }));
     }), h("p", { className: "klein" }, "Netto is een schatting met de fiscale tabel; zie Fiscaliteit & AOW voor de aannames.")) : null,
-    m.profiel.gebruik.hypotheek ? h(Kaart, { titel: "Hypotheek" }, h(HypotheekForm, null),
+    m.profiel.leef.woning === "koop" ? h(Kaart, { titel: "Hypotheek" }, h(HypotheekForm, null),
       getal(m.hyp.bedrag) > 0 ? h(KV, { rijen: [["Maandlast nu", eur(hy.maandlast)], ["Openstaand over 5 jaar", eur(hypOp(m, plusJaren(m.peil, 5)).saldo)], ["Maandlast na einde aflossing", geldigeDatum(m.hyp.aflosEinde) ? eur(hypOp(m, plusMaanden(geldigeDatum(m.hyp.aflosEinde), 1)).maandlast) : "–"]] }) : null) : null);
 }
 

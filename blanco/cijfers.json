@@ -1,0 +1,105 @@
+{
+ "versie": "2026-10-18",
+ "omschrijving": "Cijfers voor de Inkomensplanning-app. Bijwerken: pas dit bestand aan en publiceer het; de app haalt het op via de knop Cijfers bijwerken.",
+ "fiscaal": {
+  "2026": {
+   "status": "definitief",
+   "bron": "Belastingdienst, SVB (AOW per 1 juli 2026)",
+   "w": {
+    "schijf1_max": 38883,
+    "schijf2_max": 78426,
+    "tarief1": 35.75,
+    "tarief1_aow": 17.85,
+    "tarief2": 37.56,
+    "tarief3": 49.5,
+    "algemene_heffingskorting_max": 3115,
+    "ahk_afbouwgrens": 29736,
+    "ahk_afbouwpct": 6.398,
+    "ouderenkorting_max": 2067,
+    "ouderenkorting_afbouwgrens": 46002,
+    "ouderenkorting_afbouwpct": 15,
+    "ahk_na_aow_max": 1556,
+    "ahk_na_aow_afbouwpct": 3.195,
+    "arbeidskorting_max": 5685,
+    "arbeidskorting_afbouwgrens": 45592,
+    "arbeidskorting_afbouwpct": 6.51,
+    "zvw_laag_pct": 4.85,
+    "zvw_max_bijdrage_inkomen": 79409,
+    "max_jaaruitkering_tijdelijke_lijfrente_5_20jr": 27192,
+    "aow_bruto_gehuwd_pm": 1139.39,
+    "aow_vakantiegeld_gehuwd_pm": 74.85,
+    "aow_bruto_alleen_pm": 1662.16,
+    "aow_vakantiegeld_alleen_pm": 104.78,
+    "box3_tarief": 36,
+    "box3_vrij_pp": 59357,
+    "box3_sparen_pct": 1.28,
+    "box3_beleggen_pct": 6,
+    "box3_schuld_pct": 2.7
+   }
+  },
+  "2027": {
+   "status": "voorstel",
+   "bron": "Belastingplan 2027 (Rijksoverheid.nl)",
+   "w": {
+    "schijf1_max": 39247,
+    "schijf2_max": 78426,
+    "tarief1": 36.23,
+    "tarief1_aow": 18.33,
+    "tarief2": 38.16,
+    "tarief3": 49.5,
+    "algemene_heffingskorting_max": 3154,
+    "ahk_afbouwgrens": 30910,
+    "ahk_afbouwpct": 6.638,
+    "ouderenkorting_max": 1993,
+    "ouderenkorting_afbouwgrens": 46577,
+    "ouderenkorting_afbouwpct": 15,
+    "ahk_na_aow_max": 1596,
+    "ahk_na_aow_afbouwpct": 3.359,
+    "arbeidskorting_max": 5929,
+    "arbeidskorting_afbouwgrens": 47834,
+    "arbeidskorting_afbouwpct": 6.51,
+    "zvw_laag_pct": 4.85,
+    "zvw_max_bijdrage_inkomen": 79409,
+    "max_jaaruitkering_tijdelijke_lijfrente_5_20jr": 27192,
+    "aow_bruto_gehuwd_pm": 1139.39,
+    "aow_vakantiegeld_gehuwd_pm": 74.85,
+    "aow_bruto_alleen_pm": 1662.16,
+    "aow_vakantiegeld_alleen_pm": 104.78,
+    "box3_tarief": 36,
+    "box3_vrij_pp": 59357,
+    "box3_sparen_pct": 1.28,
+    "box3_beleggen_pct": 6,
+    "box3_schuld_pct": 2.7
+   }
+  }
+ },
+ "cpi": {
+  "maand": "2026-09",
+  "pct": 3.4,
+  "bron": "CBS, inflatie september 2026"
+ },
+ "rentes": {
+  "euribor12": 2.99,
+  "euriborStand": "2026-07-24",
+  "raisin6": 3.15,
+  "raisinStand": "2026-10-18",
+  "spaarrente": null,
+  "bron": "global-rates.com (Euribor), Raisin"
+ },
+ "markt": {
+  "datum": "2026-10-18",
+  "punten": [
+   "Rente: de ECB verhoogde op 10 september 2026 de depositorente met 0,25 procentpunt naar 2,50% (ingegaan op 16 september). In juli bleef de rente nog 2,25%. De ECB beslist per vergadering en legt zich niet vast. Bron: ECB.",
+   "Inflatie: 3,4% in september 2026 in Nederland (augustus 3,3%), vooral door duurdere brandstof. In de eurozone was de inflatie 3,8%. Sparen en defensief beleggen levert bij een rente rond 3% weinig reëel rendement op. Bron: CBS.",
+   "Obligaties: bij een stijgende rente dalen de koersen van obligatiefondsen. Fondsen met een korte looptijd reageren minder sterk dan fondsen met een lange looptijd.",
+   "Aandelen: koersen schommelen sterk en zijn niet te voorspellen. De stresstest hieronder laat zien wat een daling van 25% voor jouw portefeuille betekent.",
+   "Jouw controle: vul bij 'Marktbeeld' zelf de actuele stand in als je deze wilt bijhouden; de app kan geen koersen of rentes zelf ophalen."
+  ]
+ },
+ "fondsen": {
+  "IE00BF11F565": {
+   "rend": 3.82,
+   "datum": "2026-10-18"
+  }
+ }
+}

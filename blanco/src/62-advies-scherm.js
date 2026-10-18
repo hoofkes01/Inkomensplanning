@@ -46,7 +46,7 @@ function sluitVrijBeleggenAan(c, totaal) {
   var L = c.lijst("verm", "beleggingen"), vrij = L.items.filter(function (b) { return b.soort === "vrij"; });
   var doel = vrij.filter(function (b) { return b.id === c.S.advies.rekeningId; })[0] || vrij[0];
   if (doel) L.wijzig(doel.id, { waarde: Math.round(totaal) });
-  else { var id = nieuwId(); L.voeg({ id: id, naam: "Vrij beleggen", waarde: Math.round(totaal), soort: "vrij" }); c.zet("advies", { rekeningId: id }); }
+  else { var id = nieuwId(); L.voeg({ id: id, bank: "Vrij beleggen", naam: "Vrij beleggen", waarde: Math.round(totaal), soort: "vrij" }); c.zet("advies", { rekeningId: id }); }
 }
 function AdviesPortefeuille() {
   var c = useC(), a = c.S.advies;
@@ -137,12 +137,13 @@ function AdviesBestaand(p) {
 }
 function AdviesMarkt() {
   var c = useC(), mk = c.S.advies.markt || { datum: "", punten: [] };
-  var gebruikt = mk.punten.length ? mk : ADVIES_MARKT_STANDAARD;
+  var ext = (c.S.cijfers || {}).markt;
+  var gebruikt = mk.punten.length ? mk : (ext && ext.punten && ext.punten.length ? ext : ADVIES_MARKT_STANDAARD);
   var oud = ouderDan(gebruikt.datum, 30, c.m.nu);
   var L = c.lijst("advies", "markt");
   function z(patch) { c.zet("advies", { markt: Object.assign({}, gebruikt, patch) }); }
   return h("div", null,
-    h("p", { className: "klein" }, "Marktbeeld op " + fmtDatum(gebruikt.datum) + (mk.punten.length ? " (door jou bijgewerkt)" : " (meegeleverd met de app)") + ". Geen voorspelling."),
+    h("p", { className: "klein" }, "Marktbeeld op " + fmtDatum(gebruikt.datum) + (mk.punten.length ? " (door jou bijgewerkt)" : (ext && ext.punten && ext.punten.length ? " (via Cijfers bijwerken)" : " (meegeleverd met de app)")) + ". Geen voorspelling."),
     oud ? h("p", { className: "oranje klein" }, "Het marktbeeld is ouder dan een maand. Werk het bij of vraag om een nieuwe versie van de app.") : null,
     h("ul", { className: "lijst" }, gebruikt.punten.map(function (t, i) { return h("li", { key: i }, t); })),
     h("details", null, h("summary", { className: "klein" }, "Marktbeeld zelf aanpassen"),
@@ -176,7 +177,7 @@ function SchermAdvies() {
   return h("div", null,
     h(IntakeKnop, { menu: "advies" }),
     h("div", { className: "tabs", role: "tablist" }, TABS.map(function (t) { return h("button", { key: t[0], type: "button", className: tab === t[0] ? "actief" : "", onClick: function () { setTab(t[0]); }, "data-tab": t[0] }, t[1]); })),
-    tab === "uitgangspunten" ? h("div", null, h(Kaart, { titel: "Doelverdeling en drempel" }, h(AdviesDoelVelden, null)), h(Kaart, { titel: "Voorkeuren" }, h(AdviesVoorkeurVelden, null)), h(Kaart, { titel: "Rente-referenties" }, h(AdviesRenteVelden, null)),
+    tab === "uitgangspunten" ? h("div", null, h(Kaart, { titel: "Doelverdeling en drempel" }, h(AdviesDoelVelden, null)), h(Kaart, { titel: "Voorkeuren" }, h(AdviesVoorkeurVelden, null)), h(Kaart, { titel: "Rente-referenties (Raisin, Euribor)" }, h("p", { className: "klein" }, "Raisin 6 maanden: " + pct(adviesParams(m).raisin, 2) + " (stand " + (m.advies.raisinStand ? fmtDatum(m.advies.raisinStand) : "niet bijgewerkt") + "). Euribor 12 maanden: " + pct(adviesParams(m).euribor, 2) + "."), h(CijfersKnop, null), h("details", null, h("summary", { className: "klein" }, "Handmatig aanpassen"), h(AdviesRenteVelden, null))),
       S ? h(Kaart, { titel: "Samenvatting", soort: "goed" }, S.regels.map(function (r, i) { return h("p", { key: i }, r); })) : null) : null,
     tab === "bijbeleggen" && A ? h(Kaart, { titel: "Advies bijbeleggen" }, h(AdviesBijbeleggen, { m: m, A: A })) : null,
     tab === "bestaand" && A ? h(Kaart, { titel: "Bestaande portefeuille" }, h(AdviesBestaand, { m: m, A: A }), A.waarnemingen.length ? h("div", null, h("h4", { style: { marginTop: ".6rem" } }, "Waarnemingen"), h("ul", { className: "lijst" }, A.waarnemingen.map(function (t, i) { return h("li", { key: i }, t); }))) : null) : null,

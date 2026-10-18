@@ -7,90 +7,211 @@ function MaandVeld(p) {
 function datumFout(w, label) { return w && !geldigeDatum(w) ? label + ": datum is niet geldig." : null; }
 function nietNeg(w, label) { return w !== "" && w != null && getal(w) < 0 ? label + ": mag niet negatief zijn." : null; }
 function leeg(a) { return a.filter(function (x) { return x; }); }
+function maakLabel(m, pid) { return persoonVan(m, pid).naam; }
 
-/* ----- Basisgegevens ----- */
-function BasisGegevens() {
-  var c = useC(), p = c.S.profiel;
-  function z(patch) { c.zet("profiel", patch); }
+/* ----- Huishouden en persoonlijke situatie (algemene intake) ----- */
+function zetHuishouden(c, type) {
+  var lab = labelsVoorType(type);
+  c.zet("profiel", { type: type, partner: lab.length === 2, naamA: lab[0], naamB: lab[1] || "Persoon B" });
+}
+function HuishoudenKeuze() {
+  var c = useC(), p = c.S.profiel, rn = useState(function () { return "hh" + nieuwId(); })[0];
   return h("div", null,
-    h(Vink, { label: "Ik plan voor twee personen (met partner)", value: p.partner, onChange: function (v) { z({ partner: v }); } }),
-    h("div", { className: "raster" },
-      h(TekstVeld, { label: "Naam of aanduiding persoon A", value: p.naamA, onChange: function (v) { z({ naamA: v }); }, naam: "naamA" }),
-      p.partner ? h(TekstVeld, { label: "Naam of aanduiding persoon B", value: p.naamB, onChange: function (v) { z({ naamB: v }); }, naam: "naamB" }) : null),
-    h("div", { className: "raster" },
-      h(DatumVeld, { label: "Geboortedatum " + (p.naamA || "A"), value: p.geboorteA, onChange: function (v) { z({ geboorteA: v }); }, naam: "geboorteA" }),
-      p.partner ? h(DatumVeld, { label: "Geboortedatum " + (p.naamB || "B"), value: p.geboorteB, onChange: function (v) { z({ geboorteB: v }); }, naam: "geboorteB" }) : null));
+    h("div", { role: "radiogroup", "aria-label": "Samenstelling huishouden" }, HUISHOUDENS.map(function (x) {
+      return h("label", { key: x[0], className: "vink", style: { padding: ".35rem .5rem", border: "1px solid #e2e8f0", borderRadius: ".6rem", background: p.type === x[0] ? "#f1f5f9" : "#fff" } },
+        h("input", { type: "radio", name: rn, checked: p.type === x[0], onChange: function () { zetHuishouden(c, x[0]); }, "data-huishouden": x[0] }), h("span", null, x[1]));
+    })),
+    p.partner ? h(Vink, { label: "We zijn gehuwd of wonen samen als partners (fiscale partners)", hint: "Dit bepaalt onder andere de hoogte van de AOW. Vink uit als jullie een huis delen zonder partners te zijn.", value: p.fiscalePartners !== false, onChange: function (v) { c.zet("profiel", { fiscalePartners: v }); } }) : null,
+    h(Uitleg, null, "Je kunt de planning voor jezelf alleen maken, of samen met een tweede persoon. Elke volwassene kan een eigen planning maken."));
+}
+function GeboorteVelden() {
+  var c = useC(), p = c.S.profiel, m = c.m;
+  return h("div", { className: "raster" },
+    h(DatumVeld, { label: "Geboortedatum " + m.personen[0].naam, value: p.geboorteA, onChange: function (v) { c.zet("profiel", { geboorteA: v }); }, naam: "geboorteA" }),
+    p.partner ? h(DatumVeld, { label: "Geboortedatum " + (m.personen[1] ? m.personen[1].naam : "persoon 2"), value: p.geboorteB, onChange: function (v) { c.zet("profiel", { geboorteB: v }); }, naam: "geboorteB" }) : null);
+}
+function BasisGegevens() { return h("div", null, h(HuishoudenKeuze, null), h(GeboorteVelden, null)); }
+function AnoniemInfo() {
+  var c = useC();
+  return h("div", null,
+    h("div", { className: "kaart info" },
+      h("b", null, "Deze app is anoniem"),
+      h("ul", { className: "lijst" },
+        h("li", null, "Geen naam, BSN, adres, postcode, telefoonnummer of e-mailadres."),
+        h("li", null, "Geen rekeningnummers (IBAN). Alleen de naam van de bank en de soort rekening."),
+        h("li", null, "Personen heten 'Man', 'Vrouw', 'Man 1', 'Vrouw 2' enzovoort. Alle lasten hebben een neutrale omschrijving."),
+        h("li", null, "Alles blijft op dit apparaat, in deze browser. Er gaat niets naar een server."))),
+    h(Vink, { label: "Ik begrijp dit en vul geen persoonsgegevens in", value: c.S.profiel.akkoordAnoniem, onChange: function (v) { c.zet("profiel", { akkoordAnoniem: v }); } }),
+    h(Uitleg, null, "De app weigert tekst die lijkt op een e-mailadres, postcode, telefoonnummer, rekeningnummer of adres."));
+}
+function WerkStatusVelden() {
+  var c = useC(), m = c.m, w = c.S.profiel.werk || { A: [], B: [] };
+  return h("div", null, m.personen.map(function (p) {
+    var sel = w[p.id] || [];
+    return h("div", { key: p.id, className: "kaart", style: { background: "#f8fafc" } },
+      h("b", null, p.naam), h(Uitleg, null, "Kies alles wat past; de app laat daarna alleen daarbij horende onderdelen zien."),
+      WERKSTATUS.map(function (x) {
+        return h(Vink, { key: x[0], label: x[1], value: sel.indexOf(x[0]) >= 0, onChange: function (v) {
+          var nieuw = sel.filter(function (y) { return y !== x[0]; });
+          if (v) { if (x[0] === "geen") nieuw = ["geen"]; else nieuw = nieuw.filter(function (y) { return y !== "geen"; }).concat([x[0]]); }
+          c.zetPad("profiel", ["werk", p.id], nieuw);
+        } });
+      }));
+  }));
+}
+function WoningVelden() {
+  var c = useC(), l = c.S.profiel.leef || {}, rn = useState(function () { return "wn" + nieuwId(); })[0];
+  function z(patch) { c.zetPad("profiel", ["leef"], Object.assign({}, l, patch)); }
+  function kies(w) { z({ woning: w }); c.zetPad("profiel", ["gebruik", "hypotheek"], w === "koop"); }
+  var opties = [["huur", "Ik huur een woning"], ["koop", "Ik woon in een koopwoning (eigen huis)"], ["geen", "Ik heb geen eigen woning (inwonend, kamer of anders)"]];
+  return h("div", null,
+    opties.map(function (x) {
+      return h("label", { key: x[0], className: "vink", style: { padding: ".35rem .5rem", border: "1px solid #e2e8f0", borderRadius: ".6rem", background: l.woning === x[0] ? "#f1f5f9" : "#fff" } },
+        h("input", { type: "radio", name: rn, checked: l.woning === x[0], onChange: function () { kies(x[0]); }, "data-woning": x[0] }), h("span", null, x[1]));
+    }),
+    l.woning === "koop" ? h("div", null, h(BedragVeld, { label: "WOZ-waarde van de woning", hint: "Staat op je WOZ-beschikking. Telt mee in je totale vermogen, niet in je vrije vermogen.", value: l.woz, onChange: function (v) { z({ woz: v }); }, naam: "woz" }),
+      h(Uitleg, null, "Bij een koopwoning vraagt de app straks naar je hypotheek. De hypotheekrenteaftrek zit niet in de berekening: vul bij je inkomen het netto in dat je werkelijk ontvangt.")) : null,
+    l.woning === "huur" ? h(Uitleg, null, "Bij een huurwoning vraagt de app naar je huur en servicekosten, en of je huurtoeslag ontvangt.") : null,
+    l.woning === "geen" ? h(Uitleg, null, "Je kunt later een bijdrage voor woonkosten opgeven als je die betaalt.") : null);
+}
+function AutoVelden() {
+  var c = useC(), l = c.S.profiel.leef || {}, rn = useState(function () { return "au" + nieuwId(); })[0];
+  function z(patch) { c.zetPad("profiel", ["leef"], Object.assign({}, l, patch)); }
+  var opties = [["eigen", "Eigen auto"], ["lease", "Leaseauto"], ["beide", "Eigen auto en leaseauto"], ["geen", "Geen auto"]];
+  return h("div", null, opties.map(function (x) {
+    return h("label", { key: x[0], className: "vink", style: { padding: ".35rem .5rem", border: "1px solid #e2e8f0", borderRadius: ".6rem", background: l.auto === x[0] ? "#f1f5f9" : "#fff" } },
+      h("input", { type: "radio", name: rn, checked: l.auto === x[0], onChange: function () { z({ auto: x[0] }); }, "data-auto": x[0] }), h("span", null, x[1]));
+  }));
+}
+function GezinVelden() {
+  var c = useC(), l = c.S.profiel.leef || {};
+  function z(patch) { c.zetPad("profiel", ["leef"], Object.assign({}, l, patch)); }
+  return h("div", null,
+    h(BedragVeld, { label: "Aantal kinderen dat (deels) van je afhankelijk is", hint: "0 als er geen zijn. Kinderen die thuis wonen of voor wie je betaalt.", value: l.kinderen, onChange: function (v) { z({ kinderen: Math.max(0, Math.round(getal(v))) }); }, naam: "kinderen", max: 15 }),
+    getal(l.kinderen) > 0 ? h("div", null,
+      h(Vink, { label: "Kinderopvang of buitenschoolse opvang", value: !!l.opvang, onChange: function (v) { z({ opvang: v }); } }),
+      h(Vink, { label: "Een of meer kinderen studeren", value: !!l.studerend, onChange: function (v) { z({ studerend: v }); } })) : null,
+    h(Vink, { label: "We hebben een huisdier", value: !!l.huisdier, onChange: function (v) { z({ huisdier: v }); } }));
+}
+// Welke onderdelen wil je gebruiken? Niet gekozen onderdelen verdwijnen uit beeld en zijn later toe te voegen.
+function ProductenVelden() {
+  var c = useC(), g = c.S.profiel.gebruik, hyp = c.S.profiel.leef && c.S.profiel.leef.woning === "koop";
+  function z(k, v) { c.zetPad("profiel", ["gebruik", k], v); }
+  return h("div", null,
+    h(Uitleg, null, "Spaargeld heeft iedereen. Kies hieronder wat voor jou van toepassing is. Wat je niet kiest, zie je niet. Je kunt het later altijd toevoegen."),
+    h(Vink, { label: "Ik heb deposito's (of wil daarmee beginnen)", value: g.deposito, onChange: function (v) { z("deposito", v); } }),
+    h(Vink, { label: "Ik heb beleggingen (of wil daarmee beginnen)", value: g.beleggen, onChange: function (v) { z("beleggen", v); } }),
+    h(Vink, { label: "Ik heb een lijfrente of pensioenpot die ik zelf opneem", value: g.pensioen, onChange: function (v) { z("pensioen", v); } }),
+    h(Vink, { label: "Ik heb een pot die mijn inkomen tot de AOW aanvult", value: g.aanvulling, onChange: function (v) { z("aanvulling", v); } }),
+    hyp ? h(Uitleg, null, "Hypotheek: je hebt een koopwoning, dus de app vraagt later naar je hypotheek.") : null);
+}
+function GebruikSchakelaars() { return h(ProductenVelden, null); }
+function UitbreidenKaart() {
+  var c = useC(), g = c.S.profiel.gebruik;
+  var knoppen = [["deposito", "Beginnen met deposito's", "vermogen"], ["beleggen", "Beginnen met beleggen", "advies"], ["aanvulling", "Inkomensaanvulling toevoegen", "aanvulling"], ["pensioen", "Lijfrente of pensioenpot toevoegen", "pensioen"]].filter(function (x) { return !g[x[0]]; });
+  if (!knoppen.length) return null;
+  return h(Kaart, { titel: "Uitbreiden" }, h(Uitleg, null, "Iets dat nu niet bij je past, maar waar je mee wilt beginnen? Zet het hier aan; de app stelt dan een paar vragen."),
+    h("div", { className: "rij" }, knoppen.map(function (x) {
+      return h(Knop, { key: x[0], soort: "sec", klein: true, naam: "start-" + x[0], onClick: function () { c.zetPad("profiel", ["gebruik", x[0]], true); c.nav(x[2]); c.openIntake(x[2]); } }, x[1]);
+    })));
 }
 function AowKaart() {
   var c = useC(), p = c.S.profiel, m = c.m;
-  function rij(pid, naam, geb, aowKey) {
+  function rij(i, geb, aowKey) {
+    var pers = m.personen[i]; if (!pers) return null;
     var ber = aowDatumBerekend(geb), tekst = aowLeeftijdTekst(geb), status = aowStatusTekst(geb, m.nu);
-    return h("div", { key: pid, className: "kaart", style: { background: "#f8fafc" } },
-      h("b", null, naam),
+    return h("div", { key: i, className: "kaart", style: { background: "#f8fafc" } },
+      h("b", null, pers.naam),
       geb ? h("p", { className: "klein" }, "AOW-leeftijd " + tekst + ": AOW-datum " + fmtDatum(ber) + ". " + status) : h("p", { className: "klein" }, "Vul eerst de geboortedatum in."),
-      h(DatumVeld, { label: "AOW-datum aanpassen (leeg = berekende datum)", value: p[aowKey], onChange: function (v) { c.zet("profiel", (function () { var o = {}; o[aowKey] = v; return o; })()); }, naam: aowKey }));
+      h(DatumVeld, { label: "AOW-datum aanpassen (leeg = berekende datum)", value: p[aowKey], onChange: function (v) { var o = {}; o[aowKey] = v; c.zet("profiel", o); }, naam: aowKey }));
   }
-  return h("div", null, rij("A", p.naamA || "Persoon A", p.geboorteA, "aowA"), p.partner ? rij("B", p.naamB || "Persoon B", p.geboorteB, "aowB") : null);
-}
-function GebruikSchakelaars() {
-  var c = useC(), g = c.S.profiel.gebruik;
-  function z(k, v) { c.zetPad("profiel", ["gebruik", k], v); }
-  return h("div", null,
-    h(Vink, { label: "Ik heb een hypotheek", value: g.hypotheek, onChange: function (v) { z("hypotheek", v); } }),
-    h(Vink, { label: "Ik heb deposito's", value: g.deposito, onChange: function (v) { z("deposito", v); } }),
-    h(Vink, { label: "Ik heb beleggingen", value: g.beleggen, onChange: function (v) { z("beleggen", v); } }),
-    h(Vink, { label: "Ik heb lijfrente of pensioenpotten die ik zelf opneem", value: g.pensioen, onChange: function (v) { z("pensioen", v); } }),
-    h(Vink, { label: "Ik heb een pot die mijn inkomen tot de AOW aanvult", value: g.aanvulling, onChange: function (v) { z("aanvulling", v); } }));
+  return h("div", null, rij(0, p.geboorteA, "aowA"), p.partner ? rij(1, p.geboorteB, "aowB") : null);
 }
 function PeildatumVeld() {
   var c = useC();
   return h(DatumVeld, { label: "Peildatum (leeg = vandaag)", hint: "Alle bedragen die je invult gelden op deze datum. Laat leeg om altijd met vandaag te rekenen.", value: c.S.profiel.peildatum, onChange: function (v) { c.zet("profiel", { peildatum: v }); }, naam: "peildatum" });
 }
+function foutenAlgemeen(c) {
+  var p = c.S.profiel, uit = [], nu = c.m.nu;
+  if (!p.type) uit.push("Kies de samenstelling van je huishouden.");
+  [["geboorteA", c.m.personen[0].naam]].concat(p.partner ? [["geboorteB", c.m.personen[1].naam]] : []).forEach(function (x) {
+    var d = geldigeDatum(p[x[0]]);
+    if (!d) uit.push("Vul de geboortedatum van " + x[1] + " in. Die is nodig voor de AOW-datum.");
+    else if (d > nu) uit.push("De geboortedatum van " + x[1] + " ligt in de toekomst.");
+    else if (leeftijdJaren(d, nu) < 18) uit.push(x[1] + " is jonger dan 18. De app is voor volwassenen.");
+    else if (leeftijdJaren(d, nu) > 110) uit.push("Controleer de geboortedatum van " + x[1] + ".");
+  });
+  return uit;
+}
 
-/* ----- Inkomensbronnen ----- */
-function nieuweBron(pid) { return { id: nieuwId(), persoon: pid, naam: "", soort: "loon", bruto: "", netto: "", start: "", einde: "", werktijd: 100, index: "cpi", indexPct: "", kortingInNetto: true, wijzigDatum: "", wijzigBruto: "", wijzigNetto: "" }; }
+/* ----- Inkomensbronnen: vaste omschrijvingen ----- */
+function nieuweBron(pid, cat) {
+  var vrij = cat.soort === "toeslag";
+  return { id: nieuwId(), persoon: pid, code: cat.code, naam: cat.code === "overig" ? "" : cat.label, soort: cat.soort, bruto: "", netto: "", freq: cat.freq, eersteMaand: 1, start: "", einde: "", werktijd: 100, index: vrij ? "geen" : "cpi", indexPct: "", kortingInNetto: true, wijzigDatum: "", wijzigBruto: "", wijzigNetto: "" };
+}
 function foutenBron(b) {
-  return leeg([!b.naam ? "Geef elke inkomensbron een naam." : null, nietNeg(b.bruto, (b.naam || "Bron") + " bruto"), nietNeg(b.netto, (b.naam || "Bron") + " netto"),
-    (b.bruto === "" && b.netto === "") ? (b.naam || "Een bron") + ": vul bruto of netto in." : null,
-    datumFout(b.start, (b.naam || "Bron") + " start"), datumFout(b.einde, (b.naam || "Bron") + " einde"),
-    (geldigeDatum(b.start) && geldigeDatum(b.einde) && geldigeDatum(b.einde) <= geldigeDatum(b.start)) ? (b.naam || "Bron") + ": de einddatum moet na de startdatum liggen." : null,
-    (b.werktijd !== "" && (getal(b.werktijd) <= 0 || getal(b.werktijd) > 100)) ? (b.naam || "Bron") + ": werktijd moet tussen 1 en 100 procent liggen." : null]);
+  var n = b.naam || "Inkomen";
+  if (b.soort === "toeslag") return leeg([b.netto === "" || getal(b.netto) <= 0 ? n + ": vul het bedrag per betaling in." : null, datumFout(b.start, n + " start"), datumFout(b.einde, n + " einde"), (geldigeDatum(b.start) && geldigeDatum(b.einde) && geldigeDatum(b.einde) <= geldigeDatum(b.start)) ? n + ": de einddatum moet na de startdatum liggen." : null]);
+  return leeg([!b.naam ? "Geef elk inkomen een omschrijving." : null, nietNeg(b.bruto, n + " bruto"), nietNeg(b.netto, n + " netto"),
+    (b.bruto === "" && b.netto === "") ? n + ": vul bruto of netto in." : null,
+    datumFout(b.start, n + " start"), datumFout(b.einde, n + " einde"),
+    (geldigeDatum(b.start) && geldigeDatum(b.einde) && geldigeDatum(b.einde) <= geldigeDatum(b.start)) ? n + ": de einddatum moet na de startdatum liggen." : null,
+    (b.werktijd !== "" && b.soort === "loon" && (getal(b.werktijd) <= 0 || getal(b.werktijd) > 100)) ? n + ": werktijd moet tussen 1 en 100 procent liggen." : null]);
+}
+function bronKeuzes(c, pid) {
+  var L = lijstL(c.S.profiel), w = (c.S.profiel.werk || {})[pid] || [];
+  return BRON_CAT.filter(function (cat) {
+    if (cat.soort === "toeslag" && cat.code !== "studiefin" && pid !== "A") return false;
+    return w.length ? cat.wanneer(L, w) : (cat.soort === "toeslag" ? cat.wanneer(L, w) : true);
+  });
 }
 function BronnenEditor(p) {
-  var c = useC(), L = c.lijst("bronnen");
+  var c = useC(), L = c.lijst("bronnen"), m = c.m;
   var items = L.items.filter(function (b) { return b.persoon === p.persoon; });
-  return h(LijstEditor, {
-    naam: "bron", items: items, leeg: "Nog geen inkomensbronnen voor deze persoon.", voegTekst: "Inkomensbron toevoegen",
-    kop: function (b) { return (b.naam || "Nieuwe bron") + " · " + SOORT_NAAM[b.soort]; },
-    onVoeg: function () { L.voeg(nieuweBron(p.persoon)); }, onWis: L.wis, onWijzig: L.wijzig,
-    velden: function (b, w) {
-      return h("div", null,
-        h("div", { className: "raster" },
-          h(TekstVeld, { label: "Naam", value: b.naam, onChange: function (v) { w({ naam: v }); }, naam: "bron-naam", placeholder: "bijv. salaris, pensioen" }),
-          h(KeuzeVeld, { label: "Soort", value: b.soort, opties: SOORTEN_BRON, onChange: function (v) { w({ soort: v }); }, naam: "bron-soort" })),
-        h("div", { className: "raster" },
-          h(BedragVeld, { label: "Bruto per maand" + (b.soort === "loon" ? " (bij 100% werktijd)" : ""), value: b.bruto, onChange: function (v) { w({ bruto: v }); }, naam: "bron-bruto" }),
-          h(BedragVeld, { label: "Netto per maand", hint: "Leeg laten: de app schat het netto uit het bruto.", value: b.netto, onChange: function (v) { w({ netto: v }); }, naam: "bron-netto" })),
-        b.netto !== "" ? h(Vink, { label: "Dit netto bedrag is al na heffingskorting", hint: "Vink uit als het netto zonder heffingskorting is; de app telt dan de korting er één keer bij.", value: b.kortingInNetto !== false, onChange: function (v) { w({ kortingInNetto: v }); } }) : null,
+  var keuzes = bronKeuzes(c, p.persoon);
+  var s = useState(""), gekozen = s[0], setGekozen = s[1];
+  return h("div", null,
+    items.length === 0 ? h("p", { className: "klein" }, "Nog geen inkomsten voor deze persoon.") : null,
+    items.map(function (b) {
+      var w = function (patch) { L.wijzig(b.id, patch); };
+      var vrij = b.soort === "toeslag";
+      return h("div", { key: b.id, className: "kaart", style: { background: "#f8fafc" }, "data-item": "bron" },
+        h("div", { className: "rij tussen", style: { marginBottom: ".4rem" } }, h("b", null, b.naam || "Overig inkomen"), h(Knop, { soort: "gevaar", klein: true, onClick: function () { if (window.confirm("Weet je zeker dat je dit wilt verwijderen?")) L.wis(b.id); } }, "Verwijder")),
+        b.code === "overig" ? h(TekstVeld, { label: "Eigen omschrijving (zonder namen of nummers)", value: b.naam, onChange: function (v) { w({ naam: v }); }, naam: "bron-naam" }) : null,
+        vrij ? h("div", null,
+          h("div", { className: "raster" }, h(BedragVeld, { label: "Bedrag per betaling (netto)", value: b.netto, onChange: function (v) { w({ netto: v, bruto: "" }); }, naam: "bron-netto" }),
+            h(KeuzeVeld, { label: "Hoe vaak ontvangen", value: b.freq || "maand", opties: FREQ_KEUZES, onChange: function (v) { w({ freq: v }); } })),
+          (b.freq && b.freq !== "maand") ? h(KeuzeVeld, { label: "Eerste betaling in", value: String(b.eersteMaand || 1), opties: MAANDEN.map(function (n, i) { return [String(i + 1), n]; }), onChange: function (v) { w({ eersteMaand: Number(v) }); } }) : null,
+          h(Uitleg, null, "Belastingvrij: het bedrag telt volledig mee. Pas het bedrag aan als de Belastingdienst of DUO een nieuw bedrag doorgeeft."))
+        : h("div", null,
+          h("div", { className: "raster" },
+            h(BedragVeld, { label: "Bruto per maand" + (b.soort === "loon" ? " (bij 100% werktijd)" : ""), value: b.bruto, onChange: function (v) { w({ bruto: v }); }, naam: "bron-bruto" }),
+            h(BedragVeld, { label: "Netto per maand", hint: "Leeg laten: de app schat het netto uit het bruto.", value: b.netto, onChange: function (v) { w({ netto: v }); }, naam: "bron-netto" })),
+          b.netto !== "" ? h(Vink, { label: "Dit netto bedrag is al na heffingskorting", hint: "Vink uit als het netto zonder heffingskorting is; de app telt dan de korting er één keer bij.", value: b.kortingInNetto !== false, onChange: function (v) { w({ kortingInNetto: v }); } }) : null,
+          b.soort === "loon" ? h(BedragVeld, { label: "Werktijd (%)", hint: "100 = het ingevulde bedrag; 67 = tweederde.", value: b.werktijd, pct: true, onChange: function (v) { w({ werktijd: v }); }, naam: "bron-werktijd" }) : null),
         h("div", { className: "raster" },
           h(DatumVeld, { label: "Start (leeg = loopt al)", value: b.start, onChange: function (v) { w({ start: v }); }, naam: "bron-start" }),
-          h(DatumVeld, { label: "Einde (vanaf deze dag geen inkomen meer)", hint: "Leeg = loopt door. Een einddatum op de 1e van een maand telt die maand niet meer mee.", value: b.einde, onChange: function (v) { w({ einde: v }); }, naam: "bron-einde" })),
-        b.soort === "loon" ? h(BedragVeld, { label: "Werktijd (%)", hint: "100 = het ingevulde bedrag; 67 = tweederde.", value: b.werktijd, pct: true, onChange: function (v) { w({ werktijd: v }); }, naam: "bron-werktijd" }) : null,
+          h(DatumVeld, { label: "Einde (vanaf deze dag geen inkomen meer)", hint: "Leeg = loopt door.", value: b.einde, onChange: function (v) { w({ einde: v }); }, naam: "bron-einde" })),
         h("div", { className: "raster" },
           h(KeuzeVeld, { label: "Indexatie per 1 januari", value: b.index, opties: INDEX_KEUZES, onChange: function (v) { w({ index: v }); }, naam: "bron-index" }),
           b.index === "vast" ? h(BedragVeld, { label: "Percentage per jaar", value: b.indexPct, pct: true, onChange: function (v) { w({ indexPct: v }); }, naam: "bron-indexpct" }) : null),
-        h("details", null, h("summary", { className: "klein" }, "Eenmalige wijziging (bijv. nieuwe pensioenregels)"),
+        !vrij ? h("details", null, h("summary", { className: "klein" }, "Eenmalige wijziging (bijv. nieuwe pensioenregels)"),
           h("div", { className: "raster3", style: { marginTop: ".4rem" } },
             h(DatumVeld, { label: "Vanaf datum", value: b.wijzigDatum, onChange: function (v) { w({ wijzigDatum: v }); } }),
             h(BedragVeld, { label: "Nieuw bruto", value: b.wijzigBruto, onChange: function (v) { w({ wijzigBruto: v }); } }),
             h(BedragVeld, { label: "Nieuw netto", value: b.wijzigNetto, onChange: function (v) { w({ wijzigNetto: v }); } })),
-          h(Uitleg, null, "Bedragen in prijzen van de peildatum; indexatie komt er daarna nog bovenop.")));
-    }
-  });
+          h(Uitleg, null, "Bedragen in prijzen van de peildatum; indexatie komt er daarna nog bovenop.")) : null);
+    }),
+    h("div", { className: "rij" },
+      h("div", { style: { flex: 1, minWidth: "12rem" } }, h(KeuzeVeld, { label: "Inkomen toevoegen", value: gekozen, opties: [["", "Kies een soort inkomen"]].concat(keuzes.map(function (k) { return [k.code, k.label]; })), onChange: setGekozen, naam: "bron-soort-kies" })),
+      h(Knop, { soort: "sec", disabled: !gekozen, onClick: function () { var cat = bronCat(gekozen); if (cat) { L.voeg(nieuweBron(p.persoon, cat)); setGekozen(""); } }, naam: "voeg-bron" }, "+ Toevoegen")));
 }
 function WerkJarenTabel() {
   var c = useC(), m = c.m;
-  return h("div", null, m.personen.map(function (p) {
+  var heeftLoon = function (pid) { return m.bronnen.some(function (b) { return b.persoon === pid && b.soort === "loon"; }); };
+  var lijst = m.personen.filter(function (p) { return heeftLoon(p.id); });
+  if (!lijst.length) return h("p", { className: "klein" }, "Niemand heeft loon of winst uit onderneming ingevuld, dus hier valt niets te kiezen.");
+  return h("div", null, lijst.map(function (p) {
     var jaren = [];
     var eind = p.aow ? p.aow.getFullYear() : m.peil.getFullYear() + 10;
     for (var j = m.peil.getFullYear(); j <= eind; j++) jaren.push(j);
@@ -106,11 +227,14 @@ function WerkJarenTabel() {
 }
 
 /* ----- Lijfrente en pensioenpotten ----- */
-function nieuwePot(pid, m) { return { id: nieuwId(), persoon: pid, naam: "", soort: "lijfrente", saldo: "", geblokkeerdTot: "", start: "", rendVoor: m.inst.rendPot, rendTijdens: m.inst.rendPotTijdens, looptijd: 20, inleg: "", inlegTot: "" }; }
+var POT_SOORTEN = [["lijfrente", "Lijfrente"], ["pensioen", "Pensioenpot"]];
+function nieuwePot(pid, m) { return { id: nieuwId(), persoon: pid, naam: "Lijfrente", aanbieder: "", soort: "lijfrente", saldo: "", geblokkeerdTot: "", start: "", rendVoor: m.inst.rendPot, rendTijdens: m.inst.rendPotTijdens, looptijd: 20, inleg: "", inlegTot: "" }; }
+function potNaam(soort, aanbieder) { return (soort === "pensioen" ? "Pensioenpot" : "Lijfrente") + (aanbieder ? " (" + aanbieder + ")" : ""); }
 function foutenPot(b) {
-  return leeg([!b.naam ? "Geef elke pensioenpot een naam." : null, nietNeg(b.saldo, (b.naam || "Pot") + " saldo"), nietNeg(b.inleg, (b.naam || "Pot") + " inleg"),
-    datumFout(b.geblokkeerdTot, (b.naam || "Pot") + " geblokkeerd tot"), datumFout(b.start, (b.naam || "Pot") + " start uitkering"), datumFout(b.inlegTot, (b.naam || "Pot") + " inleg tot"),
-    getal(b.looptijd) <= 0 ? (b.naam || "Pot") + ": vul een looptijd van de uitkering in (jaren)." : null]);
+  var n = b.naam || "Pot";
+  return leeg([nietNeg(b.saldo, n + " saldo"), b.saldo === "" ? n + ": vul het saldo in." : null, nietNeg(b.inleg, n + " inleg"),
+    datumFout(b.geblokkeerdTot, n + " geblokkeerd tot"), datumFout(b.start, n + " start uitkering"), datumFout(b.inlegTot, n + " inleg tot"),
+    getal(b.looptijd) <= 0 ? n + ": vul een looptijd van de uitkering in (jaren)." : null]);
 }
 function PottenEditor() {
   var c = useC(), L = c.lijst("potten"), m = c.m;
@@ -122,10 +246,10 @@ function PottenEditor() {
       var pl = potPlan(m, b);
       return h("div", null,
         h("div", { className: "raster" },
-          h(TekstVeld, { label: "Naam", value: b.naam, onChange: function (v) { w({ naam: v }); }, naam: "pot-naam" }),
+          h(KeuzeVeld, { label: "Soort", value: b.soort, opties: POT_SOORTEN, onChange: function (v) { w({ soort: v, naam: potNaam(v, b.aanbieder) }); } }),
           h(KeuzeVeld, { label: "Van", value: b.persoon, opties: persOpties(m), onChange: function (v) { w({ persoon: v }); } })),
         h("div", { className: "raster" },
-          h(KeuzeVeld, { label: "Soort", value: b.soort, opties: [["lijfrente", "Lijfrente"], ["pensioen", "Pensioenpot"]], onChange: function (v) { w({ soort: v }); } }),
+          h(TekstVeld, { label: "Bank of verzekeraar", value: b.aanbieder, lijst: "bankenlijst", onChange: function (v) { w({ aanbieder: v, naam: potNaam(b.soort, v) }); }, naam: "pot-aanbieder" }),
           h(BedragVeld, { label: "Saldo nu", value: b.saldo, onChange: function (v) { w({ saldo: v }); }, naam: "pot-saldo" })),
         h("div", { className: "raster" },
           h(DatumVeld, { label: "Geblokkeerd tot (leeg = niet geblokkeerd)", value: b.geblokkeerdTot, onChange: function (v) { w({ geblokkeerdTot: v }); } }),
@@ -145,8 +269,9 @@ function PottenEditor() {
 function HypotheekForm() {
   var c = useC(), hy = c.S.hyp;
   function z(patch) { c.zet("hyp", patch); }
-  if (!c.S.profiel.gebruik.hypotheek) return h("p", { className: "klein" }, "Je hebt aangegeven geen hypotheek te hebben. Zet dit aan bij de basisgegevens op het Dashboard.");
+  if (c.S.profiel.leef.woning !== "koop") return h("p", { className: "klein" }, "Een hypotheek is alleen van toepassing bij een koopwoning. Je hebt bij de algemene intake een andere woonsituatie gekozen.");
   return h("div", null,
+    h(Uitleg, null, "Heb je geen hypotheek meer? Laat dan alles leeg."),
     h("div", { className: "raster" },
       h(BedragVeld, { label: "Openstaand bedrag", value: hy.bedrag, onChange: function (v) { z({ bedrag: v }); }, naam: "hyp-bedrag" }),
       h(BedragVeld, { label: "Rente (%)", value: hy.rente, pct: true, onChange: function (v) { z({ rente: v }); } })),
@@ -160,40 +285,76 @@ function HypotheekForm() {
     h(Uitleg, null, "Na de einddatum van de aflossing rekent de app met alleen rente over het dan openstaande bedrag."));
 }
 
-/* ----- Vaste lasten ----- */
-function nieuweLast() { return { id: nieuwId(), naam: "", bedrag: "", freq: "maand", eersteMaand: 1, index: "cpi", indexPct: "", start: "", einde: "" }; }
-function foutenLast(b) {
-  return leeg([!b.naam ? "Geef elke vaste last een naam." : null, b.bedrag === "" ? (b.naam || "Post") + ": vul een bedrag in." : null, nietNeg(b.bedrag, (b.naam || "Post") + " bedrag"),
-    datumFout(b.start, (b.naam || "Post") + " start"), datumFout(b.einde, (b.naam || "Post") + " einde"),
-    (geldigeDatum(b.start) && geldigeDatum(b.einde) && geldigeDatum(b.einde) <= geldigeDatum(b.start)) ? (b.naam || "Post") + ": de einddatum moet na de startdatum liggen." : null]);
-}
+/* ----- Vaste lasten: vaste omschrijvingen op basis van de intake ----- */
 var FREQ_KEUZES = [["maand", "Per maand"], ["kwartaal", "Per kwartaal"], ["halfjaar", "Per half jaar"], ["jaar", "Per jaar"]];
-function LastenEditor() {
-  var c = useC(), L = c.lijst("lasten");
-  return h(LijstEditor, {
-    naam: "last", items: L.items, leeg: "Nog geen vaste lasten.", voegTekst: "Vaste last toevoegen",
-    kop: function (b) { return (b.naam || "Nieuwe post") + (b.bedrag !== "" ? " · " + eur(b.bedrag) : ""); },
-    onVoeg: function () { L.voeg(nieuweLast()); }, onWis: L.wis, onWijzig: L.wijzig,
-    velden: function (b, w) {
-      return h("div", null,
-        h("div", { className: "raster" },
-          h(TekstVeld, { label: "Naam", value: b.naam, onChange: function (v) { w({ naam: v }); }, naam: "last-naam", placeholder: "bijv. energie, verzekeringen" }),
-          h(BedragVeld, { label: "Bedrag per betaling", value: b.bedrag, onChange: function (v) { w({ bedrag: v }); }, naam: "last-bedrag" })),
-        h("div", { className: "raster" },
-          h(KeuzeVeld, { label: "Hoe vaak", value: b.freq, opties: FREQ_KEUZES, onChange: function (v) { w({ freq: v }); } }),
-          b.freq !== "maand" ? h(KeuzeVeld, { label: "Eerste betaling in", value: String(b.eersteMaand || 1), opties: MAANDEN.map(function (n, i) { return [String(i + 1), n]; }), onChange: function (v) { w({ eersteMaand: Number(v) }); } }) : null),
-        h("div", { className: "raster" },
-          h(KeuzeVeld, { label: "Indexatie", value: b.index, opties: INDEX_KEUZES, onChange: function (v) { w({ index: v }); } }),
-          b.index === "vast" ? h(BedragVeld, { label: "Percentage per jaar", value: b.indexPct, pct: true, onChange: function (v) { w({ indexPct: v }); } }) : null),
-        h("div", { className: "raster" },
-          h(DatumVeld, { label: "Start (leeg = loopt al)", value: b.start, onChange: function (v) { w({ start: v }); } }),
-          h(DatumVeld, { label: "Einde (leeg = loopt door)", value: b.einde, onChange: function (v) { w({ einde: v }); } })));
-    }
+function nieuweLast(cat, pid, m) {
+  var naam = cat.code === "overig" ? "" : cat.label + (pid && m && m.personen.length > 1 ? " (" + persoonVan(m, pid).naam + ")" : "");
+  return { id: nieuwId(), code: cat.code, persoon: pid || "", naam: naam, bedrag: "", freq: cat.freq || "maand", eersteMaand: 1, index: cat.index || "cpi", indexPct: "", start: "", einde: "" };
+}
+function foutenLast(b) {
+  var n = b.naam || "Post";
+  return leeg([!b.naam ? "Geef elke vaste last een omschrijving." : null, b.bedrag === "" ? n + ": vul een bedrag in." : null, nietNeg(b.bedrag, n + " bedrag"),
+    datumFout(b.start, n + " start"), datumFout(b.einde, n + " einde"),
+    (geldigeDatum(b.start) && geldigeDatum(b.einde) && geldigeDatum(b.einde) <= geldigeDatum(b.start)) ? n + ": de einddatum moet na de startdatum liggen." : null]);
+}
+function LastRij(p) {
+  var b = p.item, w = p.wijzig;
+  return h("div", { style: { marginLeft: "1.7rem", marginBottom: ".5rem" } },
+    h("div", { className: "raster" },
+      h(BedragVeld, { label: "Bedrag per betaling", value: b.bedrag, onChange: function (v) { w({ bedrag: v }); }, naam: "last-bedrag" }),
+      h(KeuzeVeld, { label: "Hoe vaak", value: b.freq, opties: FREQ_KEUZES, onChange: function (v) { w({ freq: v }); } })),
+    h("details", null, h("summary", { className: "klein" }, "Meer opties (indexatie, start, einde)"),
+      h("div", { className: "raster", style: { marginTop: ".4rem" } },
+        b.freq !== "maand" ? h(KeuzeVeld, { label: "Eerste betaling in", value: String(b.eersteMaand || 1), opties: MAANDEN.map(function (n, i) { return [String(i + 1), n]; }), onChange: function (v) { w({ eersteMaand: Number(v) }); } }) : null,
+        h(KeuzeVeld, { label: "Indexatie", value: b.index, opties: INDEX_KEUZES, onChange: function (v) { w({ index: v }); } }),
+        b.index === "vast" ? h(BedragVeld, { label: "Percentage per jaar", value: b.indexPct, pct: true, onChange: function (v) { w({ indexPct: v }); } }) : null,
+        h(DatumVeld, { label: "Start (leeg = loopt al)", value: b.start, onChange: function (v) { w({ start: v }); } }),
+        h(DatumVeld, { label: "Einde (leeg = loopt door)", value: b.einde, onChange: function (v) { w({ einde: v }); } }))));
+}
+function LastenEditor(p) {
+  var c = useC(), L = c.lijst("lasten"), m = c.m, LL = lijstL(c.S.profiel);
+  var toonG = p && p.groepen, toonOverig = !p || !p.groepen || p.overig;
+  var items = L.items;
+  function vind(code, pid) { return items.filter(function (x) { return x.code === code && (x.persoon || "") === (pid || ""); })[0]; }
+  var getoond = [];
+  var groepen = LASTEN_GROEPEN.map(function (g) {
+    var rijen = [];
+    LASTEN_CAT.filter(function (cat) { return cat.groep === g && cat.wanneer(LL); }).forEach(function (cat) {
+      var pids = cat.per ? m.personen.map(function (p) { return p.id; }) : [""];
+      pids.forEach(function (pid) { rijen.push({ cat: cat, pid: pid }); });
+    });
+    return { naam: g, rijen: rijen };
   });
+  groepen.forEach(function (g) { g.rijen.forEach(function (r) { var it = vind(r.cat.code, r.pid); if (it) getoond.push(it.id); }); });
+  var overige = items.filter(function (x) { return getoond.indexOf(x.id) < 0; });
+  return h("div", null,
+    h(Uitleg, null, "Vink aan wat voor jou geldt en vul het bedrag in. De lijst past zich aan op je woning, auto en gezin. Staat iets er niet bij? Voeg het onderaan toe als 'Overig'."),
+    groepen.filter(function (g) { return g.rijen.length && (!toonG || toonG.indexOf(g.naam) >= 0); }).map(function (g) {
+      return h("div", { key: g.naam, className: "kaart", style: { background: "#f8fafc" } },
+        h("h3", null, g.naam),
+        g.rijen.map(function (r) {
+          var it = vind(r.cat.code, r.pid), label = r.cat.label + (r.pid && m.personen.length > 1 ? " (" + persoonVan(m, r.pid).naam + ")" : "");
+          return h("div", { key: r.cat.code + r.pid, "data-last": r.cat.code },
+            h("label", { className: "vink", style: { marginBottom: it ? ".2rem" : ".4rem" } },
+              h("input", { type: "checkbox", checked: !!it, onChange: function (e) { if (e.target.checked) L.voeg(nieuweLast(r.cat, r.pid, m)); else if (it) L.wis(it.id); }, "data-last-vink": r.cat.code + r.pid }),
+              h("span", null, label)),
+            it ? h(LastRij, { item: it, wijzig: function (patch) { L.wijzig(it.id, patch); } }) : null);
+        }));
+    }),
+    toonOverig ? h("div", { className: "kaart", style: { background: "#f8fafc" } },
+      h("h3", null, "Overig en andere posten"),
+      overige.length === 0 ? h("p", { className: "klein" }, "Geen andere posten.") : null,
+      overige.map(function (it) {
+        return h("div", { key: it.id, "data-item": "last-overig" },
+          h("div", { className: "rij tussen" }, h("b", null, it.naam || "Overig"), h(Knop, { soort: "gevaar", klein: true, onClick: function () { if (window.confirm("Weet je zeker dat je dit wilt verwijderen?")) L.wis(it.id); } }, "Verwijder")),
+          h(TekstVeld, { label: "Omschrijving (zonder namen of nummers)", value: it.naam, onChange: function (v) { L.wijzig(it.id, { naam: v }); }, naam: "last-naam" }),
+          h(LastRij, { item: it, wijzig: function (patch) { L.wijzig(it.id, patch); } }));
+      }),
+      h(Knop, { soort: "sec", onClick: function () { L.voeg(nieuweLast({ code: "overig", label: "", freq: "maand", index: "cpi" }, "", m)); }, naam: "voeg-last" }, "+ Overig vast bedrag")) : null);
 }
 function DagelijksVeld() {
   var c = useC();
-  return h(BedragVeld, { label: "Dagelijkse uitgaven per maand", hint: "Boodschappen, benzine, kleding, uit eten en alles wat niet in de vaste lasten staat.", value: c.S.dagelijks.bedrag, onChange: function (v) { c.zet("dagelijks", { bedrag: v }); }, naam: "dagelijks" });
+  return h(BedragVeld, { label: "Dagelijkse uitgaven per maand", hint: "Boodschappen, kleding, uit eten, kleine uitgaven en alles wat niet in de vaste lasten staat.", value: c.S.dagelijks.bedrag, onChange: function (v) { c.zet("dagelijks", { bedrag: v }); }, naam: "dagelijks" });
 }
 function cpiBijwerken(c, maand, nieuwPct) {
   // Bedragen met CPI-indexatie worden omgerekend naar het niveau van de gemeten maand; daarna geldt het nieuwe percentage.
@@ -204,63 +365,93 @@ function cpiBijwerken(c, maand, nieuwPct) {
   if (c.S.dagelijks.bedrag !== "") c.zet("dagelijks", { bedrag: Math.round(getal(c.S.dagelijks.bedrag) * fac * 100) / 100 });
   c.zet("inst", { cpi: nieuwPct, cpiIjk: maand, cpiStand: isoDatum(vandaag()) });
 }
+// De CPI wordt automatisch bijgehouden via 'Cijfers bijwerken'. Handmatig aanpassen kan, maar hoeft niet.
 function CpiKaart() {
   var c = useC(), i = c.S.inst;
   var s = useState(false), open = s[0], setOpen = s[1];
   var v1 = useState(isoDatum(plusMaanden(vandaag(), -1)).slice(0, 7)), mnd = v1[0], setMnd = v1[1];
   var v2 = useState(""), pctGem = v2[0], setPctGem = v2[1];
   return h("div", null,
-    h("div", { className: "raster" },
-      h(BedragVeld, { label: "Verwachte inflatie per jaar (CPI, %)", hint: "Wordt per maand omgeslagen: 1/12 van het jaarpercentage per maand.", value: i.cpi, pct: true, onChange: function (v) { c.zet("inst", { cpi: v }); }, naam: "cpi" }),
-      h(MaandVeld, { label: "Bedragen gelden op het prijspeil van", hint: "Het ijkpunt: de maand waarop je bedragen kloppen (leeg = de peilmaand).", value: i.cpiIjk, onChange: function (v) { c.zet("inst", { cpiIjk: v }); }, naam: "cpiIjk" })),
-    h("p", { className: "klein" }, "CPI laatst gecontroleerd: " + (i.cpiStand ? fmtDatum(i.cpiStand) : "nog niet") + ". Bron: CBS (cbs.nl, inflatie per maand)."),
-    h("div", { className: "rij" },
-      h(Knop, { soort: "sec", klein: true, onClick: function () { c.zet("inst", { cpiStand: isoDatum(vandaag()) }); }, naam: "cpi-gecontroleerd" }, "CPI is vandaag gecontroleerd"),
-      h(Knop, { soort: "sec", klein: true, onClick: function () { setOpen(!open); }, naam: "cpi-update" }, "CPI bijwerken met gemeten waarde")),
-    open ? h("div", { className: "kaart info", style: { marginTop: ".5rem" } },
-      h(MaandVeld, { label: "Gemeten maand", value: mnd, onChange: setMnd, naam: "cpi-maand" }),
-      h(BedragVeld, { label: "Gemeten inflatie (% jaar op jaar)", value: pctGem, pct: true, onChange: setPctGem, naam: "cpi-gemeten" }),
-      h(Uitleg, null, "Bedragen met CPI-indexatie (vaste lasten en dagelijkse uitgaven) worden omgerekend naar het prijspeil van deze maand. Daarna geldt dit percentage voor de toekomst."),
-      h(Knop, { disabled: pctGem === "", onClick: function () { cpiBijwerken(c, mnd, pctGem); setOpen(false); }, naam: "cpi-toepassen" }, "Toepassen")) : null);
+    h("p", null, "Verwachte inflatie: " + pct(i.cpi, 1) + " per jaar" + (i.cpiIjk ? ", bedragen op prijspeil " + i.cpiIjk : "") + ". Laatst bijgewerkt: " + (i.cpiStand ? fmtDatum(i.cpiStand) : "nog niet") + "."),
+    h("p", { className: "klein" }, "Bron: CBS. Vaste lasten en dagelijkse uitgaven stijgen per maand mee (1/12 van het jaarpercentage). Je hoeft hier niets in te vullen: druk elke maand op 'Cijfers bijwerken'."),
+    h(CijfersKnop, null),
+    h("details", { style: { marginTop: ".5rem" } }, h("summary", { className: "klein" }, "Geavanceerd: handmatig aanpassen"),
+      h("div", { className: "raster", style: { marginTop: ".4rem" } },
+        h(BedragVeld, { label: "Verwachte inflatie per jaar (%)", value: i.cpi, pct: true, onChange: function (v) { c.zet("inst", { cpi: v }); }, naam: "cpi" }),
+        h(MaandVeld, { label: "Bedragen gelden op het prijspeil van", value: i.cpiIjk, onChange: function (v) { c.zet("inst", { cpiIjk: v }); }, naam: "cpiIjk" })),
+      h(Knop, { soort: "sec", klein: true, onClick: function () { setOpen(!open); }, naam: "cpi-update" }, "CPI bijwerken met een gemeten waarde"),
+      open ? h("div", { className: "kaart info", style: { marginTop: ".5rem" } },
+        h(MaandVeld, { label: "Gemeten maand", value: mnd, onChange: setMnd, naam: "cpi-maand" }),
+        h(BedragVeld, { label: "Gemeten inflatie (% jaar op jaar)", value: pctGem, pct: true, onChange: setPctGem, naam: "cpi-gemeten" }),
+        h(Knop, { disabled: pctGem === "", onClick: function () { cpiBijwerken(c, mnd, pctGem); setOpen(false); }, naam: "cpi-toepassen" }, "Toepassen")) : null));
 }
 
 /* ----- Vermogen ----- */
+function nieuweRekening() { return { id: nieuwId(), bank: "", naam: "Spaarrekening", saldo: "", rente: "" }; }
+var REKENING_NAMEN = ["Spaarrekening", "Betaalrekening", "Online spaarrekening", "Kinderspaarrekening", "Gezamenlijke rekening"];
+function foutenRekeningen(c) {
+  var uit = [];
+  c.S.verm.rekeningen.forEach(function (r) {
+    if (!r.bank) uit.push("Vul bij elke rekening de naam van de bank in.");
+    if (r.saldo === "") uit.push((r.bank || "Rekening") + ": vul het saldo in.");
+    var f = nietNeg(r.saldo, (r.bank || "Rekening") + " saldo") || nietNeg(r.rente, (r.bank || "Rekening") + " rente"); if (f) uit.push(f);
+  });
+  if (!c.S.verm.rekeningen.length) uit.push("Voeg minstens één spaar- of betaalrekening toe (of sla deze stap over).");
+  return uit;
+}
 function SpaarVeld() {
-  var c = useC(), v = c.S.verm, i = c.S.inst;
+  var c = useC(), L = c.lijst("verm", "rekeningen"), i = c.S.inst;
   return h("div", null,
+    h(BankenLijst, null),
+    h(Uitleg, null, "Alleen de naam van de bank en de soort rekening, geen rekeningnummer. Tel hier alleen geld dat je direct kunt opnemen."),
+    h(LijstEditor, {
+      naam: "rekening", items: L.items, leeg: "Nog geen rekeningen.", voegTekst: "Rekening toevoegen",
+      kop: function (r) { return (r.bank || "Nieuwe rekening") + " · " + (r.naam || "") + (r.saldo !== "" ? " · " + eur(r.saldo) : ""); },
+      onVoeg: function () { L.voeg(nieuweRekening()); }, onWis: L.wis, onWijzig: L.wijzig,
+      velden: function (r, w) {
+        return h("div", null,
+          h("div", { className: "raster" },
+            h(TekstVeld, { label: "Bank", value: r.bank, lijst: "bankenlijst", onChange: function (v) { w({ bank: v }); }, naam: "rek-bank" }),
+            h(KeuzeVeld, { label: "Soort rekening", value: REKENING_NAMEN.indexOf(r.naam) >= 0 ? r.naam : "Spaarrekening", opties: REKENING_NAMEN.map(function (n) { return [n, n]; }), onChange: function (v) { w({ naam: v }); } })),
+          h("div", { className: "raster" },
+            h(BedragVeld, { label: "Saldo", value: r.saldo, onChange: function (v) { w({ saldo: v }); }, naam: "rek-saldo" }),
+            h(BedragVeld, { label: "Rente per jaar (%), leeg = standaard", value: r.rente, pct: true, onChange: function (v) { w({ rente: v }); }, naam: "rek-rente" })));
+      }
+    }),
     h("div", { className: "raster" },
-      h(BedragVeld, { label: "Spaargeld (direct opneembaar)", hint: "Alles wat je zo kunt opnemen, zonder deposito's.", value: v.spaar, onChange: function (x) { c.zet("verm", { spaar: x }); }, naam: "spaar" }),
-      h(BedragVeld, { label: "Spaarrente per jaar (%)", value: i.spaarrente, pct: true, onChange: function (x) { c.zet("inst", { spaarrente: x }); }, naam: "spaarrente" })),
+      h(BedragVeld, { label: "Standaard spaarrente per jaar (%)", hint: "Voor rekeningen zonder eigen rente.", value: i.spaarrente, pct: true, onChange: function (x) { c.zet("inst", { spaarrente: x }); }, naam: "spaarrente" })),
     h("div", { className: "rij" },
-      h("span", { className: "klein" }, "Rente gecontroleerd op: " + (i.spaarrenteStand ? fmtDatum(i.spaarrenteStand) : "nog niet") + ". Bron: je bank of Raisin."),
+      h("span", { className: "klein" }, "Rente gecontroleerd op: " + (i.spaarrenteStand ? fmtDatum(i.spaarrenteStand) : "nog niet") + "."),
       h(Knop, { soort: "sec", klein: true, onClick: function () { c.zet("inst", { spaarrenteStand: isoDatum(vandaag()) }); }, naam: "rente-gecontroleerd" }, "Vandaag gecontroleerd")));
 }
-function nieuwDeposito() { return { id: nieuwId(), naam: "", bedrag: "", rente: "", start: "", looptijd: "", eind: "", uitkering: "einde", reedsUitgekeerd: "" }; }
+function nieuwDeposito() { return { id: nieuwId(), bank: "", naam: "", bedrag: "", rente: "", start: "", looptijd: "", eind: "", uitkering: "einde", reedsUitgekeerd: "" }; }
+function depNaam(d) { return (d.bank ? d.bank : "Deposito") + (d.looptijd ? " " + d.looptijd + " mnd" : ""); }
 function foutenDeposito(d) {
-  var n = d.naam || "Deposito";
-  return leeg([!d.naam ? "Geef elk deposito een naam." : null, getal(d.bedrag) <= 0 ? n + ": vul een bedrag in." : null, d.rente === "" ? n + ": vul de rente in." : null, nietNeg(d.rente, n + " rente"),
+  var n = d.bank || "Deposito";
+  return leeg([!d.bank ? "Vul bij elk deposito de naam van de bank in." : null, getal(d.bedrag) <= 0 ? n + ": vul een bedrag in." : null, d.rente === "" ? n + ": vul de rente in." : null, nietNeg(d.rente, n + " rente"),
     !geldigeDatum(d.start) ? n + ": vul een geldige startdatum in." : null, !geldigeDatum(d.eind) ? n + ": vul een looptijd of einddatum in." : null,
     (geldigeDatum(d.start) && geldigeDatum(d.eind) && geldigeDatum(d.eind) <= geldigeDatum(d.start)) ? n + ": de einddatum moet na de startdatum liggen." : null]);
 }
 function DepositoEditor() {
   var c = useC(), L = c.lijst("verm", "deposito"), m = c.m;
-  if (!c.S.profiel.gebruik.deposito) return h("p", { className: "klein" }, "Je hebt aangegeven geen deposito's te hebben.");
+  if (!c.S.profiel.gebruik.deposito) return h("div", null, h("p", { className: "klein" }, "Je gebruikt geen deposito's."), h(Knop, { soort: "sec", klein: true, onClick: function () { c.zetPad("profiel", ["gebruik", "deposito"], true); }, naam: "zet-deposito-aan" }, "Beginnen met deposito's"));
   return h("div", null,
+    h(BankenLijst, null),
     h(LijstEditor, {
       naam: "deposito", items: L.items, leeg: "Nog geen deposito's.", voegTekst: "Deposito toevoegen",
-      kop: function (d) { return (d.naam || "Nieuw deposito") + (d.bedrag !== "" ? " · " + eur(d.bedrag) : ""); },
+      kop: function (d) { return (d.bank || "Nieuw deposito") + (d.bedrag !== "" ? " · " + eur(d.bedrag) : ""); },
       onVoeg: function () { L.voeg(nieuwDeposito()); }, onWis: L.wis, onWijzig: L.wijzig,
       velden: function (d, w) {
         var pl = depositoPlan(m, d);
         return h("div", null,
           h("div", { className: "raster" },
-            h(TekstVeld, { label: "Naam (bijv. bank)", value: d.naam, onChange: function (v) { w({ naam: v }); }, naam: "dep-naam" }),
+            h(TekstVeld, { label: "Bank", value: d.bank, lijst: "bankenlijst", onChange: function (v) { w({ bank: v, naam: depNaam(Object.assign({}, d, { bank: v })) }); }, naam: "dep-bank" }),
             h(BedragVeld, { label: "Bedrag", value: d.bedrag, onChange: function (v) { w({ bedrag: v }); }, naam: "dep-bedrag" })),
           h("div", { className: "raster" },
             h(BedragVeld, { label: "Rente per jaar (%)", value: d.rente, pct: true, onChange: function (v) { w({ rente: v }); }, naam: "dep-rente" }),
             h(DatumVeld, { label: "Startdatum", hint: "Ligt de start in de toekomst, dan gaat het bedrag op die dag van je spaarrekening af.", value: d.start, onChange: function (v) { var gd = geldigeDatum(v); w({ start: v, eind: gd && getal(d.looptijd) > 0 ? isoDatum(plusMaanden(gd, Math.round(getal(d.looptijd)))) : d.eind }); }, naam: "dep-start" })),
           h("div", { className: "raster" },
-            h(BedragVeld, { label: "Looptijd (maanden)", value: d.looptijd, pct: true, onChange: function (v) { var gd = geldigeDatum(d.start); w({ looptijd: v, eind: gd && getal(v) > 0 ? isoDatum(plusMaanden(gd, Math.round(getal(v)))) : d.eind }); }, naam: "dep-looptijd" }),
+            h(BedragVeld, { label: "Looptijd (maanden)", value: d.looptijd, pct: true, onChange: function (v) { var gd = geldigeDatum(d.start); w({ looptijd: v, naam: depNaam(Object.assign({}, d, { looptijd: v })), eind: gd && getal(v) > 0 ? isoDatum(plusMaanden(gd, Math.round(getal(v)))) : d.eind }); }, naam: "dep-looptijd" }),
             h(DatumVeld, { label: "Einddatum", value: d.eind, onChange: function (v) { var gs = geldigeDatum(v), g0 = geldigeDatum(d.start); w({ eind: v, looptijd: gs && g0 ? maandenTussen(g0, gs) : d.looptijd }); }, naam: "dep-eind" })),
           h("div", { className: "raster" },
             h(KeuzeVeld, { label: "Rente wordt uitgekeerd", value: d.uitkering, opties: [["einde", "Aan het einde van de looptijd"], ["jaarlijks", "Elk jaar"]], onChange: function (v) { w({ uitkering: v }); }, naam: "dep-uitkering" }),
@@ -273,19 +464,22 @@ function DepositoEditor() {
 }
 function BeleggingenEditor() {
   var c = useC(), L = c.lijst("verm", "beleggingen");
-  if (!c.S.profiel.gebruik.beleggen) return h("p", { className: "klein" }, "Je hebt aangegeven geen beleggingen te hebben.");
-  return h(LijstEditor, {
-    naam: "belegging", items: L.items, leeg: "Nog geen beleggingsrekeningen.", voegTekst: "Beleggingsrekening toevoegen",
-    kop: function (b) { return (b.naam || "Nieuwe rekening") + (b.waarde !== "" ? " · " + eur(b.waarde) : ""); },
-    onVoeg: function () { L.voeg({ id: nieuwId(), naam: "", waarde: "", soort: "vrij" }); }, onWis: L.wis, onWijzig: L.wijzig,
-    velden: function (b, w) {
-      return h("div", { className: "raster" },
-        h(TekstVeld, { label: "Naam of rekening", value: b.naam, onChange: function (v) { w({ naam: v }); }, naam: "bel-naam" }),
-        h(BedragVeld, { label: "Waarde nu", value: b.waarde, onChange: function (v) { w({ waarde: v }); }, naam: "bel-waarde" }),
-        h(KeuzeVeld, { label: "Soort", hint: "Vrij beleggen telt mee in het beleggingsadvies. Pensioenbeleggingen niet.", value: b.soort, opties: [["vrij", "Vrij beleggen"], ["pensioen", "Pensioen of lijfrente (geblokkeerd)"]], onChange: function (v) { w({ soort: v }); }, naam: "bel-soort" }));
-    }
-  });
+  if (!c.S.profiel.gebruik.beleggen) return h("div", null, h("p", { className: "klein" }, "Je belegt niet."), h(Knop, { soort: "sec", klein: true, onClick: function () { c.zetPad("profiel", ["gebruik", "beleggen"], true); }, naam: "zet-beleggen-aan" }, "Beginnen met beleggen"));
+  return h("div", null,
+    h(BankenLijst, null),
+    h(LijstEditor, {
+      naam: "belegging", items: L.items, leeg: "Nog geen beleggingsrekeningen.", voegTekst: "Beleggingsrekening toevoegen",
+      kop: function (b) { return (b.bank || "Nieuwe rekening") + (b.waarde !== "" ? " · " + eur(b.waarde) : ""); },
+      onVoeg: function () { L.voeg({ id: nieuwId(), bank: "", naam: "", waarde: "", soort: "vrij" }); }, onWis: L.wis, onWijzig: L.wijzig,
+      velden: function (b, w) {
+        return h("div", { className: "raster" },
+          h(TekstVeld, { label: "Bank of broker", value: b.bank, lijst: "bankenlijst", onChange: function (v) { w({ bank: v, naam: v + " " + (b.soort === "pensioen" ? "pensioen" : "vrij beleggen") }); }, naam: "bel-bank" }),
+          h(BedragVeld, { label: "Waarde nu", value: b.waarde, onChange: function (v) { w({ waarde: v }); }, naam: "bel-waarde" }),
+          h(KeuzeVeld, { label: "Soort", hint: "Vrij beleggen telt mee in het beleggingsadvies. Pensioenbeleggingen niet.", value: b.soort, opties: [["vrij", "Vrij beleggen"], ["pensioen", "Pensioen of lijfrente (geblokkeerd)"]], onChange: function (v) { w({ soort: v, naam: (b.bank || "") + " " + (v === "pensioen" ? "pensioen" : "vrij beleggen") }); }, naam: "bel-soort" }));
+      }
+    }));
 }
+var OVERIG_NAMEN = ["Auto", "Boot of caravan", "Kunst en sieraden", "Tweede woning", "Onderneming (waarde)", "Overige bezitting"];
 function OverigEditor() {
   var c = useC(), L = c.lijst("verm", "overig");
   return h(LijstEditor, {
@@ -293,13 +487,14 @@ function OverigEditor() {
     kop: function (b) { return (b.naam || "Nieuwe bezitting") + (b.waarde !== "" ? " · " + eur(b.waarde) : ""); },
     onVoeg: function () { L.voeg({ id: nieuwId(), naam: "", waarde: "", box3: false }); }, onWis: L.wis, onWijzig: L.wijzig,
     velden: function (b, w) {
-      return h("div", null, h("div", { className: "raster" },
-        h(TekstVeld, { label: "Naam", value: b.naam, onChange: function (v) { w({ naam: v }); }, placeholder: "bijv. woning, auto" }),
-        h(BedragVeld, { label: "Waarde", value: b.waarde, onChange: function (v) { w({ waarde: v }); } })),
+      return h("div", null,
+        h(OmschrijvingKeuze, { label: "Soort bezitting", opties: OVERIG_NAMEN, value: b.naam, onChange: function (v) { w({ naam: v }); }, naam: "overig-naam" }),
+        h(BedragVeld, { label: "Waarde", value: b.waarde, onChange: function (v) { w({ waarde: v }); } }),
         h(Vink, { label: "Telt mee in box 3 (niet je eigen woning)", value: !!b.box3, onChange: function (v) { w({ box3: v }); } }));
     }
   });
 }
+var SCHULD_NAMEN = ["Persoonlijke lening", "Studieschuld", "Creditcard of krediet", "Lening aan kind(eren)", "Lening aan familie of vrienden", "Overige schuld of lening"];
 function SchuldenEditor() {
   var c = useC(), L = c.lijst("verm", "schulden");
   return h(LijstEditor, {
@@ -307,10 +502,11 @@ function SchuldenEditor() {
     kop: function (b) { return (b.naam || "Nieuw") + (b.bedrag !== "" ? " · " + eur(b.bedrag) : ""); },
     onVoeg: function () { L.voeg({ id: nieuwId(), naam: "", bedrag: "", soort: "schuld" }); }, onWis: L.wis, onWijzig: L.wijzig,
     velden: function (b, w) {
-      return h("div", { className: "raster" },
-        h(TekstVeld, { label: "Naam", value: b.naam, onChange: function (v) { w({ naam: v }); } }),
-        h(BedragVeld, { label: "Bedrag", value: b.bedrag, onChange: function (v) { w({ bedrag: v }); } }),
-        h(KeuzeVeld, { label: "Soort", hint: "Vreemd vermogen telt niet mee in je vrije vermogen.", value: b.soort, opties: [["schuld", "Ik ben het schuldig"], ["uitstaand", "Ik heb het uitgeleend (bijv. aan kinderen)"]], onChange: function (v) { w({ soort: v }); } }));
+      return h("div", null,
+        h(OmschrijvingKeuze, { label: "Omschrijving", opties: SCHULD_NAMEN, value: b.naam, onChange: function (v) { w({ naam: v }); }, naam: "schuld-naam" }),
+        h("div", { className: "raster" },
+          h(BedragVeld, { label: "Bedrag", value: b.bedrag, onChange: function (v) { w({ bedrag: v }); } }),
+          h(KeuzeVeld, { label: "Soort", hint: "Vreemd vermogen telt niet mee in je vrije vermogen.", value: b.soort, opties: [["schuld", "Ik ben het schuldig"], ["uitstaand", "Ik heb het uitgeleend"]], onChange: function (v) { w({ soort: v }); } })));
     }
   });
 }
@@ -332,7 +528,7 @@ function ReserveringenEditor() {
     velden: function (r, w) {
       return h("div", null,
         h("div", { className: "raster" },
-          h(TekstVeld, { label: "Naam", value: r.naam, onChange: function (v) { w({ naam: v }); }, naam: "res-naam", placeholder: "bijv. vakantie, auto" }),
+          h(OmschrijvingKeuze, { label: "Doel", opties: RESERVERING_NAMEN, value: r.naam, onChange: function (v) { w({ naam: v }); }, naam: "res-naam" }),
           h(BedragVeld, { label: "Bedrag per maand", value: r.maand, onChange: function (v) { w({ maand: v }); }, naam: "res-maand" })),
         h("div", { className: "raster3" },
           h(BedragVeld, { label: "Boekdag (1 tot 28)", value: r.dag, pct: true, max: 28, onChange: function (v) { w({ dag: v }); } }),
@@ -345,18 +541,18 @@ function ReserveringenEditor() {
 function nieuweBoeking() { return { id: nieuwId(), datum: "", omschrijving: "", type: "uitgave", bedrag: "", reserveringId: "", herhaal: "geen", tot: "" }; }
 function foutenBoeking(b) {
   var n = b.omschrijving || "Boeking";
-  return leeg([!b.omschrijving ? "Geef elke boeking een omschrijving." : null, !geldigeDatum(b.datum) ? n + ": vul een geldige datum in." : null, getal(b.bedrag) <= 0 ? n + ": vul een bedrag in (groter dan 0)." : null]);
+  return leeg([!b.omschrijving ? "Kies bij elke boeking een omschrijving." : null, !geldigeDatum(b.datum) ? n + ": vul een geldige datum in." : null, getal(b.bedrag) <= 0 ? n + ": vul een bedrag in (groter dan 0)." : null]);
 }
 function BoekingenEditor() {
   var c = useC(), L = c.lijst("grote", "boekingen"), res = c.S.grote.reserveringen || [];
   return h(LijstEditor, {
     naam: "boeking", items: L.items, leeg: "Nog geen geplande grote inkomsten of uitgaven.", voegTekst: "Boeking toevoegen",
-    kop: function (b) { return (b.omschrijving || "Nieuwe boeking") + (b.bedrag !== "" ? " · " + (b.type === "inkomst" ? "+" : "-") + eur(b.bedrag).replace("€ ", "€ ") : ""); },
+    kop: function (b) { return (b.omschrijving || "Nieuwe boeking") + (b.bedrag !== "" ? " · " + (b.type === "inkomst" ? "+" : "-") + eur(b.bedrag) : ""); },
     onVoeg: function () { L.voeg(nieuweBoeking()); }, onWis: L.wis, onWijzig: L.wijzig,
     velden: function (b, w) {
       return h("div", null,
         h("div", { className: "raster" },
-          h(TekstVeld, { label: "Omschrijving", value: b.omschrijving, onChange: function (v) { w({ omschrijving: v }); }, naam: "boek-omschrijving" }),
+          h(OmschrijvingKeuze, { label: "Omschrijving", opties: BOEKING_NAMEN, value: b.omschrijving, onChange: function (v) { w({ omschrijving: v }); }, naam: "boek-omschrijving" }),
           h(KeuzeVeld, { label: "Soort", value: b.type, opties: [["uitgave", "Uitgave"], ["inkomst", "Inkomst"]], onChange: function (v) { w({ type: v }); }, naam: "boek-type" })),
         h("div", { className: "raster" },
           h(DatumVeld, { label: "Datum", value: b.datum, onChange: function (v) { w({ datum: v }); }, naam: "boek-datum" }),
@@ -376,13 +572,12 @@ function MinimumVeld() {
 /* ----- Inkomensaanvulling ----- */
 function foutenAanv(a) {
   return leeg([getal(a.startsaldo) <= 0 ? "Vul het saldo van de pot in." : null, a.opnameAan && getal(a.maand) <= 0 ? "Vul het bedrag in dat je per maand opneemt (of zet de opname uit)." : null,
-    datumFout(a.opnameVanaf, "Opname vanaf"), datumFout(a.einde, "Einde opname"), nietNeg(a.rendement, "Rendement") && null]);
+    datumFout(a.opnameVanaf, "Opname vanaf"), datumFout(a.einde, "Einde opname")]);
 }
 function AanvulVelden() {
   var c = useC(), a = c.S.aanv;
   function z(patch) { c.zet("aanv", patch); }
   return h("div", null,
-    h(TekstVeld, { label: "Naam van de pot", value: a.naam, onChange: function (v) { z({ naam: v }); } }),
     h("div", { className: "raster" },
       h(BedragVeld, { label: "Saldo nu", value: a.startsaldo, onChange: function (v) { z({ startsaldo: v }); }, naam: "aanv-saldo" }),
       h(BedragVeld, { label: "Opname per maand (netto)", value: a.maand, onChange: function (v) { z({ maand: v }); }, naam: "aanv-maand" })),

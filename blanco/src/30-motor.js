@@ -6,10 +6,17 @@ function maakModel(S, nu) {
   m.nu = nu;
   m.peil = geldigeDatum(S.profiel.peildatum) || nu;
   var p = S.profiel;
-  m.personen = [{ id: "A", naam: p.naamA || "Persoon A", geb: geldigeDatum(p.geboorteA), aow: geldigeDatum(p.aowA) || aowDatumBerekend(p.geboorteA) }];
-  if (p.partner) m.personen.push({ id: "B", naam: p.naamB || "Persoon B", geb: geldigeDatum(p.geboorteB), aow: geldigeDatum(p.aowB) || aowDatumBerekend(p.geboorteB) });
+  var lab = p.type ? labelsVoorType(p.type) : [p.naamA || "Persoon A", p.naamB || "Persoon B"];
+  m.personen = [{ id: "A", naam: lab[0], geb: geldigeDatum(p.geboorteA), aow: geldigeDatum(p.aowA) || aowDatumBerekend(p.geboorteA) }];
+  if (p.partner) m.personen.push({ id: "B", naam: lab[1] || "Persoon B", geb: geldigeDatum(p.geboorteB), aow: geldigeDatum(p.aowB) || aowDatumBerekend(p.geboorteB) });
   m.bronnen = (S.bronnen || []).filter(function (b) { return p.partner || b.persoon !== "B"; });
   m.potten = (S.potten || []).filter(function (b) { return p.partner || b.persoon !== "B"; });
+  // Spaarrekeningen: totaal saldo en gewogen rente.
+  var rek = (S.verm.rekeningen || []), totaal = 0, wr = 0;
+  rek.forEach(function (r) { var sd = getal(r.saldo); totaal += sd; wr += sd * (r.rente === "" || r.rente == null ? getal(S.inst.spaarrente) : getal(r.rente)); });
+  m.verm = Object.assign({}, S.verm, { spaar: totaal });
+  m.inst = Object.assign({}, S.inst, { spaarrente: totaal > 0 ? wr / totaal : getal(S.inst.spaarrente) });
+  m.cijfers = S.cijfers || {};
   m._cache = {};
   return m;
 }
@@ -89,7 +96,7 @@ function potSaldoOp(m, pot, d) {
 /* ---------- Inkomen per persoon en huishouden ---------- */
 function bronBedrag(m, b, d) {
   var wijzig = geldigeDatum(b.wijzigDatum);
-  var gebruikWijzig = wijzig && d >= eerstVanMaand(wijzig) && (b.wijzigBruto !== "" && b.wijzigBruto != null || b.wijzigNetto !== "" && b.wijzigNetto != null);
+  var gebruikWijzig = wijzig && d >= eerstVanMaand(wijzig) && ((b.wijzigBruto !== "" && b.wijzigBruto != null) || (b.wijzigNetto !== "" && b.wijzigNetto != null));
   var bruto = gebruikWijzig ? b.wijzigBruto : b.bruto;
   var netto = gebruikWijzig ? b.wijzigNetto : b.netto;
   var wt = b.soort === "loon" && b.werktijd !== "" && b.werktijd != null ? getal(b.werktijd) / 100 : 1;
@@ -105,15 +112,23 @@ function bronActief(m, b, d, pers) {
   }
   return true;
 }
-function persoonMaand(m, pid, d) {
-  var sleutel = pid + "|" + isoDatum(d);
+// kas = true: bedragen van toeslagen met een eigen betaalritme (bijv. kinderbijslag per kwartaal) vallen in de betaalmaand.
+function persoonMaand(m, pid, d, kas) {
+  var sleutel = pid + "|" + isoDatum(d) + "|" + (kas ? 1 : 0);
   m._cache.pm = m._cache.pm || {};
   if (m._cache.pm[sleutel]) return m._cache.pm[sleutel];
   var pers = persoonVan(m, pid), na = naAOW(pers, d);
-  var lijst = [];
+  var lijst = [], vrijNetto = 0;
   m.bronnen.forEach(function (b) {
     if (b.persoon !== pid || !bronActief(m, b, d, pers)) return;
     var v = bronBedrag(m, b, d);
+    if (b.soort === "toeslag") {
+      var bedrag = v.netto != null ? v.netto : v.bruto, f = b.freq || "maand";
+      var perMaand = !kas ? bedrag * FREQ_PER_JAAR[f] / 12 : (postBetaaldInMaand({ freq: f, eersteMaand: b.eersteMaand }, d) ? bedrag : 0);
+      lijst.push({ naam: b.naam || SOORT_NAAM.toeslag, soort: "toeslag", bruto: perMaand, netto: perMaand, vrij: true });
+      vrijNetto += perMaand;
+      return;
+    }
     lijst.push({ naam: b.naam || SOORT_NAAM[b.soort], soort: b.soort, bruto: v.bruto, netto: v.netto, korting: b.kortingInNetto !== false });
   });
   if (na) lijst.push({ naam: "AOW", soort: "aow", bruto: aowBrutoMaand(m, d), netto: null, korting: true });
@@ -124,20 +139,21 @@ function persoonMaand(m, pid, d) {
   });
   var brutoAlles = 0, brutoGeg = 0, arbeidAlles = 0, arbeidGeg = 0, nettoGeg = 0, zonderKortingBruto = 0;
   lijst.forEach(function (x) {
+    if (x.vrij) return;
     brutoAlles += x.bruto; if (x.soort === "loon") arbeidAlles += x.bruto;
     if (x.netto != null) { brutoGeg += x.bruto; nettoGeg += x.netto; if (x.soort === "loon") arbeidGeg += x.bruto; if (!x.korting) zonderKortingBruto += x.bruto; }
   });
   var nettoModel = 0, extraKorting = 0;
-  if (lijst.some(function (x) { return x.netto == null; })) {
+  if (lijst.some(function (x) { return !x.vrij && x.netto == null; })) {
     nettoModel = (nettoJaarPersoon(m, brutoAlles * 12, arbeidAlles * 12, na, d) - nettoJaarPersoon(m, brutoGeg * 12, arbeidGeg * 12, na, d)) / 12;
   }
   if (zonderKortingBruto > 0) {
     var jb = jaarBerekening(m, zonderKortingBruto * 12, 0, na, d);
     extraKorting = jb.kortingToegepast / 12;
   }
-  var modelBruto = brutoAlles - brutoGeg;
-  lijst.forEach(function (x) { if (x.netto == null) x.netto = modelBruto > 0 ? nettoModel * x.bruto / modelBruto : 0; });
-  var res = { id: pid, naam: pers.naam, bruto: brutoAlles, netto: nettoGeg + nettoModel + extraKorting, lijst: lijst, naAOW: na };
+  var modelBruto = lijst.reduce(function (s2, x) { return s2 + (!x.vrij && x.netto == null ? x.bruto : 0); }, 0);
+  lijst.forEach(function (x) { if (!x.vrij && x.netto == null) x.netto = modelBruto > 0 ? nettoModel * x.bruto / modelBruto : 0; });
+  var res = { id: pid, naam: pers.naam, bruto: brutoAlles, netto: nettoGeg + nettoModel + extraKorting + vrijNetto, lijst: lijst, naAOW: na };
   m._cache.pm[sleutel] = res;
   return res;
 }
@@ -168,8 +184,8 @@ function aanvulOp(m, d) {
   return pl[i] || { opname: 0, saldo: 0, d: d };
 }
 
-function huishoudenMaand(m, d) {
-  var pers = m.personen.map(function (p) { return persoonMaand(m, p.id, d); });
+function huishoudenMaand(m, d, kas) {
+  var pers = m.personen.map(function (p) { return persoonMaand(m, p.id, d, kas); });
   var aanv = aanvulOp(m, d).opname;
   var netto = pers.reduce(function (s, p) { return s + p.netto; }, 0) + aanv;
   var bruto = pers.reduce(function (s, p) { return s + p.bruto; }, 0) + aanv;
@@ -286,7 +302,7 @@ function maakSim(m, maanden, extraDatum) {
   var d0 = eerstVanMaand(start);
   for (var k = 0; k <= maanden + 1; k++) {
     var md = plusMaanden(d0, k);
-    var hm = huishoudenMaand(m, md);
+    var hm = huishoudenMaand(m, md, true);
     hm.personen.forEach(function (p) { add(new Date(md.getFullYear(), md.getMonth(), dI), p.netto, "Netto inkomen " + p.naam, "inkomen"); });
     add(new Date(md.getFullYear(), md.getMonth(), dI), hm.aanvulling, "Opname uit " + (m.aanv.naam || "inkomensaanvulling"), "aanvulling");
     lastenInMaand(m, md).forEach(function (l) { add(new Date(md.getFullYear(), md.getMonth(), dL), -l.bedrag, l.label, l.soort); });
@@ -366,7 +382,7 @@ function groeiFactor(m, pctJaar, d) {
 function vermogenItems(m, d, spaar, res) {
   var items = [];
   function item(key, comp, naam, waarde, extra) { items.push(Object.assign({ key: key, comp: comp, naam: naam, waarde: waarde }, extra || {})); }
-  item("spaar", "sparen", "Spaarrekening", spaar);
+  item("spaar", "sparen", "Spaarrekening(en)", spaar);
   if (m.profiel.gebruik.deposito) (m.verm.deposito || []).forEach(function (dep) {
     var pl = depositoPlan(m, dep);
     var actief = pl && pl.start <= d && d < pl.eind && pl.eind > m.peil;
@@ -384,6 +400,7 @@ function vermogenItems(m, d, spaar, res) {
     if (s.soort === "uitstaand") item("sc" + s.id, "uitstaand", s.naam || "Uitstaande lening", getal(s.bedrag));
     else item("sc" + s.id, "schuld", s.naam || "Schuld", -getal(s.bedrag));
   });
+  if (m.profiel.leef && m.profiel.leef.woning === "koop" && getal(m.profiel.leef.woz) > 0) item("woning", "overig", "Woning (WOZ-waarde)", getal(m.profiel.leef.woz), { box3: false });
   if (m.profiel.gebruik.hypotheek && getal(m.hyp.bedrag) > 0) item("hyp", "hypotheek", "Hypotheek", -hypOp(m, d).saldo);
   return items;
 }
@@ -456,12 +473,12 @@ function fasenLijst(m) {
 /* ---------- Controles en aandachtspunten ---------- */
 function heeftGegevens(m, menu) {
   switch (menu) {
-    case "dashboard": return !!(m.profiel.geboorteA);
+    case "dashboard": return !!(m.profiel.geboorteA && m.profiel.type);
     case "inkomen": return m.bronnen.length > 0;
     case "aanvulling": return aanvulPlan(m).length > 0;
     case "pensioen": return m.potten.length > 0 || getal(m.hyp.bedrag) > 0;
     case "lasten": return (m.lasten || []).length > 0 || getal((m.dagelijks || {}).bedrag) > 0;
-    case "vermogen": return getal(m.verm.spaar) > 0 || (m.verm.deposito || []).length > 0 || (m.verm.beleggingen || []).length > 0 || (m.verm.overig || []).length > 0;
+    case "vermogen": return getal(m.verm.spaar) > 0 || (m.verm.rekeningen || []).length > 0 || (m.verm.deposito || []).length > 0 || (m.verm.beleggingen || []).length > 0 || (m.verm.overig || []).length > 0;
     case "grote": return (m.grote.reserveringen || []).length > 0 || (m.grote.boekingen || []).length > 0;
     default: return false;
   }

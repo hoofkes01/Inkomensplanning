@@ -127,7 +127,7 @@ function RapportInhoud() {
   // Pagina 9: aannames en toelichting
   out.push(secties([
     rpAan(c, "aannames") ? h(RpSectie, { key: "aan", id: "aannames", titel: "Aannames en controles" },
-      h(KV, { rijen: [["Peildatum", fmtDatum(m.peil)], ["Inflatie (CPI) per jaar", pct(m.inst.cpi, 1) + " (gecontroleerd: " + (m.inst.cpiStand ? fmtDatum(m.inst.cpiStand) : "nee") + ")"], ["Spaarrente", pct(m.inst.spaarrente, 2) + " (gecontroleerd: " + (m.inst.spaarrenteStand ? fmtDatum(m.inst.spaarrenteStand) : "nee") + ")"], ["Rendement beleggen", pct(m.inst.rendBeleggen, 1)], ["Indexatie schijven en AOW", pct(m.inst.indexSchijven, 1) + " en " + pct(m.inst.indexAOW, 1)], ["Fiscale tabel", "stand " + fmtDatum(FISCAAL_TABEL_STAND) + ", laatste jaar " + FISCAAL_LAATSTE_JAAR], ["Versie van de app", APP_VERSIE]] }),
+      h(KV, { rijen: [["Peildatum", fmtDatum(m.peil)], ["Inflatie (CPI) per jaar", pct(m.inst.cpi, 1) + " (gecontroleerd: " + (m.inst.cpiStand ? fmtDatum(m.inst.cpiStand) : "nee") + ")"], ["Spaarrente", pct(m.inst.spaarrente, 2) + " (gecontroleerd: " + (m.inst.spaarrenteStand ? fmtDatum(m.inst.spaarrenteStand) : "nee") + ")"], ["Rendement beleggen", pct(m.inst.rendBeleggen, 1)], ["Indexatie schijven en AOW", pct(m.inst.indexSchijven, 1) + " en " + pct(m.inst.indexAOW, 1)], ["Fiscale tabel", "stand " + fmtDatum(fiscaalTabel(m).stand) + ", laatste jaar " + fiscaalTabel(m).laatste], ["Versie van de app", APP_VERSIE]] }),
       h("ul", { className: "rp-lijst" }, fiscaalWaarschuwingen(m, m.nu).map(function (t, i) { return h("li", { key: i }, t); }))) : null,
     rpAan(c, "toelichting") ? h(RpSectie, { key: "toel", id: "toelichting", titel: "Toelichting" },
       h("ul", { className: "rp-lijst" },
