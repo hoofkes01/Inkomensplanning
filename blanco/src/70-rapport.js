@@ -87,7 +87,7 @@ function RapportInhoud() {
     rpAan(c, "beleggen") ? h(RpSectie, { key: "bel", id: "beleggen", titel: "Beleggen en pensioen" },
       (S.verm.beleggingen || []).length ? h(Tabel, { className: "rp-tabel", kop: ["Beleggingen", "Soort", "Waarde nu", "Over 12 maanden"], get: [2, 3], rijen: (S.verm.beleggingen || []).map(function (b) { var it = vr[j12].items.filter(function (x) { return x.key === "bel" + b.id; })[0]; return [b.naam || "–", b.soort === "pensioen" ? "Pensioen" : "Vrij", eur(b.waarde), eur(it ? it.waarde : 0)]; }) }) : null,
       m.potten.length ? h(Tabel, { className: "rp-tabel", kop: ["Pot", "Van", "Saldo nu", "Uitkering gaat in", "Per maand bruto"], get: [2, 4], rijen: m.potten.map(function (pt) { var pl = potPlan(m, pt); return [pt.naam || "–", persoonVan(m, pt.persoon).naam, eur(pt.saldo), pl ? fmtDatum(pl.start) : "–", pl ? eur(pl.maand) : "–"]; }) }) : null,
-      aanvulPlan(m).length ? h("p", null, "Inkomensaanvulling '" + (S.aanv.naam || "") + "': saldo " + eur(S.aanv.startsaldo) + ", opname " + eur(S.aanv.maand) + " per maand.") : null,
+      aanvulPlan(m).length ? h("p", null, "Inkomensaanvulling: " + eur(S.aanv.maand) + " per maand tot " + fmtMaand(m.aanvB.eind) + ", gereserveerd uit " + (m.aanvB.bron === "sparen" ? "spaargeld" : "beleggingen") + ": " + eur(m.aanv.startsaldo) + ".") : null,
       (!(S.verm.beleggingen || []).length && !m.potten.length && !aanvulPlan(m).length) ? h("p", null, "Geen beleggingen of pensioenpotten ingevuld.") : null) : null
   ]));
   // Pagina 6: advies

@@ -31,6 +31,9 @@ const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undef
   await page.check(`${dlg}[data-woning="huur"]`); await volgende();
   await page.check(`${dlg}[data-auto="geen"]`); await volgende();
   await v("kinderen", "1"); await page.check(`${dlg}input[type=checkbox] >> nth=0`); await volgende(); // kinderopvang
+  await volgende();
+  ok("buffer is verplicht", /minimale buffer/i.test(await tekst()));
+  await v("minimum", "12.500"); await volgende();
   ok("deposito's en beleggen zijn niet vooringevuld", !(await page.isChecked(`${dlg}input[type=checkbox] >> nth=0`)) && !(await page.isChecked(`${dlg}input[type=checkbox] >> nth=1`)));
   await volgende();
   await page.waitForSelector("[role=dialog]", { state: "detached" });
@@ -76,6 +79,16 @@ const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undef
   await page.click('[data-knop="menu"]'); await page.click('[data-menu="dashboard"]');
   await page.click('[data-knop="start-beleggen"]'); await page.waitForSelector("[role=dialog]");
   ok("beginnen met beleggen opent advies-intake", /Beleggingsadvies/.test(await tekst()));
+  await volgende(); ok("profiel en broker zijn verplicht", /beleggingsprofiel/.test(await tekst()));
+  await page.check(`${dlg}[data-profiel="neutraal"]`); await page.selectOption(`${dlg}[data-veld="broker"]`, "Bux"); await volgende();
+  await page.keyboard.press("Escape");
+  // Inkomensaanvulling: bedrag per maand, de app toetst
+  await page.click('[data-knop="menu"]'); await page.click('[data-menu="dashboard"]');
+  await page.click('[data-knop="start-aanvulling"]'); await page.waitForSelector("[role=dialog]");
+  await volgende(); ok("aanvulling: bedrag verplicht", /hoeveel aanvulling/i.test(await tekst()));
+  await v("aanv-maand", "1000"); await page.selectOption(`${dlg}[data-veld="aanv-tot"]`, "datum"); await v("aanv-einde", "2028-10-18");
+  const oordeel = await page.textContent(`${dlg}[data-aanv-oordeel]`);
+  ok("aanvulling: oordeel toont nodig en beschikbaar", /Nodig/.test(oordeel) && /Beschikbaar/.test(oordeel) && /Uit spaargeld/.test(oordeel), oordeel.slice(0, 220));
   await page.keyboard.press("Escape");
   await page.click('[data-knop="menu"]');
   ok("advies-menu verschijnt na keuze", await page.locator('[data-menu="advies"]').count() === 1);

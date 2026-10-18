@@ -410,7 +410,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 })();
 </script>
 <script>
-var APP_VERSIE = "18-10-2026 · 18:08";
+var APP_VERSIE = "18-10-2026 · 18:13";
 /* ===== Basis: hulpfuncties, opslag, invoervelden ===== */
 var h = React.createElement;
 var useState = React.useState, useEffect = React.useEffect, useMemo = React.useMemo, useRef = React.useRef, useContext = React.useContext;
@@ -940,21 +940,21 @@ var STANDAARD = {
     gebruik: { hypotheek: false, deposito: false, beleggen: false, aanvulling: false, pensioen: false }
   },
   // Marktcijfers en aannames: standaardwaarden zijn voorbeelden. Zolang 'stand' leeg is, meldt de app dat ze nog niet zijn bijgewerkt.
-  inst: { cpi: 2.5, cpiIjk: "", cpiStand: "", spaarrente: 2, spaarrenteStand: "", rendBeleggen: 5, rendPot: 4, rendPotTijdens: 3, indexSchijven: 2, indexAOW: 2, dagInkomen: 25, dagLasten: 1, kortMee: true, kortMaanden: 3, backupDatum: "", cijfersDatum: "" },
+  inst: { cpi: 2.5, cpiIjk: "", cpiStand: "", spaarrente: 2, spaarrenteStand: "", rendBeleggen: 4, rendPot: 4, rendPotTijdens: 3, indexSchijven: 2, indexAOW: 2, dagInkomen: 25, dagLasten: 1, kortMee: true, kortMaanden: 3, backupDatum: "", cijfersDatum: "" },
   bronnen: [],
   werkJaren: { A: {}, B: {} },
-  aanv: { naam: "Inkomensaanvulling", startsaldo: "", maand: "", opnameAan: true, opnameVanaf: "", rendement: 3, kosten: 0.5, einde: "", mutaties: [] },
+  aanv: { naam: "Inkomensaanvulling", maand: "", opnameVanaf: "", totType: "aow", totPersoon: "A", einde: "", bron: "sparen", startsaldo: "", rendement: 3, kosten: 0, opnameAan: true, mutaties: [] },
   potten: [],
   hyp: { bedrag: "", rente: "", maandlast: "", aflossing: "", vorm: "annuiteit", aflosEinde: "", renteVastTot: "" },
   lasten: [],
   dagelijks: { bedrag: "" },
   verm: { rekeningen: [], deposito: [], beleggingen: [], overig: [], schulden: [] },
-  grote: { minimum: 7500, reserveringen: [], boekingen: [], renteOverride: {} },
+  grote: { minimum: "", reserveringen: [], boekingen: [], renteOverride: {} },
   fiscOverride: {},
   box3: { stelsel: "huidig", tarief: "", vrijPP: "", sparenPct: "", beleggenPct: "" },
   advies: {
-    doelOff: 50, doelNeu: 30, doelDef: 20, drempel: 15000, marge: 0.3, belasting: 36, stelsel: "forfait", forfaitSparen: 1.28, forfaitBeleg: 6,
-    euribor: 2.99, euriborStand: "", raisin6: 3.15, raisinStand: "", wachtTot: "", behoudAan: false, risico: "gemiddeld",
+    risico: "", broker: "", eigenDoel: false, doelOff: 50, doelNeu: 30, doelDef: 20, drempel: "", marge: 0.3, belasting: 36, stelsel: "forfait", forfaitSparen: 1.28, forfaitBeleg: 6,
+    euribor: 2.99, euriborStand: "", raisin6: 3.15, raisinStand: "", wachtTot: "", behoudAan: false,
     pf: [], pfDatum: "", rekeningId: "", rend: {},
     markt: { datum: "", punten: [] }
   },
@@ -1078,7 +1078,37 @@ function maakModel(S, nu) {
   m.inst = Object.assign({}, S.inst, { spaarrente: totaal > 0 ? wr / totaal : getal(S.inst.spaarrente) });
   m.cijfers = S.cijfers || {};
   m._cache = {};
+  // Inkomensaanvulling: de gebruiker geeft het gewenste maandbedrag; de app berekent het benodigde kapitaal en reserveert dat uit spaargeld of beleggingen.
+  m.aanv = Object.assign({}, S.aanv);
+  m.aanvB = null;
+  if (p.gebruik.aanvulling) {
+    var b = aanvulBeoordeling(m);
+    m.aanvB = b;
+    m.aanv.startsaldo = b.K; m.aanv.rendement = b.rBron; m.aanv.kosten = 0;
+    m.aanv.opnameVanaf = isoDatum(b.start); m.aanv.einde = b.eind ? isoDatum(b.eind) : ""; m.aanv.opnameAan = b.X > 0;
+    if (b.bron === "sparen") m.verm = Object.assign({}, m.verm, { spaar: m.verm.spaar - b.K });
+  }
   return m;
+}
+// Toetst de gewenste aanvulling aan spaargeld (boven de buffer) en vrije beleggingen, bij een standaard rendement.
+function aanvulBeoordeling(m) {
+  var a = m.aanv, gb = m.profiel.gebruik;
+  var start = geldigeDatum(a.opnameVanaf) || m.peil; if (start < m.peil) start = m.peil;
+  var eind = null;
+  if (a.totType === "datum") eind = geldigeDatum(a.einde);
+  else { var ps = persoonVan(m, a.totPersoon || "A"); eind = ps && ps.aow; }
+  var L = eind ? Math.max(0, maandenTussen(eerstVanMaand(start), eerstVanMaand(eind))) : 0;
+  var X = getal(a.maand), rS = getal(m.inst.spaarrente), rB = getal(m.inst.rendBeleggen);
+  function pv(r) { var i = r / 1200; return L <= 0 ? 0 : (i === 0 ? X * L : X * (1 - Math.pow(1 + i, -L)) / i); }
+  var buffer = getal(m.grote.minimum);
+  var besS = Math.max(0, getal(m.verm.spaar) - buffer);
+  var besB = gb.beleggen ? (m.verm.beleggingen || []).filter(function (x) { return x.soort === "vrij"; }).reduce(function (s, x) { return s + getal(x.waarde); }, 0) : 0;
+  var bron = a.bron === "beleggen" && gb.beleggen ? "beleggen" : "sparen";
+  var nodigS = pv(rS), nodigB = pv(rB);
+  var K = Math.min(bron === "sparen" ? nodigS : nodigB, bron === "sparen" ? besS : besB);
+  return { X: X, L: L, start: start, eind: eind, rS: rS, rB: rB, nodigS: nodigS, nodigB: nodigB, besS: besS, besB: besB, buffer: buffer,
+    kanS: L > 0 && X > 0 && besS >= nodigS - 0.5, kanB: L > 0 && X > 0 && besB >= nodigB - 0.5,
+    maxXS: annuiteit(besS, rS, L), maxXB: annuiteit(besB, rB, L), bron: bron, K: Math.max(0, K), rBron: bron === "sparen" ? rS : rB };
 }
 function persoonVan(m, id) { return m.personen.filter(function (x) { return x.id === id; })[0] || m.personen[0]; }
 function naAOW(p, d) { return !!(p && p.aow && d >= eerstVanMaand(p.aow)); }
@@ -1450,10 +1480,11 @@ function vermogenItems(m, d, spaar, res) {
   });
   if (m.profiel.gebruik.beleggen) (m.verm.beleggingen || []).forEach(function (b) {
     var rend = b.soort === "pensioen" ? m.inst.rendPot : m.inst.rendBeleggen;
-    item("bel" + b.id, b.soort === "pensioen" ? "pensioenbel" : "beleggen", b.naam || "Beleggingen", getal(b.waarde) * groeiFactor(m, rend, d), { soort: b.soort });
+    var sch = (b.soort === "vrij" && m.aanvB && m.aanvB.bron === "beleggen" && m.aanvB.besB > 0) ? 1 - m.aanvB.K / m.aanvB.besB : 1;
+    item("bel" + b.id, b.soort === "pensioen" ? "pensioenbel" : "beleggen", b.naam || "Beleggingen", getal(b.waarde) * sch * groeiFactor(m, rend, d), { soort: b.soort });
   });
   if (m.profiel.gebruik.pensioen) m.potten.forEach(function (pt) { item("pot" + pt.id, "pensioen", pt.naam || "Pensioenpot", potSaldoOp(m, pt, d)); });
-  if (m.profiel.gebruik.aanvulling && aanvulPlan(m).length) item("aanv", "aanvulling", m.aanv.naam || "Inkomensaanvulling", d <= m.peil ? getal(m.aanv.startsaldo) : aanvulOp(m, d).saldo);
+  if (m.profiel.gebruik.aanvulling && aanvulPlan(m).length) item("aanv", "aanvulling", "Inkomensaanvulling (gereserveerd)", d <= m.peil ? getal(m.aanv.startsaldo) : aanvulOp(m, d).saldo);
   (m.grote.reserveringen || []).forEach(function (r) { item("res" + r.id, "reserv", r.naam || "Reservering", (res && res[r.id] != null) ? res[r.id] : getal(r.startsaldo)); });
   (m.verm.overig || []).forEach(function (o) { item("ov" + o.id, "overig", o.naam || "Overige bezitting", getal(o.waarde), { box3: !!o.box3 }); });
   (m.verm.schulden || []).forEach(function (s) {
@@ -1569,12 +1600,22 @@ var ADVIES_MARKT_STANDAARD = {
     "Jouw controle: vul bij 'Marktbeeld' zelf de actuele stand in als je deze wilt bijhouden; de app kan geen koersen of rentes zelf ophalen."
   ]
 };
+// Risicoprofielen: de gebruiker kiest een profiel; de app vertaalt dat naar een verdeling (offensief / neutraal / defensief).
+var RISICO_PROFIELEN = {
+  defensief: { naam: "Defensief", off: 10, neu: 30, def: 60, uitleg: "Weinig schommelingen. Vooral obligaties en sparen, een klein deel aandelen." },
+  neutraal: { naam: "Neutraal", off: 30, neu: 40, def: 30, uitleg: "Een evenwicht tussen groei en rust. Met een flink deel aandelen en een stevig deel obligaties." },
+  offensief: { naam: "Offensief", off: 50, neu: 30, def: 20, uitleg: "Gericht op groei op lange termijn. Meer aandelen, dus grotere schommelingen." }
+};
+function profielVerlies(pr) { return (pr.off * 0.25 + pr.neu * 0.12 + pr.def * 0.03); }
+var BROKERS = ["DEGIRO", "Saxo", "Lynx", "Interactive Brokers", "Bux", "Trade Republic", "Bolero", "Bank of broker via je eigen bank", "Anders of weet ik niet"];
 function adviesParams(m) {
   var A = m.advies || {};
   var N = function (v, d) { return v === "" || v == null || !isFinite(Number(v)) ? d : Number(v); };
+  var pr = RISICO_PROFIELEN[A.risico] || RISICO_PROFIELEN.neutraal;
+  var doel = A.eigenDoel ? { off: N(A.doelOff, 50), neu: N(A.doelNeu, 30), def: N(A.doelDef, 20) } : { off: pr.off, neu: pr.neu, def: pr.def };
   return {
-    doel: { off: N(A.doelOff, 50), neu: N(A.doelNeu, 30), def: N(A.doelDef, 20) },
-    drempel: N(A.drempel, 15000), marge: N(A.marge, 0.3), belasting: N(A.belasting, 36),
+    doel: doel, risico: RISICO_PROFIELEN[A.risico] ? A.risico : "", broker: A.broker || "",
+    drempel: N(m.grote && m.grote.minimum, 0), marge: N(A.marge, 0.3), belasting: N(A.belasting, 36),
     stelsel: A.stelsel === "werkelijk" ? "werkelijk" : "forfait", fSparen: N(A.forfaitSparen, 1.28), fBeleg: N(A.forfaitBeleg, 6),
     euribor: N(A.euribor, 0), raisin: N(A.raisin6, 0), wachtTot: N(A.wachtTot, 0), behoudAan: !!A.behoudAan
   };
@@ -1646,7 +1687,7 @@ function adviesBerekening(m, sim) {
   defVermogen = vt.sparen + vt.deposito;
   var P100 = function (a, b) { return b > 0 ? Math.round(a / b * 100) : 0; };
   var waarnemingen = [];
-  if (defVervangen) waarnemingen.push("Geen defensief fonds levert na kosten meer dan een deposito van 6 maanden plus je marge (nodig: " + pct(adviesMinDef(P), 2) + "). Het defensieve deel (" + defOrigineel + "%) is daarom naar neutraal verschoven. Defensief geld blijft in deposito's.");
+  if (defVervangen) waarnemingen.push("Een obligatiefonds levert na kosten en belasting nu niet meer op dan sparen of een deposito. Houd het defensieve deel (" + defOrigineel + "%) daarom in deposito's of spaargeld; de app verdeelt het beleggingsdeel over neutraal en offensief.");
   if (totaalNu > 0) {
     waarnemingen.push("Je vrij belegde vermogen is " + eur(totaalNu) + ": " + P100(huidig.off, totaalNu) + "% offensief, " + P100(huidig.neu, totaalNu) + "% neutraal en " + P100(huidig.def, totaalNu) + "% defensief (doel " + P100(doel.off, somDoel) + "/" + P100(doel.neu, somDoel) + "/" + P100(doel.def, somDoel) + "%).");
     if (defVermogen > 0) waarnemingen.push("Je defensieve vermogen (sparen " + eur(vt.sparen) + " + deposito's " + eur(vt.deposito) + ") is " + eur(defVermogen) + ". Samen met je vrij beleggen is dat " + eur(defVermogen + totaalNu) + ": " + P100(totaalNu, defVermogen + totaalNu) + "% belegd en " + P100(defVermogen, defVermogen + totaalNu) + "% defensief. " + (P100(defVermogen, defVermogen + totaalNu) >= 50 ? "Bij zo'n groot defensief deel past een offensievere opzet van je beleggingen." : "Het defensieve deel is beperkt; houd je buffer in de gaten."));
@@ -1720,11 +1761,13 @@ function koopTekst(m, A, c, bedrag) {
 }
 function adviesSamenvatting(m, A) {
   var plan = herbalanceerPlan(m, A), regels = [];
-  if (A.defVervangen) regels.push("Geen defensief fonds verslaat veilig sparen na kosten en belasting (minimaal " + pct(adviesMinDef(A.P), 2) + " nodig). Het defensieve deel is daarom neutraal geworden; defensief geld blijft in deposito's.");
+  if (!A.P.risico) regels.push("Kies eerst je beleggingsprofiel (defensief, neutraal of offensief). Tot die tijd rekent de app met neutraal.");
+  else regels.push("Jouw profiel: " + RISICO_PROFIELEN[A.P.risico].naam.toLowerCase() + " (" + A.P.doel.off + "% offensief, " + A.P.doel.neu + "% neutraal, " + A.P.doel.def + "% defensief).");
+  if (A.defVervangen) regels.push("Voor het defensieve deel is sparen of een deposito nu aantrekkelijker dan een obligatiefonds, ook na belasting. Houd dat deel in spaargeld of deposito's.");
   var pfDatum = geldigeDatum((m.advies || {}).pfDatum);
   if (A.totaalNu > 0 && pfDatum && dagenTussen(pfDatum, m.nu) > 30) regels.push("Je portefeuille is " + dagenTussen(pfDatum, m.nu) + " dagen geleden bijgewerkt. Upload hem opnieuw voor een actueel advies.");
-  if (A.koopBasis > 0) regels.push("Bijbeleggen: je kunt ongeveer " + eur(afr10(A.koopBasis)) + " beleggen en blijft boven je drempel van " + eur(A.P.drempel) + ".");
-  else regels.push("Bijbeleggen: nu niet. Je direct opneembare spaargeld (" + eur(A.spaarNu) + ") blijft niet boven je drempel van " + eur(A.P.drempel) + ". Niets doen is altijd een optie.");
+  if (A.koopBasis > 0) regels.push("Bijbeleggen: je kunt ongeveer " + eur(afr10(A.koopBasis)) + " beleggen en blijft boven je minimale buffer van " + eur(A.P.drempel) + ".");
+  else regels.push("Bijbeleggen: nu niet. Je direct opneembare spaargeld (" + eur(A.spaarNu) + ") blijft niet boven je minimale buffer van " + eur(A.P.drempel) + ". Niets doen is altijd een optie.");
   if (plan) {
     if (plan.aanbeveling === "gefaseerd") {
       var st = plan.stappen[0];
@@ -1818,6 +1861,19 @@ function adviesParseUpload(tekst) {
   return uit;
 }
 
+// Wat kan er gekocht worden? Per categorie van het profiel: naam, ISIN en kosten. Niet elke broker biedt elk fonds.
+function adviesKopen(m, A) {
+  var P = A.P, som = P.doel.off + P.doel.neu + P.doel.def, uit = [];
+  ["off", "neu", "def"].forEach(function (cat) {
+    var deel = som > 0 ? Math.round(P.doel[cat] / som * 100) : 0;
+    if (deel <= 0) return;
+    var alle = ADVIES_FONDSEN.filter(function (f) { return f.cat === cat; });
+    var geschikt = cat === "def" ? alle.filter(function (f) { return adviesVoldoetMin(m, f, P); }) : alle;
+    uit.push({ cat: cat, deel: deel, fondsen: geschikt, naarDeposito: cat === "def" && !geschikt.length });
+  });
+  return uit;
+}
+
 /* ===== Gedeelde context, lijst-editor, intake-raamwerk, aandachtspunten ===== */
 var Ctx = React.createContext(null);
 function useC() { return useContext(Ctx); }
@@ -1844,6 +1900,7 @@ function aandachtspunten(c) {
   function pt(soort, tekst, menu) { uit.push({ soort: soort, tekst: tekst, menu: menu }); }
   var tot = intakeMenus(S.profiel).length, klaar = intakeKlaarAantal(S);
   if (klaar < tot) pt("info", "Intake: " + klaar + " van " + tot + " menu's voltooid. Zonder intake kan de app niet alles berekenen.", "dashboard");
+  if ((S.grote.minimum === "" || S.grote.minimum == null) && S.profiel.type) pt("waarschuw", "Geef je minimale buffer aan spaargeld aan (Vermogen). Daar rekent de app mee.", "vermogen");
   if (!S.profiel.geboorteA) pt("waarschuw", "Vul de geboortedatum in; zonder die kan de AOW-datum niet worden bepaald.", "dashboard");
   if (ouderDan(S.inst.cijfersDatum, 14, nu)) pt("waarschuw", "De cijfers (belasting, AOW, inflatie, rentes) zijn " + (S.inst.cijfersDatum ? "van " + fmtDatum(S.inst.cijfersDatum) : "nog nooit bijgewerkt") + ". Druk op 'Cijfers bijwerken'.", "dashboard");
   if (klaar >= 1) {
@@ -2500,28 +2557,48 @@ function BoekingenEditor() {
 }
 function MinimumVeld() {
   var c = useC();
-  return h(BedragVeld, { label: "Minimaal spaargeld (buffer)", hint: "Onder dit bedrag wil je niet komen.", value: c.S.grote.minimum, onChange: function (v) { c.zet("grote", { minimum: v }); }, naam: "minimum" });
+  return h(BedragVeld, { label: "Minimale buffer aan spaargeld", hint: "Het bedrag dat je altijd direct beschikbaar wilt houden. Dit is voor iedereen anders. Onder dit bedrag wil je niet komen en je belegt er niet voor bij.", value: c.S.grote.minimum, onChange: function (v) { c.zet("grote", { minimum: v }); }, naam: "minimum" });
 }
 
-/* ----- Inkomensaanvulling ----- */
-function foutenAanv(a) {
-  return leeg([getal(a.startsaldo) <= 0 ? "Vul het saldo van de pot in." : null, a.opnameAan && getal(a.maand) <= 0 ? "Vul het bedrag in dat je per maand opneemt (of zet de opname uit)." : null,
-    datumFout(a.opnameVanaf, "Opname vanaf"), datumFout(a.einde, "Einde opname")]);
+/* ----- Inkomensaanvulling: jij geeft het bedrag, de app toetst het ----- */
+function foutenAanv(c) {
+  var a = c.S.aanv, B = c.m.aanvB;
+  return leeg([getal(a.maand) <= 0 ? "Vul in hoeveel aanvulling je per maand wilt." : null,
+    datumFout(a.opnameVanaf, "Vanaf"), a.totType === "datum" ? (geldigeDatum(a.einde) ? null : "Vul de einddatum in.") : null,
+    (B && getal(a.maand) > 0 && B.L <= 0) ? "Het einde ligt niet na het begin. Kies een latere einddatum of controleer de AOW-datum." : null]);
+}
+function aanvulOordeel(B, bron) {
+  var kan = bron === "sparen" ? B.kanS : B.kanB, tekort = Math.max(0, (bron === "sparen" ? B.nodigS - B.besS : B.nodigB - B.besB)), max = bron === "sparen" ? B.maxXS : B.maxXB;
+  return kan ? h("span", { className: "groen" }, "Dit kan.") : h("span", { className: "rood" }, "Dit kan niet helemaal: tekort " + eur(tekort) + ". Haalbaar is circa " + eur(max) + " per maand.");
 }
 function AanvulVelden() {
-  var c = useC(), a = c.S.aanv;
+  var c = useC(), a = c.S.aanv, m = c.m, B = m.aanvB, gb = c.S.profiel.gebruik;
   function z(patch) { c.zet("aanv", patch); }
+  var fasen = useMemo(function () { return fasenLijst(m); }, [m]);
+  var tekorten = fasen.map(function (f) { return { naam: f.naam, d: f.d, t: f.saldo - f.aanvulling }; }).filter(function (x) { return x.t < -1 && x.d >= eerstVanMaand(m.peil); });
+  var aowOpties = m.personen.map(function (p) { return [p.id, "AOW van " + p.naam + (p.aow ? " (" + fmtDatum(p.aow) + ")" : "")]; });
   return h("div", null,
+    h(BedragVeld, { label: "Hoeveel aanvulling wil je per maand? (netto)", hint: "Het bedrag dat je maandelijks extra nodig hebt tot een bepaald moment, meestal tot de AOW.", value: a.maand, onChange: function (v) { z({ maand: v }); }, naam: "aanv-maand" }),
+    tekorten.length ? h("p", { className: "klein" }, "Ter indicatie: zonder aanvulling heb je in de volgende fasen een tekort per maand: " + tekorten.slice(0, 3).map(function (x) { return x.naam + " (" + fmtMaand(x.d) + ") " + eur(-x.t); }).join("; ") + ".") : null,
     h("div", { className: "raster" },
-      h(BedragVeld, { label: "Saldo nu", value: a.startsaldo, onChange: function (v) { z({ startsaldo: v }); }, naam: "aanv-saldo" }),
-      h(BedragVeld, { label: "Opname per maand (netto)", value: a.maand, onChange: function (v) { z({ maand: v }); }, naam: "aanv-maand" })),
-    h(Vink, { label: "Opname staat aan", value: a.opnameAan, onChange: function (v) { z({ opnameAan: v }); } }),
-    h("div", { className: "raster" },
-      h(DatumVeld, { label: "Opname vanaf (leeg = nu)", value: a.opnameVanaf, onChange: function (v) { z({ opnameVanaf: v }); } }),
-      h(DatumVeld, { label: "Opname tot (leeg = tot de pot leeg is)", value: a.einde, onChange: function (v) { z({ einde: v }); } })),
-    h("div", { className: "raster" },
-      h(BedragVeld, { label: "Rendement per jaar (%)", value: a.rendement, pct: true, onChange: function (v) { z({ rendement: v }); } }),
-      h(BedragVeld, { label: "Beheerkosten per jaar (%)", value: a.kosten, pct: true, onChange: function (v) { z({ kosten: v }); } })));
+      h(DatumVeld, { label: "Vanaf (leeg = nu)", value: a.opnameVanaf, onChange: function (v) { z({ opnameVanaf: v }); }, naam: "aanv-vanaf" }),
+      h(KeuzeVeld, { label: "Tot", value: a.totType, opties: [["aow", "Tot de AOW"], ["datum", "Tot een eigen datum"]], onChange: function (v) { z({ totType: v }); }, naam: "aanv-tot" })),
+    a.totType === "aow" && m.personen.length > 1 ? h(KeuzeVeld, { label: "Welke AOW", value: a.totPersoon || "A", opties: aowOpties, onChange: function (v) { z({ totPersoon: v }); } }) : null,
+    a.totType === "datum" ? h(DatumVeld, { label: "Einddatum", value: a.einde, onChange: function (v) { z({ einde: v }); }, naam: "aanv-einde" }) : null,
+    gb.beleggen ? h(KeuzeVeld, { label: "Waaruit wil je dit betalen?", value: a.bron, opties: [["sparen", "Uit spaargeld"], ["beleggen", "Uit beleggingen"]], onChange: function (v) { z({ bron: v }); }, naam: "aanv-bron" }) : null,
+    h("div", { className: "kaart info", "data-aanv-oordeel": "1" },
+      h("b", null, "Kan dat?"),
+      (!B || B.X <= 0) ? h("p", null, "Vul het bedrag in om te zien of het kan.") :
+      B.L <= 0 ? h("p", { className: "rood" }, "Kies een einddatum na het begin, of vul de geboortedatum in zodat de AOW-datum bekend is.") :
+      h("div", null,
+        h("p", null, "Looptijd: " + Math.floor(B.L / 12) + " jaar" + (B.L % 12 ? " en " + (B.L % 12) + " maanden" : "") + " (" + fmtMaand(B.start) + " tot " + fmtMaand(B.eind) + ")."),
+        h(Tabel, { kop: ["Bron (rendement)", "Nodig", "Beschikbaar"], get: [1, 2], rijen: [
+          ["Spaargeld (" + pct(B.rS, 1) + ")", eur(B.nodigS), eur(B.besS)]
+        ].concat(gb.beleggen ? [["Beleggingen (" + pct(B.rB, 1) + ")", eur(B.nodigB), eur(B.besB)]] : []) }),
+        h("p", { className: "klein" }, "Beschikbaar spaargeld = je spaargeld boven je minimale buffer van " + eur(B.buffer) + ". Beschikbaar bij beleggingen = je vrij belegde vermogen. Nodig = het bedrag dat je nu apart moet zetten om elke maand " + eur(B.X) + " te kunnen opnemen, bij het standaard rendement."),
+        h("p", null, h("b", null, "Uit spaargeld: "), aanvulOordeel(B, "sparen")),
+        gb.beleggen ? h("p", null, h("b", null, "Uit beleggingen: "), aanvulOordeel(B, "beleggen")) : null,
+        h("p", null, "De planning reserveert " + eur(B.K) + " uit " + (B.bron === "sparen" ? "je spaargeld" : "je beleggingen") + " voor deze aanvulling." + (B.K < (B.bron === "sparen" ? B.nodigS : B.nodigB) - 0.5 ? " Dat is minder dan nodig, dus de pot raakt eerder leeg." : "")))));
 }
 function AanvulMutaties() {
   var c = useC(), L = c.lijst("aanv", "mutaties");
@@ -2558,6 +2635,8 @@ INTAKE.dashboard = {
     { id: "auto", titel: "Auto", uitleg: "Een eigen auto, een leaseauto of geen auto geeft andere lasten.", render: function () { return h(AutoVelden, null); },
       valideer: function (c) { return intakeKeuze(c.S.profiel.leef.auto, "Kies of je een auto hebt."); } },
     { id: "gezin", titel: "Gezin", uitleg: "Kinderen geven recht op toeslagen en kosten. Dit bepaalt welke posten de app aanbiedt.", render: function () { return h(GezinVelden, null); } },
+    { id: "buffer", titel: "Minimale buffer", uitleg: "Hoeveel spaargeld wil je altijd direct beschikbaar hebben? Dit verschilt per persoon. De app waarschuwt als je er onder komt en belegt of reserveert nooit geld dat nodig is voor de buffer.", render: function () { return h(MinimumVeld, null); },
+      valideer: function (c) { var v = c.S.grote.minimum; return v === "" || v == null ? ["Vul je minimale buffer in (0 mag ook)."] : leeg([nietNeg(v, "Buffer")]); } },
     { id: "producten", titel: "Onderdelen en peildatum", uitleg: "Spaargeld heeft iedereen. Deposito's en beleggen alleen als dat bij je past; je kunt er later altijd mee beginnen.", render: function () { return h("div", null, h(ProductenVelden, null), h(PeildatumVeld, null)); },
       valideer: function (c) { return leeg([datumFout(c.S.profiel.peildatum, "Peildatum")]); } }
   ]
@@ -2577,9 +2656,8 @@ INTAKE.inkomen = {
 };
 INTAKE.aanvulling = {
   titel: "Toevoeging inkomen", stappen: [
-    { id: "pot", titel: "De pot", uitleg: "Saldo, maandelijkse opname, rendement en kosten.", render: function () { return h(AanvulVelden, null); },
-      valideer: function (c) { return foutenAanv(c.S.aanv); }, overslaan: "de aanvulling telt dan niet mee in je inkomen." },
-    { id: "mutaties", titel: "Bijstorten of afromen", uitleg: "Geplande stortingen in de pot of bedragen die je eruit haalt.", render: function () { return h(AanvulMutaties, null); }, overslaan: "er worden geen extra stortingen of opnames verwerkt." }
+    { id: "aanvulling", titel: "Hoeveel aanvulling per maand?", uitleg: "Geef aan hoeveel je per maand extra nodig hebt en tot wanneer. De app toetst of dat kan met je spaargeld of beleggingen, en rekent uit hoeveel je daarvoor apart moet zetten.", render: function () { return h(AanvulVelden, null); },
+      valideer: function (c) { return foutenAanv(c); }, overslaan: "er wordt dan geen aanvulling meegerekend." }
   ]
 };
 INTAKE.pensioen = {
@@ -2630,8 +2708,6 @@ INTAKE.vermogen = {
 };
 INTAKE.grote = {
   titel: "Grote posten en reserveringen", stappen: [
-    { id: "minimum", titel: "Minimaal spaargeld", uitleg: "Het bedrag dat altijd op je spaarrekening moet blijven staan als buffer.", render: function () { return h("div", null, h(MinimumVeld, null), h(Uitleg, null, "Het startsaldo is het spaargeld dat je bij Vermogen hebt ingevuld.")); },
-      valideer: function (c) { return leeg([nietNeg(c.S.grote.minimum, "Minimum")]); } },
     { id: "reserveringen", titel: "Reserveringen", uitleg: "Maandelijks sparen voor een doel, zoals vakantie of vervanging van de auto. Het bedrag gaat automatisch op de boekdag naar de pot.", render: function () { return h(ReserveringenEditor, null); },
       valideer: function (c) { return leeg(c.S.grote.reserveringen.map(function (r) { return !r.naam ? "Kies bij elke reservering een doel." : r.maand === "" ? r.naam + ": vul het maandbedrag in." : null; })); }, overslaan: "er worden geen reserveringen verwerkt." },
     { id: "boekingen", titel: "Geplande grote uitgaven en inkomsten", uitleg: "Bijvoorbeeld een verbouwing, een erfenis of een jaarlijkse bonus.", render: function () { return h(BoekingenEditor, null); },
@@ -2640,12 +2716,10 @@ INTAKE.grote = {
 };
 INTAKE.advies = {
   titel: "Beleggingsadvies", stappen: [
-    { id: "doel", titel: "Doelverdeling en drempel", uitleg: "Hoe wil je vrij beleggen verdelen over offensief, neutraal en defensief, en hoeveel spaargeld moet altijd direct beschikbaar blijven?", render: function () { return h(AdviesDoelVelden, null); },
-      valideer: function (c) { var a = c.S.advies; return leeg([getal(a.doelOff) + getal(a.doelNeu) + getal(a.doelDef) <= 0 ? "Vul minstens één percentage in voor de doelverdeling." : null, nietNeg(a.drempel, "Drempel")]); } },
-    { id: "voorkeur", titel: "Voorkeuren", uitleg: "Wil je bepaalde fondsen nooit verkopen? Dat geef je aan bij de portefeuille. Hier stel je ook een wachtgrens in.", render: function () { return h(AdviesVoorkeurVelden, null); },
-      valideer: function (c) { return leeg([nietNeg(c.S.advies.wachtTot, "Wachtgrens")]); }, overslaan: "er geldt dan geen wachtgrens." },
-    { id: "pf", titel: "Je portefeuille", uitleg: "Upload een DEGIRO-csv, plak de lijst of de tekst uit de DEGIRO-app, of vul de posities zelf in.", render: function () { return h(AdviesPortefeuille, null); }, overslaan: "er is dan alleen advies over bijbeleggen, niet over je bestaande portefeuille." },
-    { id: "rente", titel: "Rentes bijwerken", uitleg: "Raisin en Euribor haalt de app voor je op via 'Cijfers bijwerken'.", render: function () { return h(CijfersKnop, null); }, overslaan: "de app rekent met de standaardwaarden en meldt dat ze niet zijn bijgewerkt." }
+    { id: "profiel", titel: "Wat voor belegger ben je?", uitleg: "Kies defensief, neutraal of offensief. De app past het advies daarop aan; de rest regelt ze op de achtergrond.", render: function () { return h(AdviesProfielVelden, null); },
+      valideer: function (c) { return leeg([!c.S.advies.risico ? "Kies een beleggingsprofiel." : null, !c.S.advies.broker ? "Kies waar je belegt (of 'Anders of weet ik niet')." : null]); } },
+    { id: "pf", titel: "Je portefeuille", uitleg: "Upload het overzicht van je broker (csv), plak de lijst of de tekst uit de app, of vul de posities zelf in.", render: function () { return h(AdviesPortefeuille, null); }, overslaan: "er is dan alleen advies over bijbeleggen, niet over je bestaande portefeuille." },
+    { id: "rente", titel: "Cijfers bijwerken", uitleg: "De rentes die het advies gebruikt haalt de app voor je op.", render: function () { return h(CijfersKnop, null); }, overslaan: "de app rekent met standaardwaarden en meldt dat ze niet zijn bijgewerkt." }
   ]
 };
 INTAKE.rapport = {
@@ -2891,12 +2965,11 @@ function AdviesOpening() {
   var c = useC(), m = c.m, sim = c.sim;
   var S = useMemo(function () { try { return adviesSamenvatting(m, adviesBerekening(m, sim)); } catch (e) { console.error("advies", e); return null; } }, [m, sim]);
   if (!S || !m.profiel.gebruik.beleggen) return null;
-  var P = adviesParams(m);
   return h(Kaart, { titel: "Beleggingsadvies", soort: "goed", id: "advies-opening" },
     S.regels.map(function (r, i) { return h("p", { key: i }, r); }),
-    h("p", { className: "klein" }, "Deposito 6 maanden (Raisin): " + pct(P.raisin, 2) + " bruto, stand " + ((m.advies.raisinStand) ? fmtDatum(m.advies.raisinStand) : "niet gecontroleerd") + ". Na belasting " + pct(adviesNettoRaisin(P), 2) + "."),
-    ouderDan(m.advies.raisinStand, 7, m.nu) ? h("p", { className: "oranje" }, h("b", null, "Controleer de Raisin-rente: de stand is ouder dan 7 dagen of niet ingevuld. De app kan Raisin niet zelf opvragen.")) : null,
-    h(Knop, { soort: "sec", klein: true, onClick: function () { c.nav("advies"); }, naam: "naar-advies" }, "Bekijk het hele advies"));
+    h("div", { className: "rij" },
+      h(Knop, { soort: "sec", klein: true, onClick: function () { c.nav("advies"); }, naam: "naar-advies" }, "Bekijk het hele advies"),
+      h(Knop, { soort: "sec", klein: true, onClick: function () { c.nav("advies"); }, naam: "naar-kopen" }, "Wat kun je kopen?")));
 }
 
 /* ----- Dashboard ----- */
@@ -2948,7 +3021,7 @@ function SchermDashboard() {
     algemeenKlaar ? h(ActualiseerKaart, null) : null,
     algemeenKlaar ? h(Kaart, { titel: "Cijfers bijwerken" }, h(CijfersKnop, null)) : null,
     algemeenKlaar ? h(UitbreidenKaart, null) : null,
-    h(Kaart, { titel: "Basisgegevens" }, h("details", null, h("summary", { className: "klein" }, "Huishouden, geboortedatum en onderdelen aanpassen"), h(BasisGegevens, null), h(PeildatumVeld, null), h(AowKaart, null), h(WoningVelden, null), h(AutoVelden, null), h(GezinVelden, null), h(ProductenVelden, null)),
+    h(Kaart, { titel: "Basisgegevens" }, h("details", null, h("summary", { className: "klein" }, "Huishouden, geboortedatum en onderdelen aanpassen"), h(BasisGegevens, null), h(PeildatumVeld, null), h(MinimumVeld, null), h(AowKaart, null), h(WoningVelden, null), h(AutoVelden, null), h(GezinVelden, null), h(ProductenVelden, null)),
       h("div", { className: "rij", style: { marginTop: ".4rem" } }, h(Knop, { soort: "sec", klein: true, onClick: function () { c.openIntake("dashboard"); }, naam: "intake-opnieuw" }, "Algemene intake opnieuw"))),
     h(GegevensKaart, null));
 }
@@ -2978,19 +3051,18 @@ function SchermAanvulling() {
   var c = useC(), m = c.m, g = m.profiel.gebruik.aanvulling, plan = aanvulPlan(m);
   var jaren = {};
   plan.forEach(function (x) { var j = x.d.getFullYear(); jaren[j] = jaren[j] || { opname: 0, saldo: 0 }; jaren[j].opname += x.opname; jaren[j].saldo = x.saldo; });
-  var rijen = Object.keys(jaren).map(function (j) { return [j, eur(jaren[j].opname), eur(jaren[j].saldo)]; });
+  var rijen = Object.keys(jaren).filter(function (j) { return jaren[j].opname > 0.5 || jaren[j].saldo > 0.5; }).map(function (j) { return [j, eur(jaren[j].opname), eur(jaren[j].saldo)]; });
   var eindIndex = plan.length ? plan.map(function (x) { return x.saldo; }).findIndex(function (s, i) { return s <= 0.5 && i > 0; }) : -1;
   return h("div", null,
     h(IntakeKnop, { menu: "aanvulling" }),
     h(Kaart, { titel: "Inkomensaanvulling" },
-      h(Vink, { label: "Ik gebruik een pot die mijn inkomen aanvult", value: g, onChange: function (v) { c.zetPad("profiel", ["gebruik", "aanvulling"], v); } }),
-      g ? h(AanvulVelden, null) : h("p", { className: "klein" }, "Zet dit aan om een pot in te vullen die je inkomen tot de AOW aanvult.")),
-    g ? h(Kaart, { titel: "Bijstorten of afromen" }, h(AanvulMutaties, null)) : null,
-    (g && !plan.length) ? h(LegeStaat, { menu: "aanvulling", tekst: "Vul het saldo van de pot in om het verloop te zien." }) : null,
-    plan.length ? h(Kaart, { titel: "Verloop van de pot" },
-      h(Tabel, { kop: ["Jaar", "Opname", "Saldo einde jaar"], get: [1, 2], rijen: rijen.slice(0, 40) }),
-      eindIndex > 0 ? h("p", { className: "oranje" }, "De pot is leeg in " + fmtMaand(plan[eindIndex].d) + ".") : h("p", { className: "klein" }, "De pot is niet leeg binnen de berekende periode."),
-      h("p", { className: "klein" }, "Opnames zijn netto en worden in je inkomen geteld. Rendement minus kosten wordt per maand bijgeschreven.")) : null);
+      h(Vink, { label: "Ik wil mijn inkomen aanvullen uit mijn vermogen", value: g, onChange: function (v) { c.zetPad("profiel", ["gebruik", "aanvulling"], v); } }),
+      g ? h(AanvulVelden, null) : h("p", { className: "klein" }, "Zet dit aan om in te vullen hoeveel je per maand extra nodig hebt; de app toetst of dat kan met je spaargeld of beleggingen.")),
+    plan.length ? h(Kaart, { titel: "Verloop van het gereserveerde bedrag" },
+      h(Tabel, { kop: ["Jaar", "Opname", "Over einde jaar"], get: [1, 2], rijen: rijen.slice(0, 40) }),
+      eindIndex > 0 ? h("p", { className: "oranje" }, "Het gereserveerde bedrag is op in " + fmtMaand(plan[eindIndex].d) + ".") : h("p", { className: "klein" }, "Het gereserveerde bedrag is niet op binnen de berekende periode."),
+      h("p", { className: "klein" }, "Opnames zijn netto en tellen mee in je inkomen. Rendement wordt per maand bijgeschreven.")) : null,
+    g ? h("details", null, h("summary", { className: "klein" }, "Geavanceerd: extra storten of afromen"), h(AanvulMutaties, null)) : null);
 }
 
 /* ----- Lijfrente en pensioen ----- */
@@ -3128,7 +3200,7 @@ function SchermVermogen() {
         ["Pensioen, lijfrente en aanvulling", eur(t.gebonden)], ["Overige bezittingen", eur(t.overig)], ["Uitgeleend aan anderen (vreemd vermogen)", eur(t.uitstaand)],
         ["Schulden", eur(t.schuld)], ["Hypotheek", eur(t.hypotheek)], ["Totaal vermogen", eur(t.totaal), true]] }),
       snel.lijst.length ? h("p", { className: "klein" }, "Snel beschikbaar bevat: " + snel.lijst.map(function (x) { return x.naam + " (" + fmtDatum(x.eind) + ", " + eur(x.bedrag) + ")"; }).join("; ") + ".") : null) : null,
-    h(Kaart, { titel: "Spaargeld en rente" }, h(SpaarVeld, null), m.profiel.gebruik.deposito ? h(SnelBeschikbaarVelden, null) : null),
+    h(Kaart, { titel: "Spaargeld en rente" }, h(SpaarVeld, null), h(MinimumVeld, null), m.profiel.gebruik.deposito ? h(SnelBeschikbaarVelden, null) : null),
     m.profiel.gebruik.deposito ? h(Kaart, { titel: "Deposito's" }, h(DepositoEditor, null)) : null,
     m.profiel.gebruik.beleggen ? h(Kaart, { titel: "Beleggingen" }, h(BeleggingenEditor, null)) : null,
     h(Kaart, { titel: "Overige bezittingen" }, h(OverigEditor, null)),
@@ -3178,7 +3250,7 @@ function SchermGrote() {
   return h("div", null,
     h(IntakeKnop, { menu: "grote" }),
     !heeft ? h(LegeStaat, { menu: "grote", tekst: "Vul eerst je spaargeld in bij Vermogen en daarna je reserveringen en geplande grote posten." }) : null,
-    h(Kaart, { titel: "Minimaal spaargeld" }, h(MinimumVeld, null), h(Uitleg, null, "Startsaldo: het spaargeld van het menu Vermogen (" + eur(m.verm.spaar) + ").")),
+    h(Kaart, { titel: "Minimale buffer" }, h(MinimumVeld, null), h(Uitleg, null, "Startsaldo: het spaargeld van het menu Vermogen (" + eur(m.verm.spaar) + ").")),
     getal(m.verm.spaar) > 0 || (m.verm.deposito || []).length ? h(Kaart, { titel: "Heb ik genoeg geld?" },
       h("p", { className: "klein" }, "Het laagste spaargeld in elke maand, vergeleken met je minimum van " + eur(min) + ". Gerekend over de dagen van de maand."),
       h(Tabel, { kop: ["Maand", "Laagste punt", "Boven/onder minimum", "Status"], get: [1, 2], rijen: rijen })) : null,
@@ -3278,23 +3350,34 @@ function SchermFiscaal() {
 }
 
 /* ===== Scherm: Beleggingsadvies ===== */
+function AdviesProfielVelden() {
+  var c = useC(), a = c.S.advies, rn = useState(function () { return "rp" + nieuwId(); })[0];
+  return h("div", null,
+    ["defensief", "neutraal", "offensief"].map(function (k) {
+      var pr = RISICO_PROFIELEN[k];
+      return h("label", { key: k, className: "vink", style: { padding: ".4rem .5rem", border: "1px solid #e2e8f0", borderRadius: ".6rem", background: a.risico === k ? "#f1f5f9" : "#fff" } },
+        h("input", { type: "radio", name: rn, checked: a.risico === k, onChange: function () { c.zet("advies", { risico: k }); }, "data-profiel": k }),
+        h("span", null, h("b", null, pr.naam), h("br", null), pr.uitleg, h("br", null), h("span", { className: "klein" }, "Bij een koersdaling van aandelen met 25% verlies je ongeveer " + Math.round(profielVerlies(pr)) + "% van je belegde bedrag.")));
+    }),
+    h(KeuzeVeld, { label: "Waar belegt je (of wil je beleggen)?", hint: "Niet iedereen zit bij DEGIRO. Niet elke broker biedt elk fonds; de app laat per categorie meer dan één fonds zien.", value: a.broker, opties: [["", "Kies je broker"]].concat(BROKERS.map(function (b) { return [b, b]; })), onChange: function (v) { c.zet("advies", { broker: v }); }, naam: "broker" }));
+}
 function AdviesDoelVelden() {
   var c = useC(), a = c.S.advies, P = adviesParams(c.m);
   function z(patch) { c.zet("advies", patch); }
   var som = P.doel.off + P.doel.neu + P.doel.def;
   return h("div", null,
-    h("div", { className: "raster3" },
+    h(Vink, { label: "Eigen verdeling gebruiken in plaats van het profiel", value: !!a.eigenDoel, onChange: function (v) { z({ eigenDoel: v }); } }),
+    a.eigenDoel ? h("div", { className: "raster3" },
       h(BedragVeld, { label: "Offensief (%)", value: a.doelOff, pct: true, onChange: function (v) { z({ doelOff: v }); }, naam: "doelOff" }),
       h(BedragVeld, { label: "Neutraal (%)", value: a.doelNeu, pct: true, onChange: function (v) { z({ doelNeu: v }); }, naam: "doelNeu" }),
-      h(BedragVeld, { label: "Defensief (%)", value: a.doelDef, pct: true, onChange: function (v) { z({ doelDef: v }); }, naam: "doelDef" })),
-    som > 0 ? h("p", { className: "klein" }, "Omgerekend naar 100%: " + Math.round(P.doel.off / som * 100) + "% offensief, " + Math.round(P.doel.neu / som * 100) + "% neutraal, " + Math.round(P.doel.def / som * 100) + "% defensief.") : null,
-    h(BedragVeld, { label: "Drempel direct opneembaar spaargeld", hint: "Alleen bijbeleggen als je spaargeld blijvend boven dit bedrag blijft.", value: a.drempel, onChange: function (v) { z({ drempel: v }); }, naam: "drempel" }));
+      h(BedragVeld, { label: "Defensief (%)", value: a.doelDef, pct: true, onChange: function (v) { z({ doelDef: v }); }, naam: "doelDef" })) : null,
+    som > 0 ? h("p", { className: "klein" }, "Verdeling nu: " + Math.round(P.doel.off / som * 100) + "% offensief, " + Math.round(P.doel.neu / som * 100) + "% neutraal, " + Math.round(P.doel.def / som * 100) + "% defensief.") : null);
 }
 function AdviesVoorkeurVelden() {
   var c = useC(), a = c.S.advies;
   return h("div", null,
     h(Vink, { label: "Fondsen die ik wil behouden niet verkopen", hint: "Vink bij je portefeuille aan welke fondsen dat zijn. Ze tellen wel mee in hun categorie.", value: a.behoudAan, onChange: function (v) { c.zet("advies", { behoudAan: v }); } }),
-    h(BedragVeld, { label: "Wachtgrens: pas omzetten als de portefeuille minstens zoveel waard is", hint: "Leeg = geen wachtgrens. Daaronder adviseert de app nu niets te verkopen.", value: a.wachtTot, onChange: function (v) { c.zet("advies", { wachtTot: v }); }, naam: "wachtTot" }));
+    h(BedragVeld, { label: "Wachtgrens: pas omzetten als de portefeuille minstens zoveel waard is", hint: "Leeg = geen wachtgrens.", value: a.wachtTot, onChange: function (v) { c.zet("advies", { wachtTot: v }); }, naam: "wachtTot" }));
 }
 function AdviesRenteVelden() {
   var c = useC(), a = c.S.advies;
@@ -3344,7 +3427,7 @@ function AdviesPortefeuille() {
   return h("div", null,
     h("div", { className: "kaart", style: { background: "#f8fafc" } },
       h("b", null, "Upload of plak je portefeuille"),
-      h("p", { className: "klein" }, "Een DEGIRO-csv (Portefeuille exporteren), een geplakte lijst met naam en waarde, of de tekst uit de DEGIRO-app. Schermafbeeldingen kan de app niet lezen."),
+      h("p", { className: "klein" }, "Een csv van je broker (bij DEGIRO: Portefeuille exporteren), een geplakte lijst met naam en waarde, of de tekst uit de app. Schermafbeeldingen kan de app niet lezen."),
       h("input", { type: "file", accept: ".csv,.txt,text/csv,text/plain", "data-veld": "pf-bestand", onChange: function (e) { var f = e.target.files[0]; if (!f) return; var r = new FileReader(); r.onload = function () { setTekst(String(r.result)); lees(String(r.result)); }; r.readAsText(f); e.target.value = ""; } }),
       h("textarea", { rows: 4, value: tekst, placeholder: "Of plak hier de tekst", "data-veld": "pf-tekst", style: { marginTop: ".4rem" }, onChange: function (e) { setTekst(e.target.value); } }),
       h("div", { className: "rij", style: { marginTop: ".4rem" } }, h(Knop, { soort: "sec", disabled: !tekst.trim(), onClick: function () { lees(tekst); }, naam: "pf-lees" }, "Tekst lezen")),
@@ -3446,24 +3529,50 @@ function AdviesFondsen() {
           h("p", { className: "klein" }, "Bron rendement: " + (f.rendBron || "eigen invoer") + (r.datum ? " · stand " + fmtDatum(r.datum) : ""))) : null);
     }));
 }
+function AdviesKopen(p) {
+  var m = p.m, A = p.A, lijst = adviesKopen(m, A), P = A.P;
+  return h("div", null,
+    h("p", null, P.risico ? "Bij jouw profiel (" + RISICO_PROFIELEN[P.risico].naam.toLowerCase() + ") kun je kopen in deze categorieën:" : "Kies eerst je beleggingsprofiel bij Instellingen. Hieronder staat het neutrale profiel."),
+    h("div", { className: "kaart waarschuw" }, h("b", null, "Let op: niet iedereen zit bij DEGIRO."), h("p", null, "Zoek het fonds op via de ISIN in je eigen broker" + (P.broker && P.broker !== "Anders of weet ik niet" ? " (" + P.broker + ")" : "") + ". Staat het er niet bij, kies dan het andere fonds in dezelfde categorie, of een vergelijkbaar fonds: kapitaliserend (accumulating), breed gespreid en met lage kosten. De lijst is samengesteld met DEGIRO als uitgangspunt.")),
+    lijst.map(function (x) {
+      return h("div", { key: x.cat, className: "kaart", style: { background: "#f8fafc" }, "data-kopen": x.cat },
+        h("div", { className: "rij tussen" }, h("b", null, ADVIES_CAT[x.cat]), h("span", { className: "badge", style: { background: ADVIES_KLEUR[x.cat], color: "#fff" } }, x.deel + "% van je beleggingen")),
+        x.naarDeposito ? h("p", null, "Voor dit deel is een deposito of spaargeld nu aantrekkelijker dan een obligatiefonds. Houd dit deel in deposito's of spaargeld.") : null,
+        x.fondsen.map(function (f) {
+          return h("div", { key: f.isin, style: { padding: ".35rem 0", borderTop: "1px solid #e2e8f0" } },
+            h("div", null, h("b", null, f.naam)),
+            h("div", { className: "klein" }, "ISIN ", h("b", { style: { fontFamily: "monospace" } }, f.isin), " · kosten " + pct(f.ter, 2) + " per jaar · " + f.soort + (f.gecontroleerd ? "" : " · ISIN nog te controleren bij je broker")));
+        }));
+    }),
+    h("p", { className: "klein" }, "De app toont ISIN's en bedragen, geen koersen of aantallen. Rekenvoorbeeld, geen persoonlijk beleggingsadvies."));
+}
 function SchermAdvies() {
   var c = useC(), m = c.m, sim = c.sim;
-  var s = useState("uitgangspunten"), tab = s[0], setTab = s[1];
+  var s = useState("advies"), tab = s[0], setTab = s[1];
   var A = useMemo(function () { try { return adviesBerekening(m, sim); } catch (e) { console.error(e); return null; } }, [m, sim]);
-  var TABS = [["uitgangspunten", "Uitgangspunten"], ["bijbeleggen", "Bijbeleggen"], ["bestaand", "Bestaande portefeuille"], ["portefeuille", "Portefeuille"], ["markt", "Marktbeeld"], ["fondsen", "Fondsen"]];
-  if (!m.profiel.gebruik.beleggen) return h("div", null, h(IntakeKnop, { menu: "advies" }), h(Kaart, { titel: "Beleggingsadvies" }, h("p", null, "Je hebt aangegeven geen beleggingen te hebben."), h(Knop, { onClick: function () { c.zetPad("profiel", ["gebruik", "beleggen"], true); } }, "Toch beleggingen gebruiken")));
+  var TABS = [["advies", "Advies"], ["kopen", "Wat kopen"], ["portefeuille", "Portefeuille"], ["markt", "Marktbeeld"], ["instellingen", "Instellingen"]];
+  if (!m.profiel.gebruik.beleggen) return h("div", null, h(IntakeKnop, { menu: "advies" }), h(Kaart, { titel: "Beleggingsadvies" }, h("p", null, "Je hebt aangegeven niet te beleggen."), h(Knop, { onClick: function () { c.zetPad("profiel", ["gebruik", "beleggen"], true); }, naam: "zet-beleggen-aan" }, "Beginnen met beleggen")));
   var S = A ? adviesSamenvatting(m, A) : null;
   return h("div", null,
     h(IntakeKnop, { menu: "advies" }),
     h("div", { className: "tabs", role: "tablist" }, TABS.map(function (t) { return h("button", { key: t[0], type: "button", className: tab === t[0] ? "actief" : "", onClick: function () { setTab(t[0]); }, "data-tab": t[0] }, t[1]); })),
-    tab === "uitgangspunten" ? h("div", null, h(Kaart, { titel: "Doelverdeling en drempel" }, h(AdviesDoelVelden, null)), h(Kaart, { titel: "Voorkeuren" }, h(AdviesVoorkeurVelden, null)), h(Kaart, { titel: "Rente-referenties (Raisin, Euribor)" }, h("p", { className: "klein" }, "Raisin 6 maanden: " + pct(adviesParams(m).raisin, 2) + " (stand " + (m.advies.raisinStand ? fmtDatum(m.advies.raisinStand) : "niet bijgewerkt") + "). Euribor 12 maanden: " + pct(adviesParams(m).euribor, 2) + "."), h(CijfersKnop, null), h("details", null, h("summary", { className: "klein" }, "Handmatig aanpassen"), h(AdviesRenteVelden, null))),
-      S ? h(Kaart, { titel: "Samenvatting", soort: "goed" }, S.regels.map(function (r, i) { return h("p", { key: i }, r); })) : null) : null,
-    tab === "bijbeleggen" && A ? h(Kaart, { titel: "Advies bijbeleggen" }, h(AdviesBijbeleggen, { m: m, A: A })) : null,
-    tab === "bestaand" && A ? h(Kaart, { titel: "Bestaande portefeuille" }, h(AdviesBestaand, { m: m, A: A }), A.waarnemingen.length ? h("div", null, h("h4", { style: { marginTop: ".6rem" } }, "Waarnemingen"), h("ul", { className: "lijst" }, A.waarnemingen.map(function (t, i) { return h("li", { key: i }, t); }))) : null) : null,
+    tab === "advies" && A ? h("div", null,
+      S ? h(Kaart, { titel: "Samenvatting", soort: "goed" }, S.regels.map(function (r, i) { return h("p", { key: i }, r); })) : null,
+      h(Kaart, { titel: "Bijbeleggen" }, h(AdviesBijbeleggen, { m: m, A: A })),
+      h(Kaart, { titel: "Bestaande portefeuille" }, h(AdviesBestaand, { m: m, A: A }), A.waarnemingen.length ? h("div", null, h("h4", { style: { marginTop: ".6rem" } }, "Waarnemingen"), h("ul", { className: "lijst" }, A.waarnemingen.map(function (t, i) { return h("li", { key: i }, t); }))) : null)) : null,
+    tab === "kopen" && A ? h(Kaart, { titel: "Wat kun je kopen?" }, h(AdviesKopen, { m: m, A: A })) : null,
     tab === "portefeuille" ? h(Kaart, { titel: "Portefeuille (vrij beleggen)" }, h(AdviesPortefeuille, null)) : null,
     tab === "markt" ? h(Kaart, { titel: "Marktbeeld" }, h(AdviesMarkt, null)) : null,
-    tab === "fondsen" ? h(Kaart, { titel: "Fondsenlijst" }, h(AdviesFondsen, null)) : null,
-    h("p", { className: "klein" }, "Rekenvoorbeeld, geen persoonlijk beleggingsadvies. Koersen en aantallen zoek je zelf op; de app toont ISIN's en bedragen."));
+    tab === "instellingen" ? h("div", null,
+      h(Kaart, { titel: "Jouw profiel en broker" }, h(AdviesProfielVelden, null), h(Uitleg, null, "Je minimale buffer (" + eur(getal(m.grote.minimum)) + ") pas je aan bij Vermogen of Grote posten. Er wordt nooit bijbelegd met geld dat voor die buffer nodig is.")),
+      h(Kaart, { titel: "Rentes en cijfers" }, h("p", { className: "klein" }, "Raisin 6 maanden: " + pct(adviesParams(m).raisin, 2) + " (stand " + (m.advies.raisinStand ? fmtDatum(m.advies.raisinStand) : "niet bijgewerkt") + "). Euribor 12 maanden: " + pct(adviesParams(m).euribor, 2) + "."), h(CijfersKnop, null)),
+      h("details", null, h("summary", { className: "klein" }, "Geavanceerd (niet nodig voor gewoon gebruik)"),
+        h("div", { className: "kaart waarschuw", style: { marginTop: ".4rem" } },
+          h("h4", null, "Eigen verdeling"), h(AdviesDoelVelden, null),
+          h("h4", { style: { marginTop: ".6rem" } }, "Voorkeuren"), h(AdviesVoorkeurVelden, null),
+          h("h4", { style: { marginTop: ".6rem" } }, "Rentes en belasting handmatig"), h(AdviesRenteVelden, null),
+          h("h4", { style: { marginTop: ".6rem" } }, "Fondsen en rendementen"), h(AdviesFondsen, null)))) : null,
+    h("p", { className: "klein" }, "Rekenvoorbeeld, geen persoonlijk beleggingsadvies. Koersen en aantallen zoek je zelf op; de app toont namen, ISIN's en bedragen."));
 }
 
 /* ===== Rapport (PDF via afdrukken) ===== */
@@ -3555,7 +3664,7 @@ function RapportInhoud() {
     rpAan(c, "beleggen") ? h(RpSectie, { key: "bel", id: "beleggen", titel: "Beleggen en pensioen" },
       (S.verm.beleggingen || []).length ? h(Tabel, { className: "rp-tabel", kop: ["Beleggingen", "Soort", "Waarde nu", "Over 12 maanden"], get: [2, 3], rijen: (S.verm.beleggingen || []).map(function (b) { var it = vr[j12].items.filter(function (x) { return x.key === "bel" + b.id; })[0]; return [b.naam || "–", b.soort === "pensioen" ? "Pensioen" : "Vrij", eur(b.waarde), eur(it ? it.waarde : 0)]; }) }) : null,
       m.potten.length ? h(Tabel, { className: "rp-tabel", kop: ["Pot", "Van", "Saldo nu", "Uitkering gaat in", "Per maand bruto"], get: [2, 4], rijen: m.potten.map(function (pt) { var pl = potPlan(m, pt); return [pt.naam || "–", persoonVan(m, pt.persoon).naam, eur(pt.saldo), pl ? fmtDatum(pl.start) : "–", pl ? eur(pl.maand) : "–"]; }) }) : null,
-      aanvulPlan(m).length ? h("p", null, "Inkomensaanvulling '" + (S.aanv.naam || "") + "': saldo " + eur(S.aanv.startsaldo) + ", opname " + eur(S.aanv.maand) + " per maand.") : null,
+      aanvulPlan(m).length ? h("p", null, "Inkomensaanvulling: " + eur(S.aanv.maand) + " per maand tot " + fmtMaand(m.aanvB.eind) + ", gereserveerd uit " + (m.aanvB.bron === "sparen" ? "spaargeld" : "beleggingen") + ": " + eur(m.aanv.startsaldo) + ".") : null,
       (!(S.verm.beleggingen || []).length && !m.potten.length && !aanvulPlan(m).length) ? h("p", null, "Geen beleggingen of pensioenpotten ingevuld.") : null) : null
   ]));
   // Pagina 6: advies

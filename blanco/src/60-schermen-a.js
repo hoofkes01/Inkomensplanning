@@ -11,12 +11,11 @@ function AdviesOpening() {
   var c = useC(), m = c.m, sim = c.sim;
   var S = useMemo(function () { try { return adviesSamenvatting(m, adviesBerekening(m, sim)); } catch (e) { console.error("advies", e); return null; } }, [m, sim]);
   if (!S || !m.profiel.gebruik.beleggen) return null;
-  var P = adviesParams(m);
   return h(Kaart, { titel: "Beleggingsadvies", soort: "goed", id: "advies-opening" },
     S.regels.map(function (r, i) { return h("p", { key: i }, r); }),
-    h("p", { className: "klein" }, "Deposito 6 maanden (Raisin): " + pct(P.raisin, 2) + " bruto, stand " + ((m.advies.raisinStand) ? fmtDatum(m.advies.raisinStand) : "niet gecontroleerd") + ". Na belasting " + pct(adviesNettoRaisin(P), 2) + "."),
-    ouderDan(m.advies.raisinStand, 7, m.nu) ? h("p", { className: "oranje" }, h("b", null, "Controleer de Raisin-rente: de stand is ouder dan 7 dagen of niet ingevuld. De app kan Raisin niet zelf opvragen.")) : null,
-    h(Knop, { soort: "sec", klein: true, onClick: function () { c.nav("advies"); }, naam: "naar-advies" }, "Bekijk het hele advies"));
+    h("div", { className: "rij" },
+      h(Knop, { soort: "sec", klein: true, onClick: function () { c.nav("advies"); }, naam: "naar-advies" }, "Bekijk het hele advies"),
+      h(Knop, { soort: "sec", klein: true, onClick: function () { c.nav("advies"); }, naam: "naar-kopen" }, "Wat kun je kopen?")));
 }
 
 /* ----- Dashboard ----- */
@@ -68,7 +67,7 @@ function SchermDashboard() {
     algemeenKlaar ? h(ActualiseerKaart, null) : null,
     algemeenKlaar ? h(Kaart, { titel: "Cijfers bijwerken" }, h(CijfersKnop, null)) : null,
     algemeenKlaar ? h(UitbreidenKaart, null) : null,
-    h(Kaart, { titel: "Basisgegevens" }, h("details", null, h("summary", { className: "klein" }, "Huishouden, geboortedatum en onderdelen aanpassen"), h(BasisGegevens, null), h(PeildatumVeld, null), h(AowKaart, null), h(WoningVelden, null), h(AutoVelden, null), h(GezinVelden, null), h(ProductenVelden, null)),
+    h(Kaart, { titel: "Basisgegevens" }, h("details", null, h("summary", { className: "klein" }, "Huishouden, geboortedatum en onderdelen aanpassen"), h(BasisGegevens, null), h(PeildatumVeld, null), h(MinimumVeld, null), h(AowKaart, null), h(WoningVelden, null), h(AutoVelden, null), h(GezinVelden, null), h(ProductenVelden, null)),
       h("div", { className: "rij", style: { marginTop: ".4rem" } }, h(Knop, { soort: "sec", klein: true, onClick: function () { c.openIntake("dashboard"); }, naam: "intake-opnieuw" }, "Algemene intake opnieuw"))),
     h(GegevensKaart, null));
 }
@@ -98,19 +97,18 @@ function SchermAanvulling() {
   var c = useC(), m = c.m, g = m.profiel.gebruik.aanvulling, plan = aanvulPlan(m);
   var jaren = {};
   plan.forEach(function (x) { var j = x.d.getFullYear(); jaren[j] = jaren[j] || { opname: 0, saldo: 0 }; jaren[j].opname += x.opname; jaren[j].saldo = x.saldo; });
-  var rijen = Object.keys(jaren).map(function (j) { return [j, eur(jaren[j].opname), eur(jaren[j].saldo)]; });
+  var rijen = Object.keys(jaren).filter(function (j) { return jaren[j].opname > 0.5 || jaren[j].saldo > 0.5; }).map(function (j) { return [j, eur(jaren[j].opname), eur(jaren[j].saldo)]; });
   var eindIndex = plan.length ? plan.map(function (x) { return x.saldo; }).findIndex(function (s, i) { return s <= 0.5 && i > 0; }) : -1;
   return h("div", null,
     h(IntakeKnop, { menu: "aanvulling" }),
     h(Kaart, { titel: "Inkomensaanvulling" },
-      h(Vink, { label: "Ik gebruik een pot die mijn inkomen aanvult", value: g, onChange: function (v) { c.zetPad("profiel", ["gebruik", "aanvulling"], v); } }),
-      g ? h(AanvulVelden, null) : h("p", { className: "klein" }, "Zet dit aan om een pot in te vullen die je inkomen tot de AOW aanvult.")),
-    g ? h(Kaart, { titel: "Bijstorten of afromen" }, h(AanvulMutaties, null)) : null,
-    (g && !plan.length) ? h(LegeStaat, { menu: "aanvulling", tekst: "Vul het saldo van de pot in om het verloop te zien." }) : null,
-    plan.length ? h(Kaart, { titel: "Verloop van de pot" },
-      h(Tabel, { kop: ["Jaar", "Opname", "Saldo einde jaar"], get: [1, 2], rijen: rijen.slice(0, 40) }),
-      eindIndex > 0 ? h("p", { className: "oranje" }, "De pot is leeg in " + fmtMaand(plan[eindIndex].d) + ".") : h("p", { className: "klein" }, "De pot is niet leeg binnen de berekende periode."),
-      h("p", { className: "klein" }, "Opnames zijn netto en worden in je inkomen geteld. Rendement minus kosten wordt per maand bijgeschreven.")) : null);
+      h(Vink, { label: "Ik wil mijn inkomen aanvullen uit mijn vermogen", value: g, onChange: function (v) { c.zetPad("profiel", ["gebruik", "aanvulling"], v); } }),
+      g ? h(AanvulVelden, null) : h("p", { className: "klein" }, "Zet dit aan om in te vullen hoeveel je per maand extra nodig hebt; de app toetst of dat kan met je spaargeld of beleggingen.")),
+    plan.length ? h(Kaart, { titel: "Verloop van het gereserveerde bedrag" },
+      h(Tabel, { kop: ["Jaar", "Opname", "Over einde jaar"], get: [1, 2], rijen: rijen.slice(0, 40) }),
+      eindIndex > 0 ? h("p", { className: "oranje" }, "Het gereserveerde bedrag is op in " + fmtMaand(plan[eindIndex].d) + ".") : h("p", { className: "klein" }, "Het gereserveerde bedrag is niet op binnen de berekende periode."),
+      h("p", { className: "klein" }, "Opnames zijn netto en tellen mee in je inkomen. Rendement wordt per maand bijgeschreven.")) : null,
+    g ? h("details", null, h("summary", { className: "klein" }, "Geavanceerd: extra storten of afromen"), h(AanvulMutaties, null)) : null);
 }
 
 /* ----- Lijfrente en pensioen ----- */

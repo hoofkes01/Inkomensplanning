@@ -24,6 +24,7 @@ function aandachtspunten(c) {
   function pt(soort, tekst, menu) { uit.push({ soort: soort, tekst: tekst, menu: menu }); }
   var tot = intakeMenus(S.profiel).length, klaar = intakeKlaarAantal(S);
   if (klaar < tot) pt("info", "Intake: " + klaar + " van " + tot + " menu's voltooid. Zonder intake kan de app niet alles berekenen.", "dashboard");
+  if ((S.grote.minimum === "" || S.grote.minimum == null) && S.profiel.type) pt("waarschuw", "Geef je minimale buffer aan spaargeld aan (Vermogen). Daar rekent de app mee.", "vermogen");
   if (!S.profiel.geboorteA) pt("waarschuw", "Vul de geboortedatum in; zonder die kan de AOW-datum niet worden bepaald.", "dashboard");
   if (ouderDan(S.inst.cijfersDatum, 14, nu)) pt("waarschuw", "De cijfers (belasting, AOW, inflatie, rentes) zijn " + (S.inst.cijfersDatum ? "van " + fmtDatum(S.inst.cijfersDatum) : "nog nooit bijgewerkt") + ". Druk op 'Cijfers bijwerken'.", "dashboard");
   if (klaar >= 1) {

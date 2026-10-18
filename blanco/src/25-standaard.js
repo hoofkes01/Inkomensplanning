@@ -23,21 +23,21 @@ var STANDAARD = {
     gebruik: { hypotheek: false, deposito: false, beleggen: false, aanvulling: false, pensioen: false }
   },
   // Marktcijfers en aannames: standaardwaarden zijn voorbeelden. Zolang 'stand' leeg is, meldt de app dat ze nog niet zijn bijgewerkt.
-  inst: { cpi: 2.5, cpiIjk: "", cpiStand: "", spaarrente: 2, spaarrenteStand: "", rendBeleggen: 5, rendPot: 4, rendPotTijdens: 3, indexSchijven: 2, indexAOW: 2, dagInkomen: 25, dagLasten: 1, kortMee: true, kortMaanden: 3, backupDatum: "", cijfersDatum: "" },
+  inst: { cpi: 2.5, cpiIjk: "", cpiStand: "", spaarrente: 2, spaarrenteStand: "", rendBeleggen: 4, rendPot: 4, rendPotTijdens: 3, indexSchijven: 2, indexAOW: 2, dagInkomen: 25, dagLasten: 1, kortMee: true, kortMaanden: 3, backupDatum: "", cijfersDatum: "" },
   bronnen: [],
   werkJaren: { A: {}, B: {} },
-  aanv: { naam: "Inkomensaanvulling", startsaldo: "", maand: "", opnameAan: true, opnameVanaf: "", rendement: 3, kosten: 0.5, einde: "", mutaties: [] },
+  aanv: { naam: "Inkomensaanvulling", maand: "", opnameVanaf: "", totType: "aow", totPersoon: "A", einde: "", bron: "sparen", startsaldo: "", rendement: 3, kosten: 0, opnameAan: true, mutaties: [] },
   potten: [],
   hyp: { bedrag: "", rente: "", maandlast: "", aflossing: "", vorm: "annuiteit", aflosEinde: "", renteVastTot: "" },
   lasten: [],
   dagelijks: { bedrag: "" },
   verm: { rekeningen: [], deposito: [], beleggingen: [], overig: [], schulden: [] },
-  grote: { minimum: 7500, reserveringen: [], boekingen: [], renteOverride: {} },
+  grote: { minimum: "", reserveringen: [], boekingen: [], renteOverride: {} },
   fiscOverride: {},
   box3: { stelsel: "huidig", tarief: "", vrijPP: "", sparenPct: "", beleggenPct: "" },
   advies: {
-    doelOff: 50, doelNeu: 30, doelDef: 20, drempel: 15000, marge: 0.3, belasting: 36, stelsel: "forfait", forfaitSparen: 1.28, forfaitBeleg: 6,
-    euribor: 2.99, euriborStand: "", raisin6: 3.15, raisinStand: "", wachtTot: "", behoudAan: false, risico: "gemiddeld",
+    risico: "", broker: "", eigenDoel: false, doelOff: 50, doelNeu: 30, doelDef: 20, drempel: "", marge: 0.3, belasting: 36, stelsel: "forfait", forfaitSparen: 1.28, forfaitBeleg: 6,
+    euribor: 2.99, euriborStand: "", raisin6: 3.15, raisinStand: "", wachtTot: "", behoudAan: false,
     pf: [], pfDatum: "", rekeningId: "", rend: {},
     markt: { datum: "", punten: [] }
   },

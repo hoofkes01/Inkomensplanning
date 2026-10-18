@@ -18,7 +18,37 @@ function maakModel(S, nu) {
   m.inst = Object.assign({}, S.inst, { spaarrente: totaal > 0 ? wr / totaal : getal(S.inst.spaarrente) });
   m.cijfers = S.cijfers || {};
   m._cache = {};
+  // Inkomensaanvulling: de gebruiker geeft het gewenste maandbedrag; de app berekent het benodigde kapitaal en reserveert dat uit spaargeld of beleggingen.
+  m.aanv = Object.assign({}, S.aanv);
+  m.aanvB = null;
+  if (p.gebruik.aanvulling) {
+    var b = aanvulBeoordeling(m);
+    m.aanvB = b;
+    m.aanv.startsaldo = b.K; m.aanv.rendement = b.rBron; m.aanv.kosten = 0;
+    m.aanv.opnameVanaf = isoDatum(b.start); m.aanv.einde = b.eind ? isoDatum(b.eind) : ""; m.aanv.opnameAan = b.X > 0;
+    if (b.bron === "sparen") m.verm = Object.assign({}, m.verm, { spaar: m.verm.spaar - b.K });
+  }
   return m;
+}
+// Toetst de gewenste aanvulling aan spaargeld (boven de buffer) en vrije beleggingen, bij een standaard rendement.
+function aanvulBeoordeling(m) {
+  var a = m.aanv, gb = m.profiel.gebruik;
+  var start = geldigeDatum(a.opnameVanaf) || m.peil; if (start < m.peil) start = m.peil;
+  var eind = null;
+  if (a.totType === "datum") eind = geldigeDatum(a.einde);
+  else { var ps = persoonVan(m, a.totPersoon || "A"); eind = ps && ps.aow; }
+  var L = eind ? Math.max(0, maandenTussen(eerstVanMaand(start), eerstVanMaand(eind))) : 0;
+  var X = getal(a.maand), rS = getal(m.inst.spaarrente), rB = getal(m.inst.rendBeleggen);
+  function pv(r) { var i = r / 1200; return L <= 0 ? 0 : (i === 0 ? X * L : X * (1 - Math.pow(1 + i, -L)) / i); }
+  var buffer = getal(m.grote.minimum);
+  var besS = Math.max(0, getal(m.verm.spaar) - buffer);
+  var besB = gb.beleggen ? (m.verm.beleggingen || []).filter(function (x) { return x.soort === "vrij"; }).reduce(function (s, x) { return s + getal(x.waarde); }, 0) : 0;
+  var bron = a.bron === "beleggen" && gb.beleggen ? "beleggen" : "sparen";
+  var nodigS = pv(rS), nodigB = pv(rB);
+  var K = Math.min(bron === "sparen" ? nodigS : nodigB, bron === "sparen" ? besS : besB);
+  return { X: X, L: L, start: start, eind: eind, rS: rS, rB: rB, nodigS: nodigS, nodigB: nodigB, besS: besS, besB: besB, buffer: buffer,
+    kanS: L > 0 && X > 0 && besS >= nodigS - 0.5, kanB: L > 0 && X > 0 && besB >= nodigB - 0.5,
+    maxXS: annuiteit(besS, rS, L), maxXB: annuiteit(besB, rB, L), bron: bron, K: Math.max(0, K), rBron: bron === "sparen" ? rS : rB };
 }
 function persoonVan(m, id) { return m.personen.filter(function (x) { return x.id === id; })[0] || m.personen[0]; }
 function naAOW(p, d) { return !!(p && p.aow && d >= eerstVanMaand(p.aow)); }
@@ -390,10 +420,11 @@ function vermogenItems(m, d, spaar, res) {
   });
   if (m.profiel.gebruik.beleggen) (m.verm.beleggingen || []).forEach(function (b) {
     var rend = b.soort === "pensioen" ? m.inst.rendPot : m.inst.rendBeleggen;
-    item("bel" + b.id, b.soort === "pensioen" ? "pensioenbel" : "beleggen", b.naam || "Beleggingen", getal(b.waarde) * groeiFactor(m, rend, d), { soort: b.soort });
+    var sch = (b.soort === "vrij" && m.aanvB && m.aanvB.bron === "beleggen" && m.aanvB.besB > 0) ? 1 - m.aanvB.K / m.aanvB.besB : 1;
+    item("bel" + b.id, b.soort === "pensioen" ? "pensioenbel" : "beleggen", b.naam || "Beleggingen", getal(b.waarde) * sch * groeiFactor(m, rend, d), { soort: b.soort });
   });
   if (m.profiel.gebruik.pensioen) m.potten.forEach(function (pt) { item("pot" + pt.id, "pensioen", pt.naam || "Pensioenpot", potSaldoOp(m, pt, d)); });
-  if (m.profiel.gebruik.aanvulling && aanvulPlan(m).length) item("aanv", "aanvulling", m.aanv.naam || "Inkomensaanvulling", d <= m.peil ? getal(m.aanv.startsaldo) : aanvulOp(m, d).saldo);
+  if (m.profiel.gebruik.aanvulling && aanvulPlan(m).length) item("aanv", "aanvulling", "Inkomensaanvulling (gereserveerd)", d <= m.peil ? getal(m.aanv.startsaldo) : aanvulOp(m, d).saldo);
   (m.grote.reserveringen || []).forEach(function (r) { item("res" + r.id, "reserv", r.naam || "Reservering", (res && res[r.id] != null) ? res[r.id] : getal(r.startsaldo)); });
   (m.verm.overig || []).forEach(function (o) { item("ov" + o.id, "overig", o.naam || "Overige bezitting", getal(o.waarde), { box3: !!o.box3 }); });
   (m.verm.schulden || []).forEach(function (s) {

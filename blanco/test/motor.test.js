@@ -16,6 +16,7 @@ S.verm.rekeningen = [{ id: "k", bank: "ING", naam: "Spaarrekening", saldo: 40000
 S.verm.deposito = [{ id: "d1", naam: "Dep 1", bedrag: 20000, rente: 3, start: "2026-06-01", looptijd: 12, eind: "2027-06-01", uitkering: "einde" }];
 S.lasten = [{ id: "l1", naam: "Wonen", bedrag: 1800, freq: "maand", index: "cpi", start: "", einde: "" }, { id: "l2", naam: "Verzekering", bedrag: 1200, freq: "jaar", eersteMaand: 3, index: "geen" }];
 S.dagelijks = { bedrag: 1500 };
+S.grote.minimum = 15000;
 S.grote.reserveringen = [{ id: "r1", naam: "Vakantie", maand: 200, dag: 22, start: "", einde: "", startsaldo: 1000 }];
 S.grote.boekingen = [{ id: "b1", datum: "2027-02-10", omschrijving: "Dak", type: "uitgave", bedrag: 6000, herhaal: "geen" }];
 S.verm.beleggingen = [{ id: "v1", naam: "Vrij", waarde: 50000, soort: "vrij" }];
@@ -57,3 +58,22 @@ console.log("advies: koopBasis", A.koopBasis, "defVervangen", A.defVervangen, "t
 const sam = c.adviesSamenvatting(m2, A); sam.regels.forEach(r => console.log(" -", r));
 const AP = c.adviesParseUpload("Product;Symbool/ISIN;Waarde in EUR\nVanguard FTSE All-World;IE00BK5BQT80;1.234,56\nCASH & CASH FUND (EUR);;100,00");
 ok("Upload csv", AP.length === 1 && AP[0].waarde === 1234.56 && AP[0].isin === "IE00BK5BQT80", JSON.stringify(AP));
+
+// Inkomensaanvulling: toetsing aan spaargeld en beleggingen
+S.profiel.gebruik.aanvulling = true;
+S.aanv = Object.assign({}, S.aanv, { maand: 1000, opnameVanaf: "2027-01-01", totType: "datum", einde: "2029-01-01", bron: "sparen" });
+S.verm.rekeningen = [{ id: "k", bank: "ING", naam: "Spaarrekening", saldo: 60000, rente: 2 }];
+const mA = c.maakModel(S, c.geldigeDatum("2026-10-18")), B = mA.aanvB;
+ok("aanvulling: looptijd 24 maanden", B.L === 24, B.L);
+ok("aanvulling: nodig bij 2% = 1000*annuiteitsfactor", Math.abs(B.nodigS - 1000 * (1 - Math.pow(1 + 0.02 / 12, -24)) / (0.02 / 12)) < 1, Math.round(B.nodigS));
+ok("aanvulling: beschikbaar = spaar - buffer = 45.000", Math.round(B.besS) === 45000, B.besS);
+ok("aanvulling kan uit spaargeld", B.kanS === true);
+ok("aanvulling reserveert kapitaal uit spaargeld", Math.round(mA.verm.spaar) === Math.round(60000 - B.K), mA.verm.spaar);
+const sA = c.maakSim(mA, 36);
+const tA = c.vermogenTotalen(c.vermogenItems(mA, sA.maand[0].d, sA.maand[0].spaar, sA.maand[0].res));
+const m0 = c.maakModel(Object.assign({}, S, { profiel: Object.assign({}, S.profiel, { gebruik: Object.assign({}, S.profiel.gebruik, { aanvulling: false }) }) }), c.geldigeDatum("2026-10-18"));
+const s0 = c.maakSim(m0, 36); const t0b = c.vermogenTotalen(c.vermogenItems(m0, s0.maand[0].d, s0.maand[0].spaar, s0.maand[0].res));
+ok("reservering verandert het totale vermogen niet", Math.abs(tA.totaal - t0b.totaal) < 1, Math.round(tA.totaal - t0b.totaal));
+S.aanv.maand = 4000;
+const mB = c.maakModel(S, c.geldigeDatum("2026-10-18"));
+ok("aanvulling 4.000 per maand kan niet uit spaargeld", mB.aanvB.kanS === false && mB.aanvB.maxXS < 4000, Math.round(mB.aanvB.maxXS));

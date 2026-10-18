@@ -23,12 +23,22 @@ var ADVIES_MARKT_STANDAARD = {
     "Jouw controle: vul bij 'Marktbeeld' zelf de actuele stand in als je deze wilt bijhouden; de app kan geen koersen of rentes zelf ophalen."
   ]
 };
+// Risicoprofielen: de gebruiker kiest een profiel; de app vertaalt dat naar een verdeling (offensief / neutraal / defensief).
+var RISICO_PROFIELEN = {
+  defensief: { naam: "Defensief", off: 10, neu: 30, def: 60, uitleg: "Weinig schommelingen. Vooral obligaties en sparen, een klein deel aandelen." },
+  neutraal: { naam: "Neutraal", off: 30, neu: 40, def: 30, uitleg: "Een evenwicht tussen groei en rust. Met een flink deel aandelen en een stevig deel obligaties." },
+  offensief: { naam: "Offensief", off: 50, neu: 30, def: 20, uitleg: "Gericht op groei op lange termijn. Meer aandelen, dus grotere schommelingen." }
+};
+function profielVerlies(pr) { return (pr.off * 0.25 + pr.neu * 0.12 + pr.def * 0.03); }
+var BROKERS = ["DEGIRO", "Saxo", "Lynx", "Interactive Brokers", "Bux", "Trade Republic", "Bolero", "Bank of broker via je eigen bank", "Anders of weet ik niet"];
 function adviesParams(m) {
   var A = m.advies || {};
   var N = function (v, d) { return v === "" || v == null || !isFinite(Number(v)) ? d : Number(v); };
+  var pr = RISICO_PROFIELEN[A.risico] || RISICO_PROFIELEN.neutraal;
+  var doel = A.eigenDoel ? { off: N(A.doelOff, 50), neu: N(A.doelNeu, 30), def: N(A.doelDef, 20) } : { off: pr.off, neu: pr.neu, def: pr.def };
   return {
-    doel: { off: N(A.doelOff, 50), neu: N(A.doelNeu, 30), def: N(A.doelDef, 20) },
-    drempel: N(A.drempel, 15000), marge: N(A.marge, 0.3), belasting: N(A.belasting, 36),
+    doel: doel, risico: RISICO_PROFIELEN[A.risico] ? A.risico : "", broker: A.broker || "",
+    drempel: N(m.grote && m.grote.minimum, 0), marge: N(A.marge, 0.3), belasting: N(A.belasting, 36),
     stelsel: A.stelsel === "werkelijk" ? "werkelijk" : "forfait", fSparen: N(A.forfaitSparen, 1.28), fBeleg: N(A.forfaitBeleg, 6),
     euribor: N(A.euribor, 0), raisin: N(A.raisin6, 0), wachtTot: N(A.wachtTot, 0), behoudAan: !!A.behoudAan
   };
@@ -100,7 +110,7 @@ function adviesBerekening(m, sim) {
   defVermogen = vt.sparen + vt.deposito;
   var P100 = function (a, b) { return b > 0 ? Math.round(a / b * 100) : 0; };
   var waarnemingen = [];
-  if (defVervangen) waarnemingen.push("Geen defensief fonds levert na kosten meer dan een deposito van 6 maanden plus je marge (nodig: " + pct(adviesMinDef(P), 2) + "). Het defensieve deel (" + defOrigineel + "%) is daarom naar neutraal verschoven. Defensief geld blijft in deposito's.");
+  if (defVervangen) waarnemingen.push("Een obligatiefonds levert na kosten en belasting nu niet meer op dan sparen of een deposito. Houd het defensieve deel (" + defOrigineel + "%) daarom in deposito's of spaargeld; de app verdeelt het beleggingsdeel over neutraal en offensief.");
   if (totaalNu > 0) {
     waarnemingen.push("Je vrij belegde vermogen is " + eur(totaalNu) + ": " + P100(huidig.off, totaalNu) + "% offensief, " + P100(huidig.neu, totaalNu) + "% neutraal en " + P100(huidig.def, totaalNu) + "% defensief (doel " + P100(doel.off, somDoel) + "/" + P100(doel.neu, somDoel) + "/" + P100(doel.def, somDoel) + "%).");
     if (defVermogen > 0) waarnemingen.push("Je defensieve vermogen (sparen " + eur(vt.sparen) + " + deposito's " + eur(vt.deposito) + ") is " + eur(defVermogen) + ". Samen met je vrij beleggen is dat " + eur(defVermogen + totaalNu) + ": " + P100(totaalNu, defVermogen + totaalNu) + "% belegd en " + P100(defVermogen, defVermogen + totaalNu) + "% defensief. " + (P100(defVermogen, defVermogen + totaalNu) >= 50 ? "Bij zo'n groot defensief deel past een offensievere opzet van je beleggingen." : "Het defensieve deel is beperkt; houd je buffer in de gaten."));
@@ -174,11 +184,13 @@ function koopTekst(m, A, c, bedrag) {
 }
 function adviesSamenvatting(m, A) {
   var plan = herbalanceerPlan(m, A), regels = [];
-  if (A.defVervangen) regels.push("Geen defensief fonds verslaat veilig sparen na kosten en belasting (minimaal " + pct(adviesMinDef(A.P), 2) + " nodig). Het defensieve deel is daarom neutraal geworden; defensief geld blijft in deposito's.");
+  if (!A.P.risico) regels.push("Kies eerst je beleggingsprofiel (defensief, neutraal of offensief). Tot die tijd rekent de app met neutraal.");
+  else regels.push("Jouw profiel: " + RISICO_PROFIELEN[A.P.risico].naam.toLowerCase() + " (" + A.P.doel.off + "% offensief, " + A.P.doel.neu + "% neutraal, " + A.P.doel.def + "% defensief).");
+  if (A.defVervangen) regels.push("Voor het defensieve deel is sparen of een deposito nu aantrekkelijker dan een obligatiefonds, ook na belasting. Houd dat deel in spaargeld of deposito's.");
   var pfDatum = geldigeDatum((m.advies || {}).pfDatum);
   if (A.totaalNu > 0 && pfDatum && dagenTussen(pfDatum, m.nu) > 30) regels.push("Je portefeuille is " + dagenTussen(pfDatum, m.nu) + " dagen geleden bijgewerkt. Upload hem opnieuw voor een actueel advies.");
-  if (A.koopBasis > 0) regels.push("Bijbeleggen: je kunt ongeveer " + eur(afr10(A.koopBasis)) + " beleggen en blijft boven je drempel van " + eur(A.P.drempel) + ".");
-  else regels.push("Bijbeleggen: nu niet. Je direct opneembare spaargeld (" + eur(A.spaarNu) + ") blijft niet boven je drempel van " + eur(A.P.drempel) + ". Niets doen is altijd een optie.");
+  if (A.koopBasis > 0) regels.push("Bijbeleggen: je kunt ongeveer " + eur(afr10(A.koopBasis)) + " beleggen en blijft boven je minimale buffer van " + eur(A.P.drempel) + ".");
+  else regels.push("Bijbeleggen: nu niet. Je direct opneembare spaargeld (" + eur(A.spaarNu) + ") blijft niet boven je minimale buffer van " + eur(A.P.drempel) + ". Niets doen is altijd een optie.");
   if (plan) {
     if (plan.aanbeveling === "gefaseerd") {
       var st = plan.stappen[0];
@@ -268,6 +280,19 @@ function adviesParseUpload(tekst) {
     if (!mm) return;
     var naam = mm[1].replace(/[;,\t]+$/g, "").trim(), w = adviesGetal(mm[2]);
     if (naam && !sluit(naam) && w > 0) uit.push({ naam: naam, waarde: w, isin: isinIn(r) });
+  });
+  return uit;
+}
+
+// Wat kan er gekocht worden? Per categorie van het profiel: naam, ISIN en kosten. Niet elke broker biedt elk fonds.
+function adviesKopen(m, A) {
+  var P = A.P, som = P.doel.off + P.doel.neu + P.doel.def, uit = [];
+  ["off", "neu", "def"].forEach(function (cat) {
+    var deel = som > 0 ? Math.round(P.doel[cat] / som * 100) : 0;
+    if (deel <= 0) return;
+    var alle = ADVIES_FONDSEN.filter(function (f) { return f.cat === cat; });
+    var geschikt = cat === "def" ? alle.filter(function (f) { return adviesVoldoetMin(m, f, P); }) : alle;
+    uit.push({ cat: cat, deel: deel, fondsen: geschikt, naarDeposito: cat === "def" && !geschikt.length });
   });
   return uit;
 }

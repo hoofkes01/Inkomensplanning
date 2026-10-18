@@ -14,7 +14,8 @@ S.bronnen = [
   { id: "b6", persoon: "A", code: "kinderbijslag", naam: "Kinderbijslag", soort: "toeslag", bruto: "", netto: 300, freq: "kwartaal", eersteMaand: 1, start: "", einde: "2030-01-01", index: "geen", indexPct: "" }
 ];
 S.werkJaren = { A: { 2027: false }, B: {} };
-S.aanv = { naam: "Overbrugging", startsaldo: 60000, maand: 1500, opnameAan: true, opnameVanaf: "2027-01-01", rendement: 3, kosten: 0.5, einde: "", mutaties: [{ id: "m1", datum: "2027-06-01", bedrag: 5000 }] };
+S.aanv = { naam: "Inkomensaanvulling", maand: 1500, opnameVanaf: "2027-01-01", totType: "aow", totPersoon: "A", einde: "", bron: "beleggen", startsaldo: "", rendement: 3, kosten: 0, opnameAan: true, mutaties: [{ id: "m1", datum: "2027-06-01", bedrag: 5000 }] };
+S.grote.minimum = 7500; S.advies.risico = "offensief"; S.advies.broker = "DEGIRO";
 S.potten = [{ id: "p1", persoon: "A", naam: "Lijfrente Anna", soort: "lijfrente", saldo: 120000, geblokkeerdTot: "", start: "", rendVoor: 4, rendTijdens: 3, looptijd: 20, inleg: 3000, inlegTot: "2030-01-01" }];
 S.hyp = { bedrag: 150000, rente: 3.2, maandlast: 900, aflossing: 300, vorm: "annuiteit", aflosEinde: "2033-12-31", renteVastTot: "2027-05-01" };
 S.lasten = [

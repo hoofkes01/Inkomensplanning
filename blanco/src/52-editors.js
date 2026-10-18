@@ -566,28 +566,48 @@ function BoekingenEditor() {
 }
 function MinimumVeld() {
   var c = useC();
-  return h(BedragVeld, { label: "Minimaal spaargeld (buffer)", hint: "Onder dit bedrag wil je niet komen.", value: c.S.grote.minimum, onChange: function (v) { c.zet("grote", { minimum: v }); }, naam: "minimum" });
+  return h(BedragVeld, { label: "Minimale buffer aan spaargeld", hint: "Het bedrag dat je altijd direct beschikbaar wilt houden. Dit is voor iedereen anders. Onder dit bedrag wil je niet komen en je belegt er niet voor bij.", value: c.S.grote.minimum, onChange: function (v) { c.zet("grote", { minimum: v }); }, naam: "minimum" });
 }
 
-/* ----- Inkomensaanvulling ----- */
-function foutenAanv(a) {
-  return leeg([getal(a.startsaldo) <= 0 ? "Vul het saldo van de pot in." : null, a.opnameAan && getal(a.maand) <= 0 ? "Vul het bedrag in dat je per maand opneemt (of zet de opname uit)." : null,
-    datumFout(a.opnameVanaf, "Opname vanaf"), datumFout(a.einde, "Einde opname")]);
+/* ----- Inkomensaanvulling: jij geeft het bedrag, de app toetst het ----- */
+function foutenAanv(c) {
+  var a = c.S.aanv, B = c.m.aanvB;
+  return leeg([getal(a.maand) <= 0 ? "Vul in hoeveel aanvulling je per maand wilt." : null,
+    datumFout(a.opnameVanaf, "Vanaf"), a.totType === "datum" ? (geldigeDatum(a.einde) ? null : "Vul de einddatum in.") : null,
+    (B && getal(a.maand) > 0 && B.L <= 0) ? "Het einde ligt niet na het begin. Kies een latere einddatum of controleer de AOW-datum." : null]);
+}
+function aanvulOordeel(B, bron) {
+  var kan = bron === "sparen" ? B.kanS : B.kanB, tekort = Math.max(0, (bron === "sparen" ? B.nodigS - B.besS : B.nodigB - B.besB)), max = bron === "sparen" ? B.maxXS : B.maxXB;
+  return kan ? h("span", { className: "groen" }, "Dit kan.") : h("span", { className: "rood" }, "Dit kan niet helemaal: tekort " + eur(tekort) + ". Haalbaar is circa " + eur(max) + " per maand.");
 }
 function AanvulVelden() {
-  var c = useC(), a = c.S.aanv;
+  var c = useC(), a = c.S.aanv, m = c.m, B = m.aanvB, gb = c.S.profiel.gebruik;
   function z(patch) { c.zet("aanv", patch); }
+  var fasen = useMemo(function () { return fasenLijst(m); }, [m]);
+  var tekorten = fasen.map(function (f) { return { naam: f.naam, d: f.d, t: f.saldo - f.aanvulling }; }).filter(function (x) { return x.t < -1 && x.d >= eerstVanMaand(m.peil); });
+  var aowOpties = m.personen.map(function (p) { return [p.id, "AOW van " + p.naam + (p.aow ? " (" + fmtDatum(p.aow) + ")" : "")]; });
   return h("div", null,
+    h(BedragVeld, { label: "Hoeveel aanvulling wil je per maand? (netto)", hint: "Het bedrag dat je maandelijks extra nodig hebt tot een bepaald moment, meestal tot de AOW.", value: a.maand, onChange: function (v) { z({ maand: v }); }, naam: "aanv-maand" }),
+    tekorten.length ? h("p", { className: "klein" }, "Ter indicatie: zonder aanvulling heb je in de volgende fasen een tekort per maand: " + tekorten.slice(0, 3).map(function (x) { return x.naam + " (" + fmtMaand(x.d) + ") " + eur(-x.t); }).join("; ") + ".") : null,
     h("div", { className: "raster" },
-      h(BedragVeld, { label: "Saldo nu", value: a.startsaldo, onChange: function (v) { z({ startsaldo: v }); }, naam: "aanv-saldo" }),
-      h(BedragVeld, { label: "Opname per maand (netto)", value: a.maand, onChange: function (v) { z({ maand: v }); }, naam: "aanv-maand" })),
-    h(Vink, { label: "Opname staat aan", value: a.opnameAan, onChange: function (v) { z({ opnameAan: v }); } }),
-    h("div", { className: "raster" },
-      h(DatumVeld, { label: "Opname vanaf (leeg = nu)", value: a.opnameVanaf, onChange: function (v) { z({ opnameVanaf: v }); } }),
-      h(DatumVeld, { label: "Opname tot (leeg = tot de pot leeg is)", value: a.einde, onChange: function (v) { z({ einde: v }); } })),
-    h("div", { className: "raster" },
-      h(BedragVeld, { label: "Rendement per jaar (%)", value: a.rendement, pct: true, onChange: function (v) { z({ rendement: v }); } }),
-      h(BedragVeld, { label: "Beheerkosten per jaar (%)", value: a.kosten, pct: true, onChange: function (v) { z({ kosten: v }); } })));
+      h(DatumVeld, { label: "Vanaf (leeg = nu)", value: a.opnameVanaf, onChange: function (v) { z({ opnameVanaf: v }); }, naam: "aanv-vanaf" }),
+      h(KeuzeVeld, { label: "Tot", value: a.totType, opties: [["aow", "Tot de AOW"], ["datum", "Tot een eigen datum"]], onChange: function (v) { z({ totType: v }); }, naam: "aanv-tot" })),
+    a.totType === "aow" && m.personen.length > 1 ? h(KeuzeVeld, { label: "Welke AOW", value: a.totPersoon || "A", opties: aowOpties, onChange: function (v) { z({ totPersoon: v }); } }) : null,
+    a.totType === "datum" ? h(DatumVeld, { label: "Einddatum", value: a.einde, onChange: function (v) { z({ einde: v }); }, naam: "aanv-einde" }) : null,
+    gb.beleggen ? h(KeuzeVeld, { label: "Waaruit wil je dit betalen?", value: a.bron, opties: [["sparen", "Uit spaargeld"], ["beleggen", "Uit beleggingen"]], onChange: function (v) { z({ bron: v }); }, naam: "aanv-bron" }) : null,
+    h("div", { className: "kaart info", "data-aanv-oordeel": "1" },
+      h("b", null, "Kan dat?"),
+      (!B || B.X <= 0) ? h("p", null, "Vul het bedrag in om te zien of het kan.") :
+      B.L <= 0 ? h("p", { className: "rood" }, "Kies een einddatum na het begin, of vul de geboortedatum in zodat de AOW-datum bekend is.") :
+      h("div", null,
+        h("p", null, "Looptijd: " + Math.floor(B.L / 12) + " jaar" + (B.L % 12 ? " en " + (B.L % 12) + " maanden" : "") + " (" + fmtMaand(B.start) + " tot " + fmtMaand(B.eind) + ")."),
+        h(Tabel, { kop: ["Bron (rendement)", "Nodig", "Beschikbaar"], get: [1, 2], rijen: [
+          ["Spaargeld (" + pct(B.rS, 1) + ")", eur(B.nodigS), eur(B.besS)]
+        ].concat(gb.beleggen ? [["Beleggingen (" + pct(B.rB, 1) + ")", eur(B.nodigB), eur(B.besB)]] : []) }),
+        h("p", { className: "klein" }, "Beschikbaar spaargeld = je spaargeld boven je minimale buffer van " + eur(B.buffer) + ". Beschikbaar bij beleggingen = je vrij belegde vermogen. Nodig = het bedrag dat je nu apart moet zetten om elke maand " + eur(B.X) + " te kunnen opnemen, bij het standaard rendement."),
+        h("p", null, h("b", null, "Uit spaargeld: "), aanvulOordeel(B, "sparen")),
+        gb.beleggen ? h("p", null, h("b", null, "Uit beleggingen: "), aanvulOordeel(B, "beleggen")) : null,
+        h("p", null, "De planning reserveert " + eur(B.K) + " uit " + (B.bron === "sparen" ? "je spaargeld" : "je beleggingen") + " voor deze aanvulling." + (B.K < (B.bron === "sparen" ? B.nodigS : B.nodigB) - 0.5 ? " Dat is minder dan nodig, dus de pot raakt eerder leeg." : "")))));
 }
 function AanvulMutaties() {
   var c = useC(), L = c.lijst("aanv", "mutaties");

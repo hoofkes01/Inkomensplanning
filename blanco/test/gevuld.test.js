@@ -24,12 +24,15 @@ const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undef
     }
     // Advies-tabs
     await page.click('[data-knop="menu"]'); await page.click('[data-menu="advies"]');
-    for (const t of ["uitgangspunten", "bijbeleggen", "bestaand", "portefeuille", "markt", "fondsen"]) {
+    for (const t of ["advies", "kopen", "portefeuille", "markt", "instellingen"]) {
       await page.click(`[data-tab="${t}"]`); await page.waitForTimeout(60);
       const sw = await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]);
       ok(`[${breedte}] advies/${t}: geen horizontale scroll`, sw[0] <= sw[1], sw.join("/"));
       if (breedte === 411) await page.screenshot({ path: `${uit}/advies-${t}.png`, fullPage: true });
     }
+    await page.click('[data-tab="kopen"]');
+    const kopenTekst = await page.textContent("main");
+    ok(`[${breedte}] kopen toont ETF-naam en ISIN, en broker-waarschuwing`, /IE00B4L5Y983/.test(kopenTekst) && /iShares Core MSCI World/.test(kopenTekst) && /niet iedereen zit bij DEGIRO/i.test(kopenTekst));
     // Uitvalscherm
     await page.click('[data-knop="menu"]'); await page.click('[data-menu="vermogen"]');
     await page.click('[data-klik="sparen3"]'); await page.waitForSelector("[role=dialog]");

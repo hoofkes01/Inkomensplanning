@@ -18,6 +18,8 @@ INTAKE.dashboard = {
     { id: "auto", titel: "Auto", uitleg: "Een eigen auto, een leaseauto of geen auto geeft andere lasten.", render: function () { return h(AutoVelden, null); },
       valideer: function (c) { return intakeKeuze(c.S.profiel.leef.auto, "Kies of je een auto hebt."); } },
     { id: "gezin", titel: "Gezin", uitleg: "Kinderen geven recht op toeslagen en kosten. Dit bepaalt welke posten de app aanbiedt.", render: function () { return h(GezinVelden, null); } },
+    { id: "buffer", titel: "Minimale buffer", uitleg: "Hoeveel spaargeld wil je altijd direct beschikbaar hebben? Dit verschilt per persoon. De app waarschuwt als je er onder komt en belegt of reserveert nooit geld dat nodig is voor de buffer.", render: function () { return h(MinimumVeld, null); },
+      valideer: function (c) { var v = c.S.grote.minimum; return v === "" || v == null ? ["Vul je minimale buffer in (0 mag ook)."] : leeg([nietNeg(v, "Buffer")]); } },
     { id: "producten", titel: "Onderdelen en peildatum", uitleg: "Spaargeld heeft iedereen. Deposito's en beleggen alleen als dat bij je past; je kunt er later altijd mee beginnen.", render: function () { return h("div", null, h(ProductenVelden, null), h(PeildatumVeld, null)); },
       valideer: function (c) { return leeg([datumFout(c.S.profiel.peildatum, "Peildatum")]); } }
   ]
@@ -37,9 +39,8 @@ INTAKE.inkomen = {
 };
 INTAKE.aanvulling = {
   titel: "Toevoeging inkomen", stappen: [
-    { id: "pot", titel: "De pot", uitleg: "Saldo, maandelijkse opname, rendement en kosten.", render: function () { return h(AanvulVelden, null); },
-      valideer: function (c) { return foutenAanv(c.S.aanv); }, overslaan: "de aanvulling telt dan niet mee in je inkomen." },
-    { id: "mutaties", titel: "Bijstorten of afromen", uitleg: "Geplande stortingen in de pot of bedragen die je eruit haalt.", render: function () { return h(AanvulMutaties, null); }, overslaan: "er worden geen extra stortingen of opnames verwerkt." }
+    { id: "aanvulling", titel: "Hoeveel aanvulling per maand?", uitleg: "Geef aan hoeveel je per maand extra nodig hebt en tot wanneer. De app toetst of dat kan met je spaargeld of beleggingen, en rekent uit hoeveel je daarvoor apart moet zetten.", render: function () { return h(AanvulVelden, null); },
+      valideer: function (c) { return foutenAanv(c); }, overslaan: "er wordt dan geen aanvulling meegerekend." }
   ]
 };
 INTAKE.pensioen = {
@@ -90,8 +91,6 @@ INTAKE.vermogen = {
 };
 INTAKE.grote = {
   titel: "Grote posten en reserveringen", stappen: [
-    { id: "minimum", titel: "Minimaal spaargeld", uitleg: "Het bedrag dat altijd op je spaarrekening moet blijven staan als buffer.", render: function () { return h("div", null, h(MinimumVeld, null), h(Uitleg, null, "Het startsaldo is het spaargeld dat je bij Vermogen hebt ingevuld.")); },
-      valideer: function (c) { return leeg([nietNeg(c.S.grote.minimum, "Minimum")]); } },
     { id: "reserveringen", titel: "Reserveringen", uitleg: "Maandelijks sparen voor een doel, zoals vakantie of vervanging van de auto. Het bedrag gaat automatisch op de boekdag naar de pot.", render: function () { return h(ReserveringenEditor, null); },
       valideer: function (c) { return leeg(c.S.grote.reserveringen.map(function (r) { return !r.naam ? "Kies bij elke reservering een doel." : r.maand === "" ? r.naam + ": vul het maandbedrag in." : null; })); }, overslaan: "er worden geen reserveringen verwerkt." },
     { id: "boekingen", titel: "Geplande grote uitgaven en inkomsten", uitleg: "Bijvoorbeeld een verbouwing, een erfenis of een jaarlijkse bonus.", render: function () { return h(BoekingenEditor, null); },
@@ -100,12 +99,10 @@ INTAKE.grote = {
 };
 INTAKE.advies = {
   titel: "Beleggingsadvies", stappen: [
-    { id: "doel", titel: "Doelverdeling en drempel", uitleg: "Hoe wil je vrij beleggen verdelen over offensief, neutraal en defensief, en hoeveel spaargeld moet altijd direct beschikbaar blijven?", render: function () { return h(AdviesDoelVelden, null); },
-      valideer: function (c) { var a = c.S.advies; return leeg([getal(a.doelOff) + getal(a.doelNeu) + getal(a.doelDef) <= 0 ? "Vul minstens één percentage in voor de doelverdeling." : null, nietNeg(a.drempel, "Drempel")]); } },
-    { id: "voorkeur", titel: "Voorkeuren", uitleg: "Wil je bepaalde fondsen nooit verkopen? Dat geef je aan bij de portefeuille. Hier stel je ook een wachtgrens in.", render: function () { return h(AdviesVoorkeurVelden, null); },
-      valideer: function (c) { return leeg([nietNeg(c.S.advies.wachtTot, "Wachtgrens")]); }, overslaan: "er geldt dan geen wachtgrens." },
-    { id: "pf", titel: "Je portefeuille", uitleg: "Upload een DEGIRO-csv, plak de lijst of de tekst uit de DEGIRO-app, of vul de posities zelf in.", render: function () { return h(AdviesPortefeuille, null); }, overslaan: "er is dan alleen advies over bijbeleggen, niet over je bestaande portefeuille." },
-    { id: "rente", titel: "Rentes bijwerken", uitleg: "Raisin en Euribor haalt de app voor je op via 'Cijfers bijwerken'.", render: function () { return h(CijfersKnop, null); }, overslaan: "de app rekent met de standaardwaarden en meldt dat ze niet zijn bijgewerkt." }
+    { id: "profiel", titel: "Wat voor belegger ben je?", uitleg: "Kies defensief, neutraal of offensief. De app past het advies daarop aan; de rest regelt ze op de achtergrond.", render: function () { return h(AdviesProfielVelden, null); },
+      valideer: function (c) { return leeg([!c.S.advies.risico ? "Kies een beleggingsprofiel." : null, !c.S.advies.broker ? "Kies waar je belegt (of 'Anders of weet ik niet')." : null]); } },
+    { id: "pf", titel: "Je portefeuille", uitleg: "Upload het overzicht van je broker (csv), plak de lijst of de tekst uit de app, of vul de posities zelf in.", render: function () { return h(AdviesPortefeuille, null); }, overslaan: "er is dan alleen advies over bijbeleggen, niet over je bestaande portefeuille." },
+    { id: "rente", titel: "Cijfers bijwerken", uitleg: "De rentes die het advies gebruikt haalt de app voor je op.", render: function () { return h(CijfersKnop, null); }, overslaan: "de app rekent met standaardwaarden en meldt dat ze niet zijn bijgewerkt." }
   ]
 };
 INTAKE.rapport = {
