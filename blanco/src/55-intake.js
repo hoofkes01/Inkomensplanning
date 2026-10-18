@@ -35,6 +35,8 @@ INTAKE.inkomen = {
         overslaan: "het inkomen van " + p.naam + " telt dan niet mee; de uitkomsten kloppen niet." };
     });
     if (c.m.bronnen.some(function (b) { return b.soort === "loon"; })) st.push({ id: "werken", titel: "Werken of stoppen", uitleg: "Per jaar tot de pensioendatum: werk je dat jaar nog? Loon telt in jaren zonder vinkje niet mee.", render: function () { return h(WerkJarenTabel, null); }, overslaan: "de app gaat ervan uit dat je werkt tot de AOW-datum of de einddatum van je loon." });
+    st.push({ id: "toeslagen", titel: "Toeslagen", uitleg: "De app kijkt naar je woning, inkomen, vermogen en gezin en vraagt naar toeslagen waar je mogelijk recht op hebt.", render: function () { return h(ToeslagenVraag, null); },
+      valideer: function (cc) { return foutenToeslagen(cc); }, overslaan: "toeslagen tellen dan niet mee in je inkomen en de app blijft er op het Dashboard aan herinneren." });
     return st;
   }
 };

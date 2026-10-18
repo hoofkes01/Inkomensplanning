@@ -78,6 +78,7 @@ function SchermInkomen() {
   return h("div", null,
     h(IntakeKnop, { menu: "inkomen" }),
     !m.bronnen.length ? h(LegeStaat, { menu: "inkomen", tekst: "Er zijn nog geen inkomsten ingevuld. Start de intake om loon, uitkeringen, pensioen en toeslagen in te vullen." }) : null,
+    h(Kaart, { titel: "Toeslagen controleren", id: "toeslagen-check" }, h(ToeslagenVraag, null)),
     m.personen.map(function (p) {
       var pm = persoonMaand(m, p.id, d0);
       return h(Kaart, { key: p.id, titel: p.naam },

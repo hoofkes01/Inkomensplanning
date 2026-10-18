@@ -18,7 +18,7 @@ function actieveMenus(profiel) {
 var STANDAARD = {
   profiel: {
     type: "", partner: false, fiscalePartners: true, naamA: "Persoon A", naamB: "Persoon B", geboorteA: "", geboorteB: "", aowA: "", aowB: "", peildatum: "", akkoordAnoniem: false,
-    werk: { A: [], B: [] }, kids: [], kinderbijslagAuto: true,
+    werk: { A: [], B: [] }, kids: [], kinderbijslagAuto: true, toeslagAntwoord: {},
     leef: { woning: "", woningGeen: "", woz: "", auto: "", eigen: "", lease: "", deel: false, kinderen: 0, opvang: false, studerend: false, huisdier: false },
     gebruik: { hypotheek: false, deposito: false, beleggen: false, aanvulling: false, pensioen: false }
   },

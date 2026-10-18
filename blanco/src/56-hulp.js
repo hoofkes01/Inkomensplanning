@@ -111,6 +111,7 @@ var HELP_ITEMS = [
   ["Inkomensaanvulling", "aanvulling overbrugging pot opname", "Een pot waaruit je maandelijks opneemt tot je AOW begint. Alleen zichtbaar als je dit aanzet."],
   ["Box 3", "box 3 vermogensbelasting heffingsvrij forfaitair", "Belasting over spaargeld en beleggingen. De app toont een indicatie met het fictief rendement van de Belastingdienst. Controleer je aangifte altijd zelf."],
   ["Inflatie (CPI) en fiscale cijfers", "cpi inflatie index belasting tabel cijfers bijwerken", "Hier hoef je niets aan te passen. Druk elke maand op 'Cijfers bijwerken' (Dashboard of Fiscaliteit): de app haalt dan de nieuwste cijfers op en past vaste lasten aan op de gemeten inflatie."],
+  ["Toeslagen: heb ik er recht op?", "toeslag zorgtoeslag huurtoeslag kindgebonden budget kinderopvangtoeslag recht grens vermogen inkomen", "De app kijkt naar je woning, inkomen, vermogen en gezin en vraagt actief naar toeslagen waar je mogelijk recht op hebt: zorgtoeslag, huurtoeslag, kindgebonden budget en kinderopvangtoeslag. Je antwoordt ja, nee of weet ik niet. Bij ja vul je het bedrag van je beschikking in. De app berekent het bedrag niet zelf; toeslagen.nl heeft een proefberekening. Bij 'Weet ik niet' blijft er een herinnering op het Dashboard staan."],
   ["Bedragen indexeren", "indexeren indexering verhoging toeslagen percentage aanpassen", "Is een bedrag verhoogd, bijvoorbeeld een toeslag of een cao-verhoging? Kies op het Dashboard 'Bedragen indexeren', geef de groep en het percentage op en bevestig. De app past alle bedragen in die groep aan. Kinderbijslag, belasting en AOW worden bijgewerkt met 'Cijfers bijwerken'."],
   ["Actualiseren", "bijwerken saldo actueel maand", "Werk minstens elke maand je saldi bij: spaargeld, deposito's, beleggingen en pensioen. Gebruik 'Nu actualiseren' op het Dashboard; het leidt je stap voor stap langs alles en onthoudt wanneer je bijwerkte."],
   ["Gegevens opslaan en verder gaan", "back-up opslaan terugzetten bestand versie", "Je gegevens staan alleen in deze browser. Tik onderaan op de balk 'Back-up' om je gegevens als bestand op te slaan. Bij een nieuwe versie van de app, of een andere telefoon: open de app en kies 'Gegevens terugzetten'."],
@@ -174,6 +175,7 @@ function ToeslagenActualiseer() {
   var toeslagen = L.items.filter(function (b) { return b.soort === "toeslag"; });
   return h("div", null,
     tw.map(function (t, i) { return h("div", { key: i, className: "kaart waarschuw", "data-toeslag-controle": "1" }, t); }),
+    h(ToeslagenVraag, null),
     L2.kbAuto ? h("div", { className: "kaart", style: { background: "#f8fafc" } },
       h("b", null, "Kinderbijslag (automatisch)"),
       h(Tabel, { kop: ["Kind", "Per kwartaal"], get: [1], rijen: (m.profiel.kids || []).map(function (k, i) { return ["Kind " + (i + 1) + (k.beperking ? " (dubbel)" : ""), eur(kinderbijslagKwartaal(m, k.geboorte, kwartaalStart(m.peil), k.beperking))]; }) }),
@@ -200,7 +202,7 @@ function actualiseerStappen(c) {
     g.aanvulling ? { id: "aanvulling", titel: "Inkomensaanvulling", render: function () { return h(AanvulVelden, null); } } : null,
     koop ? { id: "hypotheek", titel: "Hypotheek", render: function () { return h(HypotheekForm, null); } } : null,
     { id: "inkomen", titel: "Inkomen en toeslagen", render: function () { return h("div", null, m.personen.map(function (p) { return h("div", { key: p.id }, h("h4", null, p.naam), h(BronnenEditor, { persoon: p.id })); })); } },
-    (lijstL(c.S.profiel).kbAuto || c.S.bronnen.some(function (b) { return b.soort === "toeslag"; })) ? { id: "toeslagen", titel: "Kinderbijslag en toeslagen", dagen: 92, render: function () { return h(ToeslagenActualiseer, null); } } : null,
+    (lijstL(c.S.profiel).kbAuto || c.S.bronnen.some(function (b) { return b.soort === "toeslag"; }) || toeslagKandidaten(c).kandidaten.length) ? { id: "toeslagen", titel: "Kinderbijslag en toeslagen", dagen: 92, render: function () { return h(ToeslagenActualiseer, null); } } : null,
     { id: "lasten", titel: "Vaste lasten en dagelijkse uitgaven", render: function () { return h("div", null, h(DagelijksVeld, null), h(LastenEditor, null)); } },
     { id: "cijfers", titel: "Cijfers bijwerken", render: function () { return h(CijfersKnop, null); } }
   ].filter(function (x) { return x; });

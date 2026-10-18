@@ -410,7 +410,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 })();
 </script>
 <script>
-var APP_VERSIE = "18-10-2026 · 18:46";
+var APP_VERSIE = "18-10-2026 · 18:48";
 /* ===== Basis: hulpfuncties, opslag, invoervelden ===== */
 var h = React.createElement;
 var useState = React.useState, useEffect = React.useEffect, useMemo = React.useMemo, useRef = React.useRef, useContext = React.useContext;
@@ -968,7 +968,7 @@ function actieveMenus(profiel) {
 var STANDAARD = {
   profiel: {
     type: "", partner: false, fiscalePartners: true, naamA: "Persoon A", naamB: "Persoon B", geboorteA: "", geboorteB: "", aowA: "", aowB: "", peildatum: "", akkoordAnoniem: false,
-    werk: { A: [], B: [] }, kids: [], kinderbijslagAuto: true,
+    werk: { A: [], B: [] }, kids: [], kinderbijslagAuto: true, toeslagAntwoord: {},
     leef: { woning: "", woningGeen: "", woz: "", auto: "", eigen: "", lease: "", deel: false, kinderen: 0, opvang: false, studerend: false, huisdier: false },
     gebruik: { hypotheek: false, deposito: false, beleggen: false, aanvulling: false, pensioen: false }
   },
@@ -2094,6 +2094,45 @@ function Uitleg(p) { return h("p", { className: "klein" }, p.children); }
 /* ---------- Aandachtspunten voor het Dashboard ---------- */
 function intakeMenus(profiel) { return actieveMenus(profiel).filter(function (x) { return x.intake; }); }
 function intakeKlaarAantal(S) { return intakeMenus(S.profiel).filter(function (x) { return (S.intake[x.id] || {}).klaar; }).length; }
+// Vermogen voor de toeslagen (box 3) en de bijbehorende grenzen.
+function toeslagVermogenInfo(c) {
+  var m = c.m, f = fx(m, m.peil), partners = m.profiel.partner && m.profiel.fiscalePartners !== false;
+  var items = c.vr[0].items, t = c.vr[0].t;
+  var bank = t.sparen + t.deposito + t.reserv, overig = items.filter(function (x) { return x.comp === "overig" && x.box3; }).reduce(function (s, x) { return s + x.waarde; }, 0);
+  var vermogen = box3Indicatie(m, bank, t.beleggen, overig, schuldBox3(items, t), m.peil).totaal;
+  return { vermogen: vermogen, grens: getal(partners ? f.toeslag_vermogen_partner : f.toeslag_vermogen_alleen), grensHuur: partners ? null : getal(f.toeslag_vermogen_huur_alleen), partners: partners, grensInkomen: getal(partners ? f.toeslag_inkomen_zorg_partner : f.toeslag_inkomen_zorg_alleen) };
+}
+// Toeslagen waar de gebruiker mogelijk recht op heeft, op basis van woning, inkomen, vermogen en gezin.
+function toeslagKandidaten(c) {
+  var m = c.m, S = c.S, L = lijstL(S.profiel), vi = toeslagVermogenInfo(c), uit = [], geen = [];
+  var kidsJong = (S.profiel.kids || []).filter(function (k) { var g = geldigeDatum(k.geboorte); return g && leeftijdJaren(g, m.nu) < 18; });
+  var fasen = fasenLijst(m);
+  var inkomenNu = fasen.length ? fasen[0].personen.reduce(function (s, p) { return s + p.bruto; }, 0) * 12 : 0;
+  var laterOnder = fasen.filter(function (x) { return x.personen.reduce(function (s, p) { return s + p.bruto; }, 0) * 12 <= vi.grensInkomen; })[0];
+  function voeg(code, reden) { var cat = bronCat(code); if (cat) uit.push({ code: code, label: cat.label, reden: reden }); }
+  // zorgtoeslag: elke volwassene verzekerd; grenzen voor inkomen en vermogen
+  if (vi.vermogen > vi.grens) geen.push("Zorgtoeslag: je vermogen (circa " + eur(vi.vermogen) + ") ligt boven de grens van " + eur(vi.grens) + ".");
+  else if (inkomenNu <= vi.grensInkomen) voeg("zorgtoeslag", "Je inkomen (circa " + eur(inkomenNu) + " per jaar) ligt onder de inkomensgrens van " + eur(vi.grensInkomen) + " en je vermogen onder de grens.");
+  else if (laterOnder) voeg("zorgtoeslag", "Nu ligt je inkomen boven de grens van " + eur(vi.grensInkomen) + ", maar in de fase '" + laterOnder.naam + "' (" + fmtMaand(laterOnder.d) + ") daalt het eronder.");
+  else geen.push("Zorgtoeslag: je inkomen (circa " + eur(inkomenNu) + " per jaar) ligt boven de grens van " + eur(vi.grensInkomen) + ".");
+  // huurtoeslag
+  if (L.woning === "huur") {
+    if (vi.grensHuur != null && vi.vermogen > vi.grensHuur) geen.push("Huurtoeslag: je vermogen (circa " + eur(vi.vermogen) + ") ligt boven de grens van " + eur(vi.grensHuur) + " voor een alleenstaande.");
+    else voeg("huurtoeslag", "Je huurt een woning. Of je recht hebt hangt af van je huur, inkomen en vermogen.");
+  }
+  // kinderen
+  if (kidsJong.length && vi.vermogen <= vi.grens) {
+    voeg("kgb", "Je hebt " + (kidsJong.length === 1 ? "een kind" : kidsJong.length + " kinderen") + " jonger dan 18. Kindgebonden budget hangt af van je inkomen.");
+    if (kidsJong.some(function (k) { return k.opvang; })) voeg("kopvang", "Een of meer kinderen gaan naar kinderopvang of buitenschoolse opvang.");
+  } else if (kidsJong.length) geen.push("Kindgebonden budget: je vermogen (circa " + eur(vi.vermogen) + ") ligt boven de grens van " + eur(vi.grens) + ".");
+  if (L.beperking) { voeg("extra_kb", "Een kind heeft een beperking met intensieve zorg: er kan extra kinderbijslag zijn."); voeg("tegemoetkoming", "Voor een kind met een beperking zijn er soms vergoedingen of tegemoetkomingen (gemeente, Wlz, Jeugdwet)."); }
+  var antw = S.profiel.toeslagAntwoord || {};
+  uit.forEach(function (k) {
+    var heeft = S.bronnen.some(function (b) { return b.code === k.code; });
+    k.antwoord = antw[k.code] || (heeft ? "ja" : "");
+  });
+  return { kandidaten: uit, geen: geen };
+}
 // Controle op toeslagen met grenzen van de Belastingdienst: toetsingsinkomen en vermogen. Geen berekening van het bedrag zelf.
 function toeslagWaarschuwingen(c) {
   var m = c.m, S = c.S, uit = [];
@@ -2125,6 +2164,8 @@ function aandachtspunten(c) {
   if (S.inst.cijfersFout) pt("fout", "Het bijwerken van de cijfers is op " + fmtDatum(S.inst.cijfersFout.datum) + " mislukt: " + S.inst.cijfersFout.tekst + " Je rekent nu met oudere cijfers. Probeer het opnieuw of kies een cijferbestand.", "dashboard");
   else if ((S.cijfers || {}).versie && dagenTussen(geldigeDatum(S.cijfers.versie), nu) > 45) pt("waarschuw", "Het cijferbestand is van " + fmtDatum(S.cijfers.versie) + ": er zijn nog geen nieuwere cijfers beschikbaar. Controleer of er een nieuwe versie van de app is.", "dashboard");
   toeslagWaarschuwingen(c).forEach(function (t) { pt("waarschuw", t, "inkomen"); });
+  var open = (S.intake.dashboard || {}).klaar ? toeslagKandidaten(c).kandidaten.filter(function (k) { return !k.antwoord; }) : [];
+  if (open.length) pt("waarschuw", "Mogelijk recht op: " + open.map(function (k) { return k.label.toLowerCase(); }).join(", ") + ". Beantwoord de toeslagenvragen bij Inkomen.", "inkomen");
   if (klaar >= 1) {
     var stale = actualiseerStappen(c).filter(function (x) { var l = actualiseerLeeftijd(c, x.id); return x.id !== "cijfers" && (l == null || l > (x.dagen || 31)); });
     if (stale.length) pt("info", "Actualiseren: " + stale.map(function (x) { return x.titel.toLowerCase(); }).slice(0, 4).join(", ") + (stale.length > 4 ? " en meer" : "") + " zijn niet recent bijgewerkt of nog niet gecontroleerd.", "dashboard");
@@ -2472,6 +2513,41 @@ function BronnenEditor(p) {
     h("div", { className: "rij" },
       h("div", { style: { flex: 1, minWidth: "12rem" } }, h(KeuzeVeld, { label: "Inkomen toevoegen", value: gekozen, opties: [["", "Kies een soort inkomen"]].concat(keuzes.map(function (k) { return [k.code, k.label]; })), onChange: setGekozen, naam: "bron-soort-kies" })),
       h(Knop, { soort: "sec", disabled: !gekozen, onClick: function () { var cat = bronCat(gekozen); if (cat) { L.voeg(nieuweBron(p.persoon, cat, m)); setGekozen(""); } }, naam: "voeg-bron" }, "+ Toevoegen")));
+}
+function foutenToeslagen(c) {
+  var kd = toeslagKandidaten(c), uit = [];
+  kd.kandidaten.forEach(function (k) {
+    if (!k.antwoord) uit.push("Beantwoord de vraag over " + k.label.toLowerCase() + " (of kies 'Weet ik niet').");
+    else if (k.antwoord === "ja") { var b = c.S.bronnen.filter(function (x) { return x.code === k.code; })[0]; if (!b || b.netto === "" || getal(b.netto) <= 0) uit.push("Vul het bedrag in van je " + k.label.toLowerCase() + ".") }
+  });
+  return uit;
+}
+function ToeslagenVraag() {
+  var c = useC(), m = c.m, L = c.lijst("bronnen"), rn = useState(function () { return "tv" + nieuwId(); })[0];
+  var kd = toeslagKandidaten(c);
+  function antwoord(code, w) {
+    c.zetPad("profiel", ["toeslagAntwoord", code], w);
+    var cat = bronCat(code), bestaand = c.S.bronnen.filter(function (b) { return b.code === code; });
+    if (w === "ja" && !bestaand.length && cat) L.voeg(nieuweBron("A", cat, m));
+    if (w !== "ja" && bestaand.length) bestaand.forEach(function (b) { L.wis(b.id); });
+  }
+  if (!kd.kandidaten.length && !kd.geen.length) return h("p", null, "Op basis van je gegevens zijn er geen toeslagen om naar te vragen.");
+  return h("div", { "data-toeslagvragen": "1" },
+    kd.kandidaten.length ? h(Uitleg, null, "Op basis van je woning, inkomen, vermogen en gezin kun je mogelijk recht hebben op de toeslagen hieronder. De app rekent het bedrag niet uit; vul het bedrag van je beschikking in. Weet je het niet, kijk dan op toeslagen.nl voor een proefberekening.") : null,
+    kd.kandidaten.map(function (k) {
+      var b = c.S.bronnen.filter(function (x) { return x.code === k.code; })[0];
+      return h("div", { key: k.code, className: "kaart", style: { background: "#f8fafc" }, "data-toeslagvraag": k.code },
+        h("b", null, "Ontvang je " + k.label.toLowerCase() + "?"),
+        h("p", { className: "klein" }, k.reden),
+        [["ja", "Ja"], ["nee", "Nee"], ["onbekend", "Weet ik niet"]].map(function (o) {
+          return h("label", { key: o[0], className: "vink" }, h("input", { type: "radio", name: rn + k.code, checked: k.antwoord === o[0], onChange: function () { antwoord(k.code, o[0]); }, "data-toeslag-antwoord": k.code + "-" + o[0] }), h("span", null, o[1]));
+        }),
+        k.antwoord === "ja" && b ? h("div", null,
+          h(BedragVeld, { label: "Bedrag per betaling (netto)", value: b.netto, onChange: function (v) { L.wijzig(b.id, { netto: v, bruto: "", bijgewerkt: isoDatum(vandaag()) }); }, naam: "tv-bedrag-" + k.code }),
+          h(KeuzeVeld, { label: "Hoe vaak ontvangen", value: b.freq || "maand", opties: FREQ_KEUZES, onChange: function (v) { L.wijzig(b.id, { freq: v }); } })) : null,
+        k.antwoord === "onbekend" ? h("p", { className: "oranje klein" }, "Controleer dit op toeslagen.nl. Zodra je het weet, kun je het hier invullen.") : null);
+    }),
+    kd.geen.length ? h("div", { className: "kaart info" }, h("b", null, "Waarschijnlijk geen recht"), h("ul", { className: "lijst" }, kd.geen.map(function (t, i) { return h("li", { key: i }, t); }))) : null);
 }
 function WerkJarenTabel() {
   var c = useC(), m = c.m;
@@ -2962,6 +3038,8 @@ INTAKE.inkomen = {
         overslaan: "het inkomen van " + p.naam + " telt dan niet mee; de uitkomsten kloppen niet." };
     });
     if (c.m.bronnen.some(function (b) { return b.soort === "loon"; })) st.push({ id: "werken", titel: "Werken of stoppen", uitleg: "Per jaar tot de pensioendatum: werk je dat jaar nog? Loon telt in jaren zonder vinkje niet mee.", render: function () { return h(WerkJarenTabel, null); }, overslaan: "de app gaat ervan uit dat je werkt tot de AOW-datum of de einddatum van je loon." });
+    st.push({ id: "toeslagen", titel: "Toeslagen", uitleg: "De app kijkt naar je woning, inkomen, vermogen en gezin en vraagt naar toeslagen waar je mogelijk recht op hebt.", render: function () { return h(ToeslagenVraag, null); },
+      valideer: function (cc) { return foutenToeslagen(cc); }, overslaan: "toeslagen tellen dan niet mee in je inkomen en de app blijft er op het Dashboard aan herinneren." });
     return st;
   }
 };
@@ -3153,6 +3231,7 @@ var HELP_ITEMS = [
   ["Inkomensaanvulling", "aanvulling overbrugging pot opname", "Een pot waaruit je maandelijks opneemt tot je AOW begint. Alleen zichtbaar als je dit aanzet."],
   ["Box 3", "box 3 vermogensbelasting heffingsvrij forfaitair", "Belasting over spaargeld en beleggingen. De app toont een indicatie met het fictief rendement van de Belastingdienst. Controleer je aangifte altijd zelf."],
   ["Inflatie (CPI) en fiscale cijfers", "cpi inflatie index belasting tabel cijfers bijwerken", "Hier hoef je niets aan te passen. Druk elke maand op 'Cijfers bijwerken' (Dashboard of Fiscaliteit): de app haalt dan de nieuwste cijfers op en past vaste lasten aan op de gemeten inflatie."],
+  ["Toeslagen: heb ik er recht op?", "toeslag zorgtoeslag huurtoeslag kindgebonden budget kinderopvangtoeslag recht grens vermogen inkomen", "De app kijkt naar je woning, inkomen, vermogen en gezin en vraagt actief naar toeslagen waar je mogelijk recht op hebt: zorgtoeslag, huurtoeslag, kindgebonden budget en kinderopvangtoeslag. Je antwoordt ja, nee of weet ik niet. Bij ja vul je het bedrag van je beschikking in. De app berekent het bedrag niet zelf; toeslagen.nl heeft een proefberekening. Bij 'Weet ik niet' blijft er een herinnering op het Dashboard staan."],
   ["Bedragen indexeren", "indexeren indexering verhoging toeslagen percentage aanpassen", "Is een bedrag verhoogd, bijvoorbeeld een toeslag of een cao-verhoging? Kies op het Dashboard 'Bedragen indexeren', geef de groep en het percentage op en bevestig. De app past alle bedragen in die groep aan. Kinderbijslag, belasting en AOW worden bijgewerkt met 'Cijfers bijwerken'."],
   ["Actualiseren", "bijwerken saldo actueel maand", "Werk minstens elke maand je saldi bij: spaargeld, deposito's, beleggingen en pensioen. Gebruik 'Nu actualiseren' op het Dashboard; het leidt je stap voor stap langs alles en onthoudt wanneer je bijwerkte."],
   ["Gegevens opslaan en verder gaan", "back-up opslaan terugzetten bestand versie", "Je gegevens staan alleen in deze browser. Tik onderaan op de balk 'Back-up' om je gegevens als bestand op te slaan. Bij een nieuwe versie van de app, of een andere telefoon: open de app en kies 'Gegevens terugzetten'."],
@@ -3216,6 +3295,7 @@ function ToeslagenActualiseer() {
   var toeslagen = L.items.filter(function (b) { return b.soort === "toeslag"; });
   return h("div", null,
     tw.map(function (t, i) { return h("div", { key: i, className: "kaart waarschuw", "data-toeslag-controle": "1" }, t); }),
+    h(ToeslagenVraag, null),
     L2.kbAuto ? h("div", { className: "kaart", style: { background: "#f8fafc" } },
       h("b", null, "Kinderbijslag (automatisch)"),
       h(Tabel, { kop: ["Kind", "Per kwartaal"], get: [1], rijen: (m.profiel.kids || []).map(function (k, i) { return ["Kind " + (i + 1) + (k.beperking ? " (dubbel)" : ""), eur(kinderbijslagKwartaal(m, k.geboorte, kwartaalStart(m.peil), k.beperking))]; }) }),
@@ -3242,7 +3322,7 @@ function actualiseerStappen(c) {
     g.aanvulling ? { id: "aanvulling", titel: "Inkomensaanvulling", render: function () { return h(AanvulVelden, null); } } : null,
     koop ? { id: "hypotheek", titel: "Hypotheek", render: function () { return h(HypotheekForm, null); } } : null,
     { id: "inkomen", titel: "Inkomen en toeslagen", render: function () { return h("div", null, m.personen.map(function (p) { return h("div", { key: p.id }, h("h4", null, p.naam), h(BronnenEditor, { persoon: p.id })); })); } },
-    (lijstL(c.S.profiel).kbAuto || c.S.bronnen.some(function (b) { return b.soort === "toeslag"; })) ? { id: "toeslagen", titel: "Kinderbijslag en toeslagen", dagen: 92, render: function () { return h(ToeslagenActualiseer, null); } } : null,
+    (lijstL(c.S.profiel).kbAuto || c.S.bronnen.some(function (b) { return b.soort === "toeslag"; }) || toeslagKandidaten(c).kandidaten.length) ? { id: "toeslagen", titel: "Kinderbijslag en toeslagen", dagen: 92, render: function () { return h(ToeslagenActualiseer, null); } } : null,
     { id: "lasten", titel: "Vaste lasten en dagelijkse uitgaven", render: function () { return h("div", null, h(DagelijksVeld, null), h(LastenEditor, null)); } },
     { id: "cijfers", titel: "Cijfers bijwerken", render: function () { return h(CijfersKnop, null); } }
   ].filter(function (x) { return x; });
@@ -3409,6 +3489,7 @@ function SchermInkomen() {
   return h("div", null,
     h(IntakeKnop, { menu: "inkomen" }),
     !m.bronnen.length ? h(LegeStaat, { menu: "inkomen", tekst: "Er zijn nog geen inkomsten ingevuld. Start de intake om loon, uitkeringen, pensioen en toeslagen in te vullen." }) : null,
+    h(Kaart, { titel: "Toeslagen controleren", id: "toeslagen-check" }, h(ToeslagenVraag, null)),
     m.personen.map(function (p) {
       var pm = persoonMaand(m, p.id, d0);
       return h(Kaart, { key: p.id, titel: p.naam },

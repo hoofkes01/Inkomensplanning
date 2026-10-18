@@ -59,7 +59,16 @@ const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undef
   ok("Man 2 krijgt geen huurtoeslag", !optB.some(o => /Huurtoeslag/.test(o)));
   await page.click('[data-knop="intake-overslaan"]'); // overslaan Man 2
   await page.waitForSelector(`${dlg}[data-intake-stap="werken"]`).catch(() => {});
-  if (await page.locator("[role=dialog]").count()) { while (await page.locator("[role=dialog]").count()) { await page.click('[data-knop="intake-volgende"]'); await page.waitForTimeout(100); } }
+  // werken-stap en toeslagen-stap
+  for (let i = 0; i < 6 && await page.locator("[role=dialog]").count(); i++) {
+    if (await page.locator(`${dlg}[data-toeslagvragen]`).count()) {
+      ok("toeslagenstap vraagt actief naar zorgtoeslag, kindgebonden budget en kinderopvangtoeslag", await page.locator(`${dlg}[data-toeslagvraag="zorgtoeslag"]`).count() === 1 && await page.locator(`${dlg}[data-toeslagvraag="kgb"]`).count() === 1 && await page.locator(`${dlg}[data-toeslagvraag="kopvang"]`).count() === 1);
+      await volgende(); ok("onbeantwoorde toeslagvraag blokkeert", /Beantwoord de vraag over/.test(await tekst()));
+      ok("huurtoeslag staat al als ja (zelf ingevoerd)", await page.isChecked(`${dlg}[data-toeslag-antwoord="huurtoeslag-ja"]`));
+      for (const k of ["zorgtoeslag", "kgb", "kopvang"]) await page.check(`${dlg}[data-toeslag-antwoord="${k}-nee"]`);
+    }
+    await volgende(); await page.waitForTimeout(100);
+  }
   ok("kinderbijslag wordt automatisch berekend (6 tot 11 jaar: € 362)", /Kinderbijslag \(automatisch\)/.test(await page.textContent("main")) && /€ 362/.test(await page.textContent("main")));
   ok("Inkomen toont netto inkomen en toeslag", /€ 2\.900/.test(await page.textContent("main")) && /€ 150/.test(await page.textContent("main")));
   // Lasten: huurlasten, geen koop- of autolasten

@@ -258,6 +258,41 @@ function BronnenEditor(p) {
       h("div", { style: { flex: 1, minWidth: "12rem" } }, h(KeuzeVeld, { label: "Inkomen toevoegen", value: gekozen, opties: [["", "Kies een soort inkomen"]].concat(keuzes.map(function (k) { return [k.code, k.label]; })), onChange: setGekozen, naam: "bron-soort-kies" })),
       h(Knop, { soort: "sec", disabled: !gekozen, onClick: function () { var cat = bronCat(gekozen); if (cat) { L.voeg(nieuweBron(p.persoon, cat, m)); setGekozen(""); } }, naam: "voeg-bron" }, "+ Toevoegen")));
 }
+function foutenToeslagen(c) {
+  var kd = toeslagKandidaten(c), uit = [];
+  kd.kandidaten.forEach(function (k) {
+    if (!k.antwoord) uit.push("Beantwoord de vraag over " + k.label.toLowerCase() + " (of kies 'Weet ik niet').");
+    else if (k.antwoord === "ja") { var b = c.S.bronnen.filter(function (x) { return x.code === k.code; })[0]; if (!b || b.netto === "" || getal(b.netto) <= 0) uit.push("Vul het bedrag in van je " + k.label.toLowerCase() + ".") }
+  });
+  return uit;
+}
+function ToeslagenVraag() {
+  var c = useC(), m = c.m, L = c.lijst("bronnen"), rn = useState(function () { return "tv" + nieuwId(); })[0];
+  var kd = toeslagKandidaten(c);
+  function antwoord(code, w) {
+    c.zetPad("profiel", ["toeslagAntwoord", code], w);
+    var cat = bronCat(code), bestaand = c.S.bronnen.filter(function (b) { return b.code === code; });
+    if (w === "ja" && !bestaand.length && cat) L.voeg(nieuweBron("A", cat, m));
+    if (w !== "ja" && bestaand.length) bestaand.forEach(function (b) { L.wis(b.id); });
+  }
+  if (!kd.kandidaten.length && !kd.geen.length) return h("p", null, "Op basis van je gegevens zijn er geen toeslagen om naar te vragen.");
+  return h("div", { "data-toeslagvragen": "1" },
+    kd.kandidaten.length ? h(Uitleg, null, "Op basis van je woning, inkomen, vermogen en gezin kun je mogelijk recht hebben op de toeslagen hieronder. De app rekent het bedrag niet uit; vul het bedrag van je beschikking in. Weet je het niet, kijk dan op toeslagen.nl voor een proefberekening.") : null,
+    kd.kandidaten.map(function (k) {
+      var b = c.S.bronnen.filter(function (x) { return x.code === k.code; })[0];
+      return h("div", { key: k.code, className: "kaart", style: { background: "#f8fafc" }, "data-toeslagvraag": k.code },
+        h("b", null, "Ontvang je " + k.label.toLowerCase() + "?"),
+        h("p", { className: "klein" }, k.reden),
+        [["ja", "Ja"], ["nee", "Nee"], ["onbekend", "Weet ik niet"]].map(function (o) {
+          return h("label", { key: o[0], className: "vink" }, h("input", { type: "radio", name: rn + k.code, checked: k.antwoord === o[0], onChange: function () { antwoord(k.code, o[0]); }, "data-toeslag-antwoord": k.code + "-" + o[0] }), h("span", null, o[1]));
+        }),
+        k.antwoord === "ja" && b ? h("div", null,
+          h(BedragVeld, { label: "Bedrag per betaling (netto)", value: b.netto, onChange: function (v) { L.wijzig(b.id, { netto: v, bruto: "", bijgewerkt: isoDatum(vandaag()) }); }, naam: "tv-bedrag-" + k.code }),
+          h(KeuzeVeld, { label: "Hoe vaak ontvangen", value: b.freq || "maand", opties: FREQ_KEUZES, onChange: function (v) { L.wijzig(b.id, { freq: v }); } })) : null,
+        k.antwoord === "onbekend" ? h("p", { className: "oranje klein" }, "Controleer dit op toeslagen.nl. Zodra je het weet, kun je het hier invullen.") : null);
+    }),
+    kd.geen.length ? h("div", { className: "kaart info" }, h("b", null, "Waarschijnlijk geen recht"), h("ul", { className: "lijst" }, kd.geen.map(function (t, i) { return h("li", { key: i }, t); }))) : null);
+}
 function WerkJarenTabel() {
   var c = useC(), m = c.m;
   var heeftLoon = function (pid) { return m.bronnen.some(function (b) { return b.persoon === pid && b.soort === "loon"; }); };
