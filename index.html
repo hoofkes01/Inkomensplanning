@@ -6579,6 +6579,27 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     { cat: "neu", hoofd: false, naam: "iShares Edge MSCI Europe Minimum Volatility UCITS ETF EUR Acc", isin: "IE00B86MWN23", ter: "0,25%", omvang: "circa 0,83 tot 0,9 mld EUR", soort: "Europa aandelen met lage koersschommeling, kapitaliserend" },
     { cat: "neu", hoofd: false, naam: "Vanguard LifeStrategy 40% Equity UCITS ETF (EUR) Acc", isin: "IE00BMVB5M21", ter: "0,25%", omvang: "circa 0,28 mld EUR", soort: "40% aandelen, 60% obligaties, kapitaliserend; rustiger, rendement waarschijnlijk onder Euribor + 2%" }
   ];
+  // Wat overlapt een fonds uit de lijst met wat je al bezit? Beoordeeld op dezelfde ISIN of dezelfde regio/blootstelling.
+  const ADVIES_DEK = { IE00BFMXXD54: "us", IE00B4K48X80: "europe", IE00BK5BQT80: "all", IE00BKM4GZ66: "em", IE00B86MWN23: "europe" };
+  function adviesBezit(pf) {
+    const t = {};
+    (pf || []).forEach(x => {
+      const n = String(x.naam || "").toLowerCase();
+      const tag = /semiconductor/.test(n) ? "semis" : /em imi|emerging/.test(n) ? "em" : /europe|stoxx/.test(n) ? "europe" : /world|wld|all-world|acwi/.test(n) ? "world" : null;
+      if (tag) (t[tag] = t[tag] || []).push(x);
+    });
+    return t;
+  }
+  function adviesOverlap(f, pf, bezit) {
+    const eur = lijst => "€ " + Math.round((lijst || []).reduce((a, x) => a + (Number(x.waarde) || 0), 0)).toLocaleString("nl-NL");
+    const eigen = (pf || []).find(x => x.isin === f.isin || adviesIsinVoorNaam(x.naam) === f.isin);
+    if (eigen) return { overlap: true, tekst: "Heb je al: " + eigen.naam + " (€ " + Math.round(Number(eigen.waarde) || 0).toLocaleString("nl-NL") + ")" };
+    const dek = ADVIES_DEK[f.isin];
+    if (dek === "us" && bezit.world) return { overlap: true, tekst: "Overlap: circa 70% van je wereldfondsen (" + eur(bezit.world) + ") is al Amerikaans; dit vergroot de weging van de VS." };
+    if (dek === "europe" && bezit.europe) return { overlap: true, tekst: "Overlap: je hebt al Europa (" + bezit.europe.map(x => x.naam).join(", ") + ", " + eur(bezit.europe) + ")." };
+    if (dek === "all" && (bezit.world || bezit.europe || bezit.em)) return { overlap: true, tekst: "Overlap: bevat wat je al hebt in wereld-, Europa- en opkomende-landenfondsen (samen " + eur([].concat(bezit.world || [], bezit.europe || [], bezit.em || [])) + ")." };
+    return { overlap: false, tekst: "Vult je portefeuille aan." };
+  }
   // Portefeuille volgens DEGIRO (schermafbeelding van 18-10-2026); zelf bij te werken in het tabblad.
   const ADVIES_STANDAARD_PF = [
     { naam: "Amundi Core MSCI World UCITS ETF Acc", waarde: 10092.67 },
@@ -7037,10 +7058,11 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
         H("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-1" }, "Fondsen"),
         ["off", "neu"].map(c => H("div", { key: c, className: "py-2 border-t border-slate-100" },
           H("div", { className: "font-semibold text-sm", style: { color: ADVIES_KLEUR[c] } }, ADVIES_CAT[c]),
-          ADVIES_FONDSEN.filter(f => f.cat === c).map((f, i) => H("div", { key: f.isin, className: "mt-1" },
+          ADVIES_FONDSEN.filter(f => f.cat === c).map((f, i) => { const ov = adviesOverlap(f, pf, adviesBezit(pf)); return H("div", { key: f.isin, className: "mt-1" },
             H("div", { className: "text-sm" }, (i + 1) + ". " + f.naam + (f.hoofd ? " (hoofdkeuze)" : "")),
             H("div", { className: "text-xs font-mono text-slate-700" }, "ISIN " + f.isin + " · TER " + f.ter),
-            H("div", { className: "text-xs text-slate-500" }, f.omvang ? f.soort + " · fondsomvang " + f.omvang : f.soort))))),
+            H("div", { className: "text-xs text-slate-500" }, f.omvang ? f.soort + " · fondsomvang " + f.omvang : f.soort),
+            H("div", { className: "text-xs " + (ov.overlap ? "text-amber-800" : "text-emerald-700") }, ov.tekst)); }))),
         H("p", { className: "text-xs text-slate-500 mt-2" }, "Alleen kapitaliserende (accumulating) fondsen, gesorteerd op lage kosten en daarna hoge fondsomvang (maatstaf voor volume; het werkelijke handelsvolume is niet gecontroleerd). De hoofdkeuze is het fonds dat het koopadvies noemt. Of een fonds bij de DEGIRO Kernselectie hoort, is niet gecontroleerd (de lijst was niet op te vragen): controleer in DEGIRO of het fonds op Tradegate de Kernselectie-voorwaarden heeft. ISIN's en kosten zijn op 18-10-2026 gecontroleerd bij fondsdata-sites; fondsomvang is een afgeronde schatting en verschilt per bron. Controleer in DEGIRO of het fonds op jouw beurs beschikbaar is en wat de kosten zijn. Dit is een rekenhulp op basis van je eigen uitgangspunten, geen persoonlijk beleggingsadvies.")));
   }
 
