@@ -1,7 +1,7 @@
 // Voorbeeldhuishouden (verzonnen) voor tests.
 const c = require("./laad.js");
 const S = JSON.parse(JSON.stringify(c.STANDAARD));
-S.profiel.type = "man+vrouw"; S.profiel.partner = true; S.profiel.akkoordAnoniem = true; S.profiel.naamA = "Man"; S.profiel.naamB = "Vrouw"; S.profiel.werk = { A: ["loon"], B: ["loon", "pensioen"] }; S.profiel.leef = { woning: "koop", woz: 400000, woningGeen: "", auto: "eigen", kinderen: 1, opvang: false, studerend: true, huisdier: false }; S.profiel.geboorteA = "1966-09-15"; S.profiel.geboorteB = "1964-11-09"; S.profiel.peildatum = "2026-10-18";
+S.profiel.type = "man+vrouw"; S.profiel.partner = true; S.profiel.akkoordAnoniem = true; S.profiel.naamA = "Man"; S.profiel.naamB = "Vrouw"; S.profiel.werk = { A: ["loon"], B: ["loon", "pensioen"] }; S.profiel.leef = { woning: "koop", woz: 400000, woningGeen: "", auto: "", eigen: 2, lease: 1, deel: true, kinderen: 1, opvang: false, studerend: true, huisdier: false }; S.profiel.geboorteA = "1966-09-15"; S.profiel.geboorteB = "1964-11-09"; S.profiel.peildatum = "2026-10-18";
 S.profiel.gebruik = { hypotheek: true, deposito: true, beleggen: true, aanvulling: true, pensioen: true };
 S.inst.cpiStand = "2026-10-10"; S.inst.spaarrenteStand = "2026-10-15"; S.inst.cijfersDatum = "2026-10-15";
 S.advies.pfDatum = "2026-10-10"; S.advies.wachtTot = 55000; S.advies.behoudAan = true;

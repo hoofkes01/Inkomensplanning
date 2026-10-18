@@ -86,13 +86,16 @@ function WoningVelden() {
     l.woning === "geen" ? h(Uitleg, null, "Je kunt later een bijdrage voor woonkosten opgeven als je die betaalt.") : null);
 }
 function AutoVelden() {
-  var c = useC(), l = c.S.profiel.leef || {}, rn = useState(function () { return "au" + nieuwId(); })[0];
+  var c = useC(), l = c.S.profiel.leef || {};
   function z(patch) { c.zetPad("profiel", ["leef"], Object.assign({}, l, patch)); }
-  var opties = [["eigen", "Eigen auto"], ["lease", "Leaseauto"], ["beide", "Eigen auto en leaseauto"], ["geen", "Geen auto"]];
-  return h("div", null, opties.map(function (x) {
-    return h("label", { key: x[0], className: "vink", style: { padding: ".35rem .5rem", border: "1px solid #e2e8f0", borderRadius: ".6rem", background: l.auto === x[0] ? "#f1f5f9" : "#fff" } },
-      h("input", { type: "radio", name: rn, checked: l.auto === x[0], onChange: function () { z({ auto: x[0] }); }, "data-auto": x[0] }), h("span", null, x[1]));
-  }));
+  var tel = [["", "Kies"], ["0", "Geen"], ["1", "1"], ["2", "2"], ["3", "3"], ["4", "4"]];
+  var eigen = l.eigen !== undefined && l.eigen !== "" ? String(l.eigen) : "", lease = l.lease !== undefined && l.lease !== "" ? String(l.lease) : "";
+  return h("div", null,
+    h("div", { className: "raster" },
+      h(KeuzeVeld, { label: "Aantal eigen auto's", value: eigen, opties: tel, onChange: function (v) { z({ eigen: v === "" ? "" : Number(v), auto: "" }); }, naam: "auto-eigen" }),
+      h(KeuzeVeld, { label: "Aantal leaseauto's", value: lease, opties: tel, onChange: function (v) { z({ lease: v === "" ? "" : Number(v), auto: "" }); }, naam: "auto-lease" })),
+    h(Vink, { label: "We gebruiken een deelauto of nemen regelmatig een taxi", value: !!l.deel, onChange: function (v) { z({ deel: v }); } }),
+    h(Uitleg, null, "Kies 'Geen' bij beide als je geen auto hebt. Per auto vraagt de app later naar verzekering, belasting, brandstof en onderhoud (eigen auto) of de leasetermijn (leaseauto)."));
 }
 function GezinVelden() {
   var c = useC(), l = c.S.profiel.leef || {};
@@ -297,9 +300,9 @@ function HypotheekForm() {
 
 /* ----- Vaste lasten: vaste omschrijvingen op basis van de intake ----- */
 var FREQ_KEUZES = [["maand", "Per maand"], ["kwartaal", "Per kwartaal"], ["halfjaar", "Per half jaar"], ["jaar", "Per jaar"]];
-function nieuweLast(cat, pid, m) {
-  var naam = cat.code === "overig" ? "" : cat.label + (pid && m && m.personen.length > 1 ? " (" + persoonVan(m, pid).naam + ")" : "");
-  return { id: nieuwId(), code: cat.code, persoon: pid || "", naam: naam, bedrag: "", freq: cat.freq || "maand", eersteMaand: 1, index: cat.index || "cpi", indexPct: "", start: "", einde: "" };
+function nieuweLast(cat, pid, m, auto) {
+  var naam = cat.code === "overig" ? "" : cat.label + (pid && m && m.personen.length > 1 ? " (" + persoonVan(m, pid).naam + ")" : "") + (auto && auto.toon ? " (" + auto.naam + ")" : "");
+  return { id: nieuwId(), code: cat.code, persoon: pid || "", autoId: auto ? auto.id : "", naam: naam, bedrag: "", freq: cat.freq || "maand", eersteMaand: 1, index: cat.index || "cpi", indexPct: "", start: "", einde: "" };
 }
 function foutenLast(b) {
   var n = b.naam || "Post";
@@ -324,29 +327,34 @@ function LastRij(p) {
 function LastenEditor(p) {
   var c = useC(), L = c.lijst("lasten"), m = c.m, LL = lijstL(c.S.profiel);
   var toonG = p && p.groepen, toonOverig = !p || !p.groepen || p.overig;
-  var items = L.items;
-  function vind(code, pid) { return items.filter(function (x) { return x.code === code && (x.persoon || "") === (pid || ""); })[0]; }
+  var items = L.items, autos = autosVan(LL);
+  function vind(code, pid, autoId) { return items.filter(function (x) { return x.code === code && (x.persoon || "") === (pid || "") && (x.autoId || "") === (autoId || ""); })[0]; }
   var getoond = [];
   var groepen = LASTEN_GROEPEN.map(function (g) {
     var rijen = [];
     LASTEN_CAT.filter(function (cat) { return cat.groep === g && cat.wanneer(LL); }).forEach(function (cat) {
-      var pids = cat.per ? m.personen.map(function (p) { return p.id; }) : [""];
-      pids.forEach(function (pid) { rijen.push({ cat: cat, pid: pid }); });
+      if (cat.perAuto) {
+        autos.filter(function (a) { return cat.perAuto === "alle" || a.soort === cat.perAuto; }).forEach(function (a) { rijen.push({ cat: cat, pid: "", auto: a }); });
+      } else {
+        var pids = cat.per ? m.personen.map(function (pp) { return pp.id; }) : [""];
+        pids.forEach(function (pid) { rijen.push({ cat: cat, pid: pid, auto: null }); });
+      }
     });
     return { naam: g, rijen: rijen };
   });
-  groepen.forEach(function (g) { g.rijen.forEach(function (r) { var it = vind(r.cat.code, r.pid); if (it) getoond.push(it.id); }); });
+  groepen.forEach(function (g) { g.rijen.forEach(function (r) { var it = vind(r.cat.code, r.pid, r.auto ? r.auto.id : ""); if (it) getoond.push(it.id); }); });
   var overige = items.filter(function (x) { return getoond.indexOf(x.id) < 0; });
   return h("div", null,
-    h(Uitleg, null, "Vink aan wat voor jou geldt en vul het bedrag in. De lijst past zich aan op je woning, auto en gezin. Staat iets er niet bij? Voeg het onderaan toe als 'Overig'."),
+    h(Uitleg, null, "Vink aan wat voor jou geldt en vul het bedrag in. De lijst past zich aan op je woning, auto('s) en gezin. Staat iets er niet bij? Voeg het onderaan toe als 'Overig'."),
     groepen.filter(function (g) { return g.rijen.length && (!toonG || toonG.indexOf(g.naam) >= 0); }).map(function (g) {
       return h("div", { key: g.naam, className: "kaart", style: { background: "#f8fafc" } },
         h("h3", null, g.naam),
         g.rijen.map(function (r) {
-          var it = vind(r.cat.code, r.pid), label = r.cat.label + (r.pid && m.personen.length > 1 ? " (" + persoonVan(m, r.pid).naam + ")" : "");
-          return h("div", { key: r.cat.code + r.pid, "data-last": r.cat.code },
+          var autoId = r.auto ? r.auto.id : "";
+          var it = vind(r.cat.code, r.pid, autoId), label = r.cat.label + (r.pid && m.personen.length > 1 ? " (" + persoonVan(m, r.pid).naam + ")" : "") + (r.auto && r.auto.toon ? " (" + r.auto.naam + ")" : "");
+          return h("div", { key: r.cat.code + r.pid + autoId, "data-last": r.cat.code },
             h("label", { className: "vink", style: { marginBottom: it ? ".2rem" : ".4rem" } },
-              h("input", { type: "checkbox", checked: !!it, onChange: function (e) { if (e.target.checked) L.voeg(nieuweLast(r.cat, r.pid, m)); else if (it) L.wis(it.id); }, "data-last-vink": r.cat.code + r.pid }),
+              h("input", { type: "checkbox", checked: !!it, onChange: function (e) { if (e.target.checked) L.voeg(nieuweLast(r.cat, r.pid, m, r.auto)); else if (it) L.wis(it.id); }, "data-last-vink": r.cat.code + r.pid + autoId }),
               h("span", null, label)),
             it ? h(LastRij, { item: it, wijzig: function (patch) { L.wijzig(it.id, patch); } }) : null);
         }));
@@ -360,7 +368,7 @@ function LastenEditor(p) {
           h(TekstVeld, { label: "Omschrijving (zonder namen of nummers)", value: it.naam, onChange: function (v) { L.wijzig(it.id, { naam: v }); }, naam: "last-naam" }),
           h(LastRij, { item: it, wijzig: function (patch) { L.wijzig(it.id, patch); } }));
       }),
-      h(Knop, { soort: "sec", onClick: function () { L.voeg(nieuweLast({ code: "overig", label: "", freq: "maand", index: "cpi" }, "", m)); }, naam: "voeg-last" }, "+ Overig vast bedrag")) : null);
+      h(Knop, { soort: "sec", onClick: function () { L.voeg(nieuweLast({ code: "overig", label: "", freq: "maand", index: "cpi" }, "", m, null)); }, naam: "voeg-last" }, "+ Overig vast bedrag")) : null);
 }
 function DagelijksVeld() {
   var c = useC();

@@ -15,8 +15,8 @@ INTAKE.dashboard = {
       overslaan: "de app toont dan alle soorten inkomen; je moet zelf kiezen wat past." },
     { id: "woning", titel: "Wonen", uitleg: "Huur of koop leidt tot andere lasten en toeslagen.", render: function () { return h(WoningVelden, null); },
       valideer: function (c) { return intakeKeuze(c.S.profiel.leef.woning, "Kies je woonsituatie."); } },
-    { id: "auto", titel: "Auto", uitleg: "Een eigen auto, een leaseauto of geen auto geeft andere lasten.", render: function () { return h(AutoVelden, null); },
-      valideer: function (c) { return intakeKeuze(c.S.profiel.leef.auto, "Kies of je een auto hebt."); } },
+    { id: "auto", titel: "Auto's", uitleg: "Eigen auto's, leaseauto's, een deelauto of geen auto geven andere lasten. Er mogen er meer dan één zijn.", render: function () { return h(AutoVelden, null); },
+      valideer: function (c) { var l = c.S.profiel.leef; return leeg([(l.eigen === "" || l.eigen === undefined) ? "Kies het aantal eigen auto's (Geen mag ook)." : null, (l.lease === "" || l.lease === undefined) ? "Kies het aantal leaseauto's (Geen mag ook)." : null]); } },
     { id: "gezin", titel: "Gezin", uitleg: "Kinderen geven recht op toeslagen en kosten. Dit bepaalt welke posten de app aanbiedt.", render: function () { return h(GezinVelden, null); } },
     { id: "buffer", titel: "Minimale buffer", uitleg: "Hoeveel spaargeld wil je altijd direct beschikbaar hebben? Dit verschilt per persoon. De app waarschuwt als je er onder komt en belegt of reserveert nooit geld dat nodig is voor de buffer.", render: function () { return h(MinimumVeld, null); },
       valideer: function (c) { var v = c.S.grote.minimum; return v === "" || v == null ? ["Vul je minimale buffer in (0 mag ook)."] : leeg([nietNeg(v, "Buffer")]); } },
@@ -56,7 +56,7 @@ INTAKE.pensioen = {
 };
 function lastenGroepStappen(c) {
   var LL = lijstL(c.S.profiel), m = c.m;
-  var uit = [], uitleg = { Wonen: "Alleen de lasten die bij jouw woonsituatie passen.", Vervoer: "Passend bij je auto of juist geen auto.", "Zorg en verzekeringen": "Per persoon.", Gezin: "Kosten voor kinderen en alimentatie.", Overig: "Overige vaste lasten en eventueel een eigen post." };
+  var uit = [], uitleg = { Wonen: "Alleen de lasten die bij jouw woonsituatie passen.", Vervoer: "Per auto, passend bij eigen auto, leaseauto, deelauto of geen auto.", "Zorg en verzekeringen": "Per persoon.", Gezin: "Kosten voor kinderen en alimentatie.", Overig: "Overige vaste lasten en eventueel een eigen post." };
   LASTEN_GROEPEN.forEach(function (g, gi) {
     var heeft = LASTEN_CAT.some(function (cat) { return cat.groep === g && cat.wanneer(LL); });
     var laatste = g === "Overig";

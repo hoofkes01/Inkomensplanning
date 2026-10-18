@@ -40,6 +40,10 @@ const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undef
     ok(`[${breedte}] uitvalscherm toont namen`, /Netto inkomen|Vaste lasten/.test(modalTekst), modalTekst.slice(0, 160));
     if (breedte === 411) await page.screenshot({ path: `${uit}/uitval.png` });
     await page.keyboard.press("Escape");
+    await page.click('[data-knop="menu"]'); await page.click('[data-menu="lasten"]');
+    const lastTekst = await page.textContent("main");
+    ok(`[${breedte}] lasten per auto: 2 eigen en 1 lease`, (lastTekst.match(/Autoverzekering \(eigen auto \d\)/g) || []).length === 2 && (lastTekst.match(/Leasetermijn auto \(leaseauto\)/g) || []).length === 1 && (lastTekst.match(/Brandstof of laden \(/g) || []).length === 3, (lastTekst.match(/(Autoverzekering|Leasetermijn auto|Brandstof of laden) \([^)]*\)/g) || []).join("|"));
+    ok(`[${breedte}] deelauto-post bij deelauto`, /Deelauto en taxi/.test(lastTekst));
     // Help, Actualiseren, Cijfers bijwerken (bestand)
     await page.click('[data-knop="help"]'); await page.fill('[data-veld="help-zoek"]', "toeslag");
     ok(`[${breedte}] help vindt toeslagen`, /Toeslagen en kinderbijslag/.test(await page.textContent("[role=dialog]")));

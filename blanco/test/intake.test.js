@@ -29,7 +29,8 @@ const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undef
   await volgende();
   await volgende(); ok("woning is verplicht", /Kies je woonsituatie/.test(await tekst()));
   await page.check(`${dlg}[data-woning="huur"]`); await volgende();
-  await page.check(`${dlg}[data-auto="geen"]`); await volgende();
+  await volgende(); ok("auto-aantal is verplicht", /aantal eigen auto/.test(await tekst()));
+  await page.selectOption(`${dlg}[data-veld="auto-eigen"]`, "0"); await page.selectOption(`${dlg}[data-veld="auto-lease"]`, "0"); await volgende();
   await v("kinderen", "1"); await page.check(`${dlg}input[type=checkbox] >> nth=0`); await volgende(); // kinderopvang
   await volgende();
   ok("buffer is verplicht", /minimale buffer/i.test(await tekst()));

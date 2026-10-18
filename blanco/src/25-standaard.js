@@ -19,7 +19,7 @@ var STANDAARD = {
   profiel: {
     type: "", partner: false, fiscalePartners: true, naamA: "Persoon A", naamB: "Persoon B", geboorteA: "", geboorteB: "", aowA: "", aowB: "", peildatum: "", akkoordAnoniem: false,
     werk: { A: [], B: [] },
-    leef: { woning: "", woningGeen: "", woz: "", auto: "", kinderen: 0, opvang: false, studerend: false, huisdier: false },
+    leef: { woning: "", woningGeen: "", woz: "", auto: "", eigen: "", lease: "", deel: false, kinderen: 0, opvang: false, studerend: false, huisdier: false },
     gebruik: { hypotheek: false, deposito: false, beleggen: false, aanvulling: false, pensioen: false }
   },
   // Marktcijfers en aannames: standaardwaarden zijn voorbeelden. Zolang 'stand' leeg is, meldt de app dat ze nog niet zijn bijgewerkt.
@@ -99,14 +99,14 @@ var LASTEN_CAT = [
   { code: "aansprakelijk", groep: "Wonen", label: "Aansprakelijkheidsverzekering", freq: "maand", index: "cpi", wanneer: function () { return true; } },
   { code: "internet", groep: "Wonen", label: "Internet en televisie", freq: "maand", index: "cpi", wanneer: function () { return true; } },
   { code: "mobiel", groep: "Wonen", label: "Mobiele telefoon", freq: "maand", index: "cpi", per: true, wanneer: function () { return true; } },
-  { code: "auto_belasting", groep: "Vervoer", label: "Motorrijtuigenbelasting", freq: "kwartaal", index: "cpi", wanneer: function (L) { return L.auto === "eigen" || L.auto === "beide"; } },
-  { code: "auto_verz", groep: "Vervoer", label: "Autoverzekering", freq: "maand", index: "cpi", wanneer: function (L) { return L.auto === "eigen" || L.auto === "beide"; } },
-  { code: "auto_brandstof", groep: "Vervoer", label: "Brandstof of laden", freq: "maand", index: "cpi", wanneer: function (L) { return L.auto && L.auto !== "geen"; } },
-  { code: "auto_onderhoud", groep: "Vervoer", label: "Onderhoud en APK", freq: "jaar", index: "cpi", wanneer: function (L) { return L.auto === "eigen" || L.auto === "beide"; } },
-  { code: "auto_vervanging", groep: "Vervoer", label: "Sparen voor vervanging van de auto", freq: "maand", index: "cpi", wanneer: function (L) { return L.auto === "eigen" || L.auto === "beide"; } },
-  { code: "auto_lease", groep: "Vervoer", label: "Leasetermijn auto", freq: "maand", index: "cpi", wanneer: function (L) { return L.auto === "lease" || L.auto === "beide"; } },
-  { code: "auto_parkeer", groep: "Vervoer", label: "Parkeren", freq: "maand", index: "cpi", wanneer: function (L) { return L.auto && L.auto !== "geen"; } },
-  { code: "deelauto", groep: "Vervoer", label: "Deelauto en taxi", freq: "maand", index: "cpi", wanneer: function (L) { return L.auto === "geen"; } },
+  { code: "auto_belasting", groep: "Vervoer", label: "Motorrijtuigenbelasting", freq: "kwartaal", index: "cpi", perAuto: "eigen", wanneer: function (L) { return L.eigen > 0; } },
+  { code: "auto_verz", groep: "Vervoer", label: "Autoverzekering", freq: "maand", index: "cpi", perAuto: "eigen", wanneer: function (L) { return L.eigen > 0; } },
+  { code: "auto_brandstof", groep: "Vervoer", label: "Brandstof of laden", freq: "maand", index: "cpi", perAuto: "alle", wanneer: function (L) { return L.auto; } },
+  { code: "auto_onderhoud", groep: "Vervoer", label: "Onderhoud en APK", freq: "jaar", index: "cpi", perAuto: "eigen", wanneer: function (L) { return L.eigen > 0; } },
+  { code: "auto_vervanging", groep: "Vervoer", label: "Sparen voor vervanging van de auto", freq: "maand", index: "cpi", perAuto: "eigen", wanneer: function (L) { return L.eigen > 0; } },
+  { code: "auto_lease", groep: "Vervoer", label: "Leasetermijn auto", freq: "maand", index: "cpi", perAuto: "lease", wanneer: function (L) { return L.lease > 0; } },
+  { code: "auto_parkeer", groep: "Vervoer", label: "Parkeren", freq: "maand", index: "cpi", perAuto: "alle", wanneer: function (L) { return L.auto; } },
+  { code: "deelauto", groep: "Vervoer", label: "Deelauto en taxi", freq: "maand", index: "cpi", wanneer: function (L) { return L.deel || L.geenAuto; } },
   { code: "ov", groep: "Vervoer", label: "Openbaar vervoer", freq: "maand", index: "cpi", per: true, wanneer: function () { return true; } },
   { code: "fiets", groep: "Vervoer", label: "Fiets (onderhoud en verzekering)", freq: "jaar", index: "cpi", wanneer: function () { return true; } },
   { code: "zorgverz", groep: "Zorg en verzekeringen", label: "Zorgverzekering (basis)", freq: "maand", index: "cpi", per: true, wanneer: function () { return true; } },
@@ -132,9 +132,23 @@ var LASTEN_CAT = [
   { code: "belasting_na", groep: "Overig", label: "Belastingaanslagen (voorlopige aanslag, naheffing)", freq: "jaar", index: "geen", wanneer: function () { return true; } }
 ];
 function lastCat(code) { return LASTEN_CAT.filter(function (x) { return x.code === code; })[0]; }
+function aantalAutos(l, soort) {
+  var v = l[soort];
+  if (v !== undefined && v !== "" && v !== null) return Math.max(0, Math.round(Number(v)) || 0);
+  if (soort === "eigen") return (l.auto === "eigen" || l.auto === "beide") ? 1 : 0;
+  return (l.auto === "lease" || l.auto === "beide") ? 1 : 0;
+}
 function lijstL(profiel) {
   var l = profiel.leef || {};
-  return { woning: l.woning, auto: l.auto, kinderen: Number(l.kinderen) || 0, opvang: !!l.opvang, studerend: !!l.studerend, huisdier: !!l.huisdier, partner: !!profiel.partner };
+  var eigen = aantalAutos(l, "eigen"), lease = aantalAutos(l, "lease");
+  return { woning: l.woning, eigen: eigen, lease: lease, auto: eigen + lease > 0, deel: !!l.deel, geenAuto: eigen + lease === 0, kinderen: Number(l.kinderen) || 0, opvang: !!l.opvang, studerend: !!l.studerend, huisdier: !!l.huisdier, partner: !!profiel.partner };
+}
+// De auto's van het huishouden, elk met een eigen id en naam (voor lasten per auto).
+function autosVan(L) {
+  var uit = [], n = L.eigen + L.lease;
+  for (var i = 1; i <= L.eigen; i++) uit.push({ id: "e" + i, soort: "eigen", naam: L.eigen > 1 ? "eigen auto " + i : "eigen auto", toon: n > 1 });
+  for (var j = 1; j <= L.lease; j++) uit.push({ id: "l" + j, soort: "lease", naam: L.lease > 1 ? "leaseauto " + j : "leaseauto", toon: n > 1 });
+  return uit;
 }
 
 var RESERVERING_NAMEN = ["Vakantie", "Vervanging auto", "Onderhoud woning", "Verbouwing", "Kinderen en studie", "Cadeaus en feestdagen", "Zorgkosten", "Hobby en sport", "Belastingen", "Aanvulling pensioen"];
