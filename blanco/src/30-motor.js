@@ -181,7 +181,7 @@ function bronActief(m, b, d, pers) {
   return true;
 }
 // kas = true: bedragen van toeslagen met een eigen betaalritme (bijv. kinderbijslag per kwartaal) vallen in de betaalmaand.
-function persoonMaand(m, pid, d, kas) {
+function persoonMaandBasis(m, pid, d, kas) {
   var sleutel = pid + "|" + isoDatum(d) + "|" + (kas ? 1 : 0);
   m._cache.pm = m._cache.pm || {};
   if (m._cache.pm[sleutel]) return m._cache.pm[sleutel];
@@ -197,7 +197,7 @@ function persoonMaand(m, pid, d, kas) {
       vrijNetto += perMaand;
       return;
     }
-    lijst.push({ naam: b.naam || SOORT_NAAM[b.soort], soort: b.soort, bruto: v.bruto, netto: v.netto });
+    lijst.push({ id: b.id, naam: b.naam || SOORT_NAAM[b.soort], soort: b.soort, bruto: v.bruto, netto: v.netto });
   });
   if (pid === "A") {
     var kbm = kinderbijslagMaand(m, d, kas);
@@ -227,6 +227,18 @@ function persoonMaand(m, pid, d, kas) {
   var res = { id: pid, naam: pers.naam, bruto: brutoAlles, netto: nettoGeg + nettoModel + vrijNetto, lijst: lijst, naAOW: na, kortingBij: hoogste ? hoogste.naam : "" };
   m._cache.pm[sleutel] = res;
   return res;
+}
+
+function persoonMaand(m, pid, d, kas) {
+  var sleutel = pid + "|" + isoDatum(d) + "|" + (kas ? 1 : 0);
+  m._cache.pw = m._cache.pw || {};
+  if (m._cache.pw[sleutel]) return m._cache.pw[sleutel];
+  var basis = persoonMaandBasis(m, pid, d, kas), v = hypVoordeel(m, d), uit = basis;
+  if (v && v.pid === pid && Math.abs(v.maand) > 0.005) {
+    uit = Object.assign({}, basis, { lijst: basis.lijst.concat([{ naam: v.maand > 0 ? "Hypotheekrenteaftrek (belastingvoordeel)" : "Eigenwoningforfait (belastingnadeel)", soort: "toeslag", bruto: v.maand, netto: v.maand, vrij: true }]), netto: basis.netto + v.maand });
+  }
+  m._cache.pw[sleutel] = uit;
+  return uit;
 }
 
 // Inkomensaanvulling (pot): maandelijkse opname en saldo.
@@ -264,19 +276,92 @@ function huishoudenMaand(m, d, kas) {
 }
 
 /* ---------- Lasten ---------- */
-function hypOp(m, d) {
-  var hy = m.hyp;
-  if (!m.profiel.gebruik.hypotheek || !(getal(hy.bedrag) > 0)) return { maandlast: 0, saldo: 0, aflossing: 0, rente: 0 };
+// Eén hypotheekdeel op datum d. Na de renteherzieningsdatum geldt de verwachte nieuwe rente (leeg = dezelfde rente).
+function hypDeelOp(m, dl, d) {
+  var nul = { maandlast: 0, saldo: 0, aflossing: 0, rente: 0 };
+  if (!(getal(dl.bedrag) > 0)) return nul;
   var n = Math.max(0, maandenTussen(m.peil, d));
-  var einde = geldigeDatum(hy.aflosEinde);
-  var aflM = getal(hy.aflossing);
+  var einde = geldigeDatum(dl.aflosEinde), aflM = getal(dl.aflossing);
   var aantalAfl = einde ? Math.min(n, Math.max(0, maandenTussen(m.peil, einde))) : n;
-  var saldo = Math.max(0, getal(hy.bedrag) - aflM * aantalAfl);
-  var rente = saldo * getal(hy.rente) / 1200;
-  if (saldo <= 0) return { maandlast: 0, saldo: 0, aflossing: 0, rente: 0 };
+  var saldo = Math.max(0, getal(dl.bedrag) - aflM * aantalAfl);
+  if (saldo <= 0) return nul;
+  var herz = geldigeDatum(dl.herzienDatum), rente0 = getal(dl.rente), renteNu = rente0;
+  if (herz && !dl.variabel && d >= eerstVanMaand(herz) && dl.nieuweRente !== "" && dl.nieuweRente != null) renteNu = getal(dl.nieuweRente);
+  var rente = saldo * renteNu / 1200;
   if (einde && d >= eerstVanMaand(einde)) return { maandlast: rente, saldo: saldo, aflossing: 0, rente: rente };
-  return { maandlast: getal(hy.maandlast), saldo: saldo, aflossing: Math.min(aflM, saldo), rente: rente };
+  var last = getal(dl.maandlast) + saldo * (renteNu - rente0) / 1200;
+  return { maandlast: Math.max(0, last), saldo: saldo, aflossing: Math.min(aflM, saldo), rente: rente };
 }
+function hypOp(m, d) {
+  var uit = { maandlast: 0, saldo: 0, aflossing: 0, rente: 0, saldoBox1: 0, saldoBox3: 0, renteBox1: 0, renteBox3: 0 };
+  if (!m.profiel.gebruik.hypotheek) return uit;
+  ((m.hyp || {}).delen || []).forEach(function (dl) {
+    var r = hypDeelOp(m, dl, d);
+    uit.maandlast += r.maandlast; uit.saldo += r.saldo; uit.aflossing += r.aflossing; uit.rente += r.rente;
+    if (dl.box === "3") { uit.saldoBox3 += r.saldo; uit.renteBox3 += r.rente; } else { uit.saldoBox1 += r.saldo; uit.renteBox1 += r.rente; }
+  });
+  return uit;
+}
+// Risico per hypotheekdeel: wanneer wordt de rente herzien en wat kost 1 procentpunt meer?
+function hypRisico(m) {
+  var uit = [];
+  if (!m.profiel.gebruik.hypotheek) return uit;
+  ((m.hyp || {}).delen || []).forEach(function (dl, i) {
+    if (!(getal(dl.bedrag) > 0)) return;
+    var naam = "Hypotheekdeel " + (i + 1) + (dl.box === "3" ? " (box 3)" : dl.box === "1" ? " (box 1)" : "");
+    if (dl.variabel) { uit.push({ naam: naam, variabel: true, impact: hypDeelOp(m, dl, m.peil).saldo * 0.01 / 12 }); return; }
+    var herz = geldigeDatum(dl.herzienDatum);
+    if (!herz) { uit.push({ naam: naam, onbekend: true }); return; }
+    var saldoDan = hypDeelOp(m, dl, herz < m.peil ? m.peil : herz).saldo;
+    uit.push({ naam: naam, datum: herz, maanden: maandenTussen(m.nu, herz), dagen: dagenTussen(m.nu, herz), saldoDan: saldoDan, impact: saldoDan * 0.01 / 12 });
+  });
+  return uit;
+}
+// Eigenwoningforfait (bijtelling) op basis van de WOZ-waarde.
+function ewfBedrag(m, d) {
+  var woz = getal(m.profiel.leef && m.profiel.leef.woz);
+  if (woz <= 0) return 0;
+  var f = fx(m, d), hg = getal(f.ewf_hoog_grens);
+  if (woz > hg) return getal(f.ewf_hoog_vast) + (woz - hg) * getal(f.ewf_hoog_pct) / 100;
+  var p = woz >= 75000 ? getal(f.ewf_pct) : woz >= 50000 ? 0.25 : woz >= 25000 ? 0.20 : woz >= 12500 ? 0.10 : 0;
+  return woz * p / 100;
+}
+// Belastingvoordeel van de hypotheekrente (box 1), toegerekend aan de persoon met het hoogste inkomen.
+// Rente minus eigenwoningforfait; aftrek is beperkt tot het tarief van de tweede schijf; bij een lage hypotheek geldt de Hillen-regeling.
+function hypVoordeel(m, d) {
+  m._cache.hv = m._cache.hv || {};
+  var sleutel = isoDatum(d);
+  if (m._cache.hv[sleutel] !== undefined) return m._cache.hv[sleutel];
+  var res = null;
+  if (m.profiel.leef && m.profiel.leef.woning === "koop" && m.profiel.gebruik.hypotheek && !(m.hyp && m.hyp.voordeelInNetto)) {
+    var hy = hypOp(m, d), rente = hy.renteBox1 * 12, ewf = ewfBedrag(m, d);
+    if (rente > 0 || ewf > 0) {
+      var best = null;
+      m.personen.forEach(function (p) { var pm = persoonMaandBasis(m, p.id, d, false); if (!best || pm.bruto > best.pm.bruto) best = { p: p, pm: pm }; });
+      if (best && best.pm.bruto > 0) {
+        var na = best.pm.naAOW, B = best.pm.bruto * 12, A = best.pm.lijst.filter(function (x) { return x.soort === "loon"; }).reduce(function (s2, x) { return s2 + x.bruto; }, 0) * 12;
+        var f = fx(m, d);
+        var tax = function (b) { var bel = belastingBox1(f, b, na), kort = algemeneHeffingskorting(f, b, na) + ouderenkorting(f, b, na) + arbeidskorting(f, Math.min(A, b)); return { bel: bel, kort: kort }; };
+        var t0 = tax(B), net0 = t0.bel - Math.min(t0.bel, t0.kort), verschil = rente - ewf, voordeel;
+        if (verschil >= 0) {
+          var t1 = tax(Math.max(0, B - verschil)), delta = Math.min(t0.bel - t1.bel, verschil * getal(f.tarief2) / 100), bel1 = t0.bel - delta;
+          voordeel = net0 - (bel1 - Math.min(bel1, t1.kort));
+        } else {
+          var bijt = -verschil * (1 - getal(f.hillen_pct) / 100), t2 = tax(B + bijt);
+          voordeel = net0 - (t2.bel - Math.min(t2.bel, t2.kort));
+        }
+        res = { pid: best.p.id, maand: voordeel / 12, jaar: voordeel, verschil: verschil, rente: rente, ewf: ewf };
+      }
+    }
+  }
+  m._cache.hv[sleutel] = res;
+  return res;
+}
+// Box 3-schuld: schulden plus hypotheekdelen die niet aan de eigen woning zijn besteed.
+function schuldBox3(items, t) {
+  return -t.schuld + items.filter(function (x) { return x.comp === "hypotheek" && x.box === "3"; }).reduce(function (s, x) { return s - x.waarde; }, 0);
+}
+
 function postBetaaldInMaand(p, d) {
   var f = p.freq || "maand";
   if (f === "maand") return true;
@@ -473,7 +558,9 @@ function vermogenItems(m, d, spaar, res) {
     else item("sc" + s.id, "schuld", s.naam || "Schuld", -getal(s.bedrag));
   });
   if (m.profiel.leef && m.profiel.leef.woning === "koop" && getal(m.profiel.leef.woz) > 0) item("woning", "overig", "Woning (WOZ-waarde)", getal(m.profiel.leef.woz), { box3: false });
-  if (m.profiel.gebruik.hypotheek && getal(m.hyp.bedrag) > 0) item("hyp", "hypotheek", "Hypotheek", -hypOp(m, d).saldo);
+  if (m.profiel.gebruik.hypotheek) ((m.hyp || {}).delen || []).forEach(function (dl, i) {
+    if (getal(dl.bedrag) > 0) item("hyp" + dl.id, "hypotheek", "Hypotheekdeel " + (i + 1) + (dl.box === "3" ? " (box 3)" : " (box 1)"), -hypDeelOp(m, dl, d).saldo, { box: dl.box === "3" ? "3" : "1" });
+  });
   return items;
 }
 function vermogenTotalen(items) {
@@ -548,7 +635,7 @@ function heeftGegevens(m, menu) {
     case "dashboard": return !!(m.profiel.geboorteA && m.profiel.type);
     case "inkomen": return m.bronnen.length > 0;
     case "aanvulling": return aanvulPlan(m).length > 0;
-    case "pensioen": return m.potten.length > 0 || getal(m.hyp.bedrag) > 0;
+    case "pensioen": return m.potten.length > 0 || ((m.hyp || {}).delen || []).length > 0;
     case "lasten": return (m.lasten || []).length > 0 || getal((m.dagelijks || {}).bedrag) > 0;
     case "vermogen": return getal(m.verm.spaar) > 0 || (m.verm.rekeningen || []).length > 0 || (m.verm.deposito || []).length > 0 || (m.verm.beleggingen || []).length > 0 || (m.verm.overig || []).length > 0;
     case "grote": return (m.grote.reserveringen || []).length > 0 || (m.grote.boekingen || []).length > 0;

@@ -28,7 +28,7 @@ function toeslagWaarschuwingen(c) {
   var f = fx(m, m.peil), partners = m.profiel.partner && m.profiel.fiscalePartners !== false;
   var items = c.vr[0].items, t = c.vr[0].t;
   var bank = t.sparen + t.deposito + t.reserv, overig = items.filter(function (x) { return x.comp === "overig" && x.box3; }).reduce(function (s, x) { return s + x.waarde; }, 0);
-  var vermogen = box3Indicatie(m, bank, t.beleggen, overig, -t.schuld, m.peil).totaal;
+  var vermogen = box3Indicatie(m, bank, t.beleggen, overig, schuldBox3(items, t), m.peil).totaal;
   var gV = getal(partners ? f.toeslag_vermogen_partner : f.toeslag_vermogen_alleen);
   if ((zorg || kgb) && vermogen > gV) uit.push("Je vermogen (circa " + eur(vermogen) + ") ligt boven de grens van " + eur(gV) + " voor " + [zorg ? "zorgtoeslag" : "", kgb ? "kindgebonden budget" : ""].filter(function (x) { return x; }).join(" en ") + ". Je hebt dan waarschijnlijk geen recht meer. Het vermogen op 1 januari telt.");
   if (huur && !partners && vermogen > getal(f.toeslag_vermogen_huur_alleen)) uit.push("Je vermogen (circa " + eur(vermogen) + ") ligt boven de vermogensgrens voor huurtoeslag voor een alleenstaande (" + eur(f.toeslag_vermogen_huur_alleen) + "). Je hebt dan waarschijnlijk geen recht meer.");
@@ -46,7 +46,7 @@ function aandachtspunten(c) {
   if (klaar < tot) pt("info", "Intake: " + klaar + " van " + tot + " menu's voltooid. Zonder intake kan de app niet alles berekenen.", "dashboard");
   if ((S.grote.minimum === "" || S.grote.minimum == null) && S.profiel.type) pt("waarschuw", "Geef je minimale buffer aan spaargeld aan (Vermogen). Daar rekent de app mee.", "vermogen");
   if (!S.profiel.geboorteA) pt("waarschuw", "Vul de geboortedatum in; zonder die kan de AOW-datum niet worden bepaald.", "dashboard");
-  if (ouderDan(S.inst.cijfersDatum, 14, nu)) pt("waarschuw", "De cijfers (belasting, AOW, inflatie, rentes) zijn " + (S.inst.cijfersDatum ? "van " + fmtDatum(S.inst.cijfersDatum) : "nog nooit bijgewerkt") + ". Druk op 'Cijfers bijwerken'.", "dashboard");
+  if (ouderDan(S.inst.cijfersDatum, 14, nu)) pt("waarschuw", "De cijfers (belasting, AOW, kinderbijslag, inflatie) zijn " + (S.inst.cijfersDatum ? "van " + fmtDatum(S.inst.cijfersDatum) : "nog nooit bijgewerkt") + ". Druk op 'Cijfers bijwerken'.", "dashboard");
   if (S.inst.cijfersFout) pt("fout", "Het bijwerken van de cijfers is op " + fmtDatum(S.inst.cijfersFout.datum) + " mislukt: " + S.inst.cijfersFout.tekst + " Je rekent nu met oudere cijfers. Probeer het opnieuw of kies een cijferbestand.", "dashboard");
   else if ((S.cijfers || {}).versie && dagenTussen(geldigeDatum(S.cijfers.versie), nu) > 45) pt("waarschuw", "Het cijferbestand is van " + fmtDatum(S.cijfers.versie) + ": er zijn nog geen nieuwere cijfers beschikbaar. Controleer of er een nieuwe versie van de app is.", "dashboard");
   toeslagWaarschuwingen(c).forEach(function (t) { pt("waarschuw", t, "inkomen"); });
@@ -60,10 +60,13 @@ function aandachtspunten(c) {
     if (dagen < 0) pt("fout", "Deposito '" + nm + "' is verlopen op " + fmtDatum(pl.eind) + ". Boek het bedrag zelf over en verwijder of werk het deposito bij.", "vermogen");
     else if (dagen <= 60) pt("waarschuw", "Deposito '" + nm + "' vervalt over " + dagen + " dagen (" + fmtDatum(pl.eind) + "). Beslis zelf of je een nieuw deposito afsluit vanaf de spaarrekening.", "vermogen");
   });
-  if (m.profiel.gebruik.hypotheek && geldigeDatum(m.hyp.renteVastTot)) {
-    var dg = dagenTussen(nu, geldigeDatum(m.hyp.renteVastTot));
-    if (dg >= 0 && dg <= 365) pt("waarschuw", "De rentevaste periode van de hypotheek eindigt op " + fmtDatum(m.hyp.renteVastTot) + ".", "pensioen");
-  }
+  hypRisico(m).forEach(function (r) {
+    if (r.onbekend) pt("waarschuw", r.naam + ": de renteherzieningsdatum ontbreekt. Vul hem in; het is een belangrijk risico.", "pensioen");
+    else if (r.variabel) pt("info", r.naam + " heeft een variabele rente: bij 1 procentpunt hogere rente stijgt de maandlast met circa " + eur(r.impact) + ".", "pensioen");
+    else if (r.dagen < 0) pt("fout", r.naam + ": de renteherzieningsdatum (" + fmtDatum(r.datum) + ") is verstreken. Werk de rente en de nieuwe datum bij.", "pensioen");
+    else if (r.maanden <= 12) pt("waarschuw", r.naam + ": de rente wordt herzien op " + fmtDatum(r.datum) + " (over " + r.maanden + " maanden). Bij 1 procentpunt hogere rente stijgt de maandlast met circa " + eur(r.impact) + ".", "pensioen");
+    else if (r.maanden <= 24) pt("info", r.naam + ": de rente wordt herzien op " + fmtDatum(r.datum) + ". Bij 1 procentpunt hogere rente stijgt de maandlast met circa " + eur(r.impact) + ".", "pensioen");
+  });
   if (getal(m.verm.spaar) > 0 || (S.verm.deposito || []).length) {
     var min = getal(S.grote.minimum), lag = null;
     sim.maand.slice(0, 13).forEach(function (r) { if (r.min < min && (!lag || r.min < lag.min)) lag = r; });

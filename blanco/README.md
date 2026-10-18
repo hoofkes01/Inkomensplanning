@@ -7,6 +7,6 @@ Planningstool voor een huishouden van één of twee personen: inkomen, vaste las
 - **Anoniem:** tekstvelden weigeren e-mail, postcode, telefoon, IBAN, adres en nummers van 9 cijfers; personen heten Man/Vrouw/Man 1/Vrouw 2; lasten en inkomsten hebben vaste omschrijvingen (`src/25-standaard.js`).
 - **Back-up:** Dashboard > "Gegevens opslaan als bestand" / "Gegevens terugzetten". Een nieuwe versie van de app is een nieuw bestand; zet daarna de back-up terug. De kop toont het versiestempel.
 - **Bronbestanden:** `src/`. Samenvoegen tot `index.html`: `./build.sh` (zet ook het versiestempel).
-- **Tests:** `node test/motor.test.js` (rekenmotor), `node test/browser.test.js`, `node test/gevuld.test.js [map]` en `node test/intake.test.js`, `node test/situaties.test.js` (Playwright, Chromium; zet `NODE_PATH` naar de globale node_modules en `CHROMIUM` naar de chrome-binary).
+- **Tests:** `node test/motor.test.js` (rekenmotor), `node test/browser.test.js`, `node test/gevuld.test.js [map]` en `node test/intake.test.js`, `node test/situaties.test.js`, `node test/hypotheek.test.js` (Playwright, Chromium; zet `NODE_PATH` naar de globale node_modules en `CHROMIUM` naar de chrome-binary).
 - **Jaarlijks bijwerken:** fiscale tabel in `src/20-fiscaal.js` (`FISCAAL_PER_JAAR`, `FISCAAL_TABEL_STAND`), fondsenlijst en ISIN's in `src/40-advies.js`, marktbeeld in `ADVIES_MARKT_STANDAARD`. Controleer box 3, AOW (SVB, januari en juli) en AOW-leeftijd.
 - Rekenvoorbeelden, geen persoonlijk financieel of fiscaal advies.

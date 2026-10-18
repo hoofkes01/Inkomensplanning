@@ -410,7 +410,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 })();
 </script>
 <script>
-var APP_VERSIE = "18-10-2026 · 18:39";
+var APP_VERSIE = "18-10-2026 · 18:46";
 /* ===== Basis: hulpfuncties, opslag, invoervelden ===== */
 var h = React.createElement;
 var useState = React.useState, useEffect = React.useEffect, useMemo = React.useMemo, useRef = React.useRef, useContext = React.useContext;
@@ -765,6 +765,7 @@ var FISCAAL_PER_JAAR = {
       aow_bruto_gehuwd_pm: 1139.39, aow_vakantiegeld_gehuwd_pm: 74.85,
       aow_bruto_alleen_pm: 1662.16, aow_vakantiegeld_alleen_pm: 104.78,
       kinderbijslag_0_5: 298.40, kinderbijslag_6_11: 362.35, kinderbijslag_12_17: 426.29,
+      ewf_pct: 0.35, ewf_hoog_grens: 1350000, ewf_hoog_vast: 4725, ewf_hoog_pct: 2.35, hillen_pct: 71.867,
       toeslag_inkomen_zorg_alleen: 40857, toeslag_inkomen_zorg_partner: 51142, toeslag_vermogen_alleen: 146011, toeslag_vermogen_partner: 184633, toeslag_vermogen_huur_alleen: 38479,
       box3_tarief: 36, box3_vrij_pp: 59357, box3_sparen_pct: 1.28, box3_beleggen_pct: 6.00, box3_schuld_pct: 2.70
     }
@@ -785,6 +786,7 @@ var FISCAAL_PER_JAAR = {
       aow_bruto_gehuwd_pm: 1139.39, aow_vakantiegeld_gehuwd_pm: 74.85,
       aow_bruto_alleen_pm: 1662.16, aow_vakantiegeld_alleen_pm: 104.78,
       kinderbijslag_0_5: 298.40, kinderbijslag_6_11: 362.35, kinderbijslag_12_17: 426.29,
+      ewf_pct: 0.35, ewf_hoog_grens: 1350000, ewf_hoog_vast: 4725, ewf_hoog_pct: 2.35, hillen_pct: 67.067,
       toeslag_inkomen_zorg_alleen: 40857, toeslag_inkomen_zorg_partner: 51142, toeslag_vermogen_alleen: 119122, toeslag_vermogen_partner: 158748, toeslag_vermogen_huur_alleen: 38479,
       box3_tarief: 36, box3_vrij_pp: 59357, box3_sparen_pct: 1.28, box3_beleggen_pct: 6.00, box3_schuld_pct: 2.70
     }
@@ -810,6 +812,7 @@ var FISCAAL_LABELS = {
   aow_bruto_alleen_pm: ["AOW bruto per maand (alleenstaand)", "b"], aow_vakantiegeld_alleen_pm: ["AOW-vakantiegeld per maand (alleenstaand)", "b"],
   kinderbijslag_0_5: ["Kinderbijslag per kwartaal, kind van 0 tot en met 5 jaar", "b"], kinderbijslag_6_11: ["Kinderbijslag per kwartaal, kind van 6 tot en met 11 jaar", "b"], kinderbijslag_12_17: ["Kinderbijslag per kwartaal, kind van 12 tot en met 17 jaar", "b"],
   toeslag_inkomen_zorg_alleen: ["Zorgtoeslag: maximaal toetsingsinkomen alleenstaand", "b"], toeslag_inkomen_zorg_partner: ["Zorgtoeslag: maximaal toetsingsinkomen met partner", "b"], toeslag_vermogen_alleen: ["Zorgtoeslag en kindgebonden budget: maximaal vermogen alleenstaand", "b"], toeslag_vermogen_partner: ["Zorgtoeslag en kindgebonden budget: maximaal vermogen met partner", "b"], toeslag_vermogen_huur_alleen: ["Huurtoeslag: maximaal vermogen alleenstaand", "b"],
+  ewf_pct: ["Eigenwoningforfait (% van de WOZ-waarde, vanaf 75.000)", "p"], ewf_hoog_grens: ["Eigenwoningforfait: bovengrens WOZ-waarde", "b"], ewf_hoog_vast: ["Eigenwoningforfait boven die grens: vast bedrag", "b"], ewf_hoog_pct: ["Eigenwoningforfait boven die grens: % over het meerdere", "p"], hillen_pct: ["Aftrek geen of geringe eigenwoningschuld (Hillen, %)", "p"],
   box3_tarief: ["Box 3: tarief (%)", "p"], box3_vrij_pp: ["Box 3: heffingsvrij vermogen per persoon", "b"], box3_sparen_pct: ["Box 3: fictief rendement sparen (%)", "p"], box3_beleggen_pct: ["Box 3: fictief rendement beleggen (%)", "p"], box3_schuld_pct: ["Box 3: rente op schulden (%)", "p"]
 };
 
@@ -975,7 +978,7 @@ var STANDAARD = {
   werkJaren: { A: {}, B: {} },
   aanv: { naam: "Inkomensaanvulling", maand: "", opnameVanaf: "", totType: "aow", totPersoon: "A", einde: "", bron: "sparen", startsaldo: "", rendement: 3, kosten: 0, opnameAan: true, mutaties: [] },
   potten: [],
-  hyp: { bedrag: "", rente: "", maandlast: "", aflossing: "", vorm: "annuiteit", aflosEinde: "", renteVastTot: "" },
+  hyp: { delen: [], voordeelInNetto: false },
   lasten: [],
   dagelijks: { bedrag: "" },
   verm: { rekeningen: [], deposito: [], beleggingen: [], overig: [], schulden: [] },
@@ -1295,7 +1298,7 @@ function bronActief(m, b, d, pers) {
   return true;
 }
 // kas = true: bedragen van toeslagen met een eigen betaalritme (bijv. kinderbijslag per kwartaal) vallen in de betaalmaand.
-function persoonMaand(m, pid, d, kas) {
+function persoonMaandBasis(m, pid, d, kas) {
   var sleutel = pid + "|" + isoDatum(d) + "|" + (kas ? 1 : 0);
   m._cache.pm = m._cache.pm || {};
   if (m._cache.pm[sleutel]) return m._cache.pm[sleutel];
@@ -1311,7 +1314,7 @@ function persoonMaand(m, pid, d, kas) {
       vrijNetto += perMaand;
       return;
     }
-    lijst.push({ naam: b.naam || SOORT_NAAM[b.soort], soort: b.soort, bruto: v.bruto, netto: v.netto });
+    lijst.push({ id: b.id, naam: b.naam || SOORT_NAAM[b.soort], soort: b.soort, bruto: v.bruto, netto: v.netto });
   });
   if (pid === "A") {
     var kbm = kinderbijslagMaand(m, d, kas);
@@ -1341,6 +1344,18 @@ function persoonMaand(m, pid, d, kas) {
   var res = { id: pid, naam: pers.naam, bruto: brutoAlles, netto: nettoGeg + nettoModel + vrijNetto, lijst: lijst, naAOW: na, kortingBij: hoogste ? hoogste.naam : "" };
   m._cache.pm[sleutel] = res;
   return res;
+}
+
+function persoonMaand(m, pid, d, kas) {
+  var sleutel = pid + "|" + isoDatum(d) + "|" + (kas ? 1 : 0);
+  m._cache.pw = m._cache.pw || {};
+  if (m._cache.pw[sleutel]) return m._cache.pw[sleutel];
+  var basis = persoonMaandBasis(m, pid, d, kas), v = hypVoordeel(m, d), uit = basis;
+  if (v && v.pid === pid && Math.abs(v.maand) > 0.005) {
+    uit = Object.assign({}, basis, { lijst: basis.lijst.concat([{ naam: v.maand > 0 ? "Hypotheekrenteaftrek (belastingvoordeel)" : "Eigenwoningforfait (belastingnadeel)", soort: "toeslag", bruto: v.maand, netto: v.maand, vrij: true }]), netto: basis.netto + v.maand });
+  }
+  m._cache.pw[sleutel] = uit;
+  return uit;
 }
 
 // Inkomensaanvulling (pot): maandelijkse opname en saldo.
@@ -1378,19 +1393,92 @@ function huishoudenMaand(m, d, kas) {
 }
 
 /* ---------- Lasten ---------- */
-function hypOp(m, d) {
-  var hy = m.hyp;
-  if (!m.profiel.gebruik.hypotheek || !(getal(hy.bedrag) > 0)) return { maandlast: 0, saldo: 0, aflossing: 0, rente: 0 };
+// Eén hypotheekdeel op datum d. Na de renteherzieningsdatum geldt de verwachte nieuwe rente (leeg = dezelfde rente).
+function hypDeelOp(m, dl, d) {
+  var nul = { maandlast: 0, saldo: 0, aflossing: 0, rente: 0 };
+  if (!(getal(dl.bedrag) > 0)) return nul;
   var n = Math.max(0, maandenTussen(m.peil, d));
-  var einde = geldigeDatum(hy.aflosEinde);
-  var aflM = getal(hy.aflossing);
+  var einde = geldigeDatum(dl.aflosEinde), aflM = getal(dl.aflossing);
   var aantalAfl = einde ? Math.min(n, Math.max(0, maandenTussen(m.peil, einde))) : n;
-  var saldo = Math.max(0, getal(hy.bedrag) - aflM * aantalAfl);
-  var rente = saldo * getal(hy.rente) / 1200;
-  if (saldo <= 0) return { maandlast: 0, saldo: 0, aflossing: 0, rente: 0 };
+  var saldo = Math.max(0, getal(dl.bedrag) - aflM * aantalAfl);
+  if (saldo <= 0) return nul;
+  var herz = geldigeDatum(dl.herzienDatum), rente0 = getal(dl.rente), renteNu = rente0;
+  if (herz && !dl.variabel && d >= eerstVanMaand(herz) && dl.nieuweRente !== "" && dl.nieuweRente != null) renteNu = getal(dl.nieuweRente);
+  var rente = saldo * renteNu / 1200;
   if (einde && d >= eerstVanMaand(einde)) return { maandlast: rente, saldo: saldo, aflossing: 0, rente: rente };
-  return { maandlast: getal(hy.maandlast), saldo: saldo, aflossing: Math.min(aflM, saldo), rente: rente };
+  var last = getal(dl.maandlast) + saldo * (renteNu - rente0) / 1200;
+  return { maandlast: Math.max(0, last), saldo: saldo, aflossing: Math.min(aflM, saldo), rente: rente };
 }
+function hypOp(m, d) {
+  var uit = { maandlast: 0, saldo: 0, aflossing: 0, rente: 0, saldoBox1: 0, saldoBox3: 0, renteBox1: 0, renteBox3: 0 };
+  if (!m.profiel.gebruik.hypotheek) return uit;
+  ((m.hyp || {}).delen || []).forEach(function (dl) {
+    var r = hypDeelOp(m, dl, d);
+    uit.maandlast += r.maandlast; uit.saldo += r.saldo; uit.aflossing += r.aflossing; uit.rente += r.rente;
+    if (dl.box === "3") { uit.saldoBox3 += r.saldo; uit.renteBox3 += r.rente; } else { uit.saldoBox1 += r.saldo; uit.renteBox1 += r.rente; }
+  });
+  return uit;
+}
+// Risico per hypotheekdeel: wanneer wordt de rente herzien en wat kost 1 procentpunt meer?
+function hypRisico(m) {
+  var uit = [];
+  if (!m.profiel.gebruik.hypotheek) return uit;
+  ((m.hyp || {}).delen || []).forEach(function (dl, i) {
+    if (!(getal(dl.bedrag) > 0)) return;
+    var naam = "Hypotheekdeel " + (i + 1) + (dl.box === "3" ? " (box 3)" : dl.box === "1" ? " (box 1)" : "");
+    if (dl.variabel) { uit.push({ naam: naam, variabel: true, impact: hypDeelOp(m, dl, m.peil).saldo * 0.01 / 12 }); return; }
+    var herz = geldigeDatum(dl.herzienDatum);
+    if (!herz) { uit.push({ naam: naam, onbekend: true }); return; }
+    var saldoDan = hypDeelOp(m, dl, herz < m.peil ? m.peil : herz).saldo;
+    uit.push({ naam: naam, datum: herz, maanden: maandenTussen(m.nu, herz), dagen: dagenTussen(m.nu, herz), saldoDan: saldoDan, impact: saldoDan * 0.01 / 12 });
+  });
+  return uit;
+}
+// Eigenwoningforfait (bijtelling) op basis van de WOZ-waarde.
+function ewfBedrag(m, d) {
+  var woz = getal(m.profiel.leef && m.profiel.leef.woz);
+  if (woz <= 0) return 0;
+  var f = fx(m, d), hg = getal(f.ewf_hoog_grens);
+  if (woz > hg) return getal(f.ewf_hoog_vast) + (woz - hg) * getal(f.ewf_hoog_pct) / 100;
+  var p = woz >= 75000 ? getal(f.ewf_pct) : woz >= 50000 ? 0.25 : woz >= 25000 ? 0.20 : woz >= 12500 ? 0.10 : 0;
+  return woz * p / 100;
+}
+// Belastingvoordeel van de hypotheekrente (box 1), toegerekend aan de persoon met het hoogste inkomen.
+// Rente minus eigenwoningforfait; aftrek is beperkt tot het tarief van de tweede schijf; bij een lage hypotheek geldt de Hillen-regeling.
+function hypVoordeel(m, d) {
+  m._cache.hv = m._cache.hv || {};
+  var sleutel = isoDatum(d);
+  if (m._cache.hv[sleutel] !== undefined) return m._cache.hv[sleutel];
+  var res = null;
+  if (m.profiel.leef && m.profiel.leef.woning === "koop" && m.profiel.gebruik.hypotheek && !(m.hyp && m.hyp.voordeelInNetto)) {
+    var hy = hypOp(m, d), rente = hy.renteBox1 * 12, ewf = ewfBedrag(m, d);
+    if (rente > 0 || ewf > 0) {
+      var best = null;
+      m.personen.forEach(function (p) { var pm = persoonMaandBasis(m, p.id, d, false); if (!best || pm.bruto > best.pm.bruto) best = { p: p, pm: pm }; });
+      if (best && best.pm.bruto > 0) {
+        var na = best.pm.naAOW, B = best.pm.bruto * 12, A = best.pm.lijst.filter(function (x) { return x.soort === "loon"; }).reduce(function (s2, x) { return s2 + x.bruto; }, 0) * 12;
+        var f = fx(m, d);
+        var tax = function (b) { var bel = belastingBox1(f, b, na), kort = algemeneHeffingskorting(f, b, na) + ouderenkorting(f, b, na) + arbeidskorting(f, Math.min(A, b)); return { bel: bel, kort: kort }; };
+        var t0 = tax(B), net0 = t0.bel - Math.min(t0.bel, t0.kort), verschil = rente - ewf, voordeel;
+        if (verschil >= 0) {
+          var t1 = tax(Math.max(0, B - verschil)), delta = Math.min(t0.bel - t1.bel, verschil * getal(f.tarief2) / 100), bel1 = t0.bel - delta;
+          voordeel = net0 - (bel1 - Math.min(bel1, t1.kort));
+        } else {
+          var bijt = -verschil * (1 - getal(f.hillen_pct) / 100), t2 = tax(B + bijt);
+          voordeel = net0 - (t2.bel - Math.min(t2.bel, t2.kort));
+        }
+        res = { pid: best.p.id, maand: voordeel / 12, jaar: voordeel, verschil: verschil, rente: rente, ewf: ewf };
+      }
+    }
+  }
+  m._cache.hv[sleutel] = res;
+  return res;
+}
+// Box 3-schuld: schulden plus hypotheekdelen die niet aan de eigen woning zijn besteed.
+function schuldBox3(items, t) {
+  return -t.schuld + items.filter(function (x) { return x.comp === "hypotheek" && x.box === "3"; }).reduce(function (s, x) { return s - x.waarde; }, 0);
+}
+
 function postBetaaldInMaand(p, d) {
   var f = p.freq || "maand";
   if (f === "maand") return true;
@@ -1587,7 +1675,9 @@ function vermogenItems(m, d, spaar, res) {
     else item("sc" + s.id, "schuld", s.naam || "Schuld", -getal(s.bedrag));
   });
   if (m.profiel.leef && m.profiel.leef.woning === "koop" && getal(m.profiel.leef.woz) > 0) item("woning", "overig", "Woning (WOZ-waarde)", getal(m.profiel.leef.woz), { box3: false });
-  if (m.profiel.gebruik.hypotheek && getal(m.hyp.bedrag) > 0) item("hyp", "hypotheek", "Hypotheek", -hypOp(m, d).saldo);
+  if (m.profiel.gebruik.hypotheek) ((m.hyp || {}).delen || []).forEach(function (dl, i) {
+    if (getal(dl.bedrag) > 0) item("hyp" + dl.id, "hypotheek", "Hypotheekdeel " + (i + 1) + (dl.box === "3" ? " (box 3)" : " (box 1)"), -hypDeelOp(m, dl, d).saldo, { box: dl.box === "3" ? "3" : "1" });
+  });
   return items;
 }
 function vermogenTotalen(items) {
@@ -1662,7 +1752,7 @@ function heeftGegevens(m, menu) {
     case "dashboard": return !!(m.profiel.geboorteA && m.profiel.type);
     case "inkomen": return m.bronnen.length > 0;
     case "aanvulling": return aanvulPlan(m).length > 0;
-    case "pensioen": return m.potten.length > 0 || getal(m.hyp.bedrag) > 0;
+    case "pensioen": return m.potten.length > 0 || ((m.hyp || {}).delen || []).length > 0;
     case "lasten": return (m.lasten || []).length > 0 || getal((m.dagelijks || {}).bedrag) > 0;
     case "vermogen": return getal(m.verm.spaar) > 0 || (m.verm.rekeningen || []).length > 0 || (m.verm.deposito || []).length > 0 || (m.verm.beleggingen || []).length > 0 || (m.verm.overig || []).length > 0;
     case "grote": return (m.grote.reserveringen || []).length > 0 || (m.grote.boekingen || []).length > 0;
@@ -2013,7 +2103,7 @@ function toeslagWaarschuwingen(c) {
   var f = fx(m, m.peil), partners = m.profiel.partner && m.profiel.fiscalePartners !== false;
   var items = c.vr[0].items, t = c.vr[0].t;
   var bank = t.sparen + t.deposito + t.reserv, overig = items.filter(function (x) { return x.comp === "overig" && x.box3; }).reduce(function (s, x) { return s + x.waarde; }, 0);
-  var vermogen = box3Indicatie(m, bank, t.beleggen, overig, -t.schuld, m.peil).totaal;
+  var vermogen = box3Indicatie(m, bank, t.beleggen, overig, schuldBox3(items, t), m.peil).totaal;
   var gV = getal(partners ? f.toeslag_vermogen_partner : f.toeslag_vermogen_alleen);
   if ((zorg || kgb) && vermogen > gV) uit.push("Je vermogen (circa " + eur(vermogen) + ") ligt boven de grens van " + eur(gV) + " voor " + [zorg ? "zorgtoeslag" : "", kgb ? "kindgebonden budget" : ""].filter(function (x) { return x; }).join(" en ") + ". Je hebt dan waarschijnlijk geen recht meer. Het vermogen op 1 januari telt.");
   if (huur && !partners && vermogen > getal(f.toeslag_vermogen_huur_alleen)) uit.push("Je vermogen (circa " + eur(vermogen) + ") ligt boven de vermogensgrens voor huurtoeslag voor een alleenstaande (" + eur(f.toeslag_vermogen_huur_alleen) + "). Je hebt dan waarschijnlijk geen recht meer.");
@@ -2031,7 +2121,7 @@ function aandachtspunten(c) {
   if (klaar < tot) pt("info", "Intake: " + klaar + " van " + tot + " menu's voltooid. Zonder intake kan de app niet alles berekenen.", "dashboard");
   if ((S.grote.minimum === "" || S.grote.minimum == null) && S.profiel.type) pt("waarschuw", "Geef je minimale buffer aan spaargeld aan (Vermogen). Daar rekent de app mee.", "vermogen");
   if (!S.profiel.geboorteA) pt("waarschuw", "Vul de geboortedatum in; zonder die kan de AOW-datum niet worden bepaald.", "dashboard");
-  if (ouderDan(S.inst.cijfersDatum, 14, nu)) pt("waarschuw", "De cijfers (belasting, AOW, inflatie, rentes) zijn " + (S.inst.cijfersDatum ? "van " + fmtDatum(S.inst.cijfersDatum) : "nog nooit bijgewerkt") + ". Druk op 'Cijfers bijwerken'.", "dashboard");
+  if (ouderDan(S.inst.cijfersDatum, 14, nu)) pt("waarschuw", "De cijfers (belasting, AOW, kinderbijslag, inflatie) zijn " + (S.inst.cijfersDatum ? "van " + fmtDatum(S.inst.cijfersDatum) : "nog nooit bijgewerkt") + ". Druk op 'Cijfers bijwerken'.", "dashboard");
   if (S.inst.cijfersFout) pt("fout", "Het bijwerken van de cijfers is op " + fmtDatum(S.inst.cijfersFout.datum) + " mislukt: " + S.inst.cijfersFout.tekst + " Je rekent nu met oudere cijfers. Probeer het opnieuw of kies een cijferbestand.", "dashboard");
   else if ((S.cijfers || {}).versie && dagenTussen(geldigeDatum(S.cijfers.versie), nu) > 45) pt("waarschuw", "Het cijferbestand is van " + fmtDatum(S.cijfers.versie) + ": er zijn nog geen nieuwere cijfers beschikbaar. Controleer of er een nieuwe versie van de app is.", "dashboard");
   toeslagWaarschuwingen(c).forEach(function (t) { pt("waarschuw", t, "inkomen"); });
@@ -2045,10 +2135,13 @@ function aandachtspunten(c) {
     if (dagen < 0) pt("fout", "Deposito '" + nm + "' is verlopen op " + fmtDatum(pl.eind) + ". Boek het bedrag zelf over en verwijder of werk het deposito bij.", "vermogen");
     else if (dagen <= 60) pt("waarschuw", "Deposito '" + nm + "' vervalt over " + dagen + " dagen (" + fmtDatum(pl.eind) + "). Beslis zelf of je een nieuw deposito afsluit vanaf de spaarrekening.", "vermogen");
   });
-  if (m.profiel.gebruik.hypotheek && geldigeDatum(m.hyp.renteVastTot)) {
-    var dg = dagenTussen(nu, geldigeDatum(m.hyp.renteVastTot));
-    if (dg >= 0 && dg <= 365) pt("waarschuw", "De rentevaste periode van de hypotheek eindigt op " + fmtDatum(m.hyp.renteVastTot) + ".", "pensioen");
-  }
+  hypRisico(m).forEach(function (r) {
+    if (r.onbekend) pt("waarschuw", r.naam + ": de renteherzieningsdatum ontbreekt. Vul hem in; het is een belangrijk risico.", "pensioen");
+    else if (r.variabel) pt("info", r.naam + " heeft een variabele rente: bij 1 procentpunt hogere rente stijgt de maandlast met circa " + eur(r.impact) + ".", "pensioen");
+    else if (r.dagen < 0) pt("fout", r.naam + ": de renteherzieningsdatum (" + fmtDatum(r.datum) + ") is verstreken. Werk de rente en de nieuwe datum bij.", "pensioen");
+    else if (r.maanden <= 12) pt("waarschuw", r.naam + ": de rente wordt herzien op " + fmtDatum(r.datum) + " (over " + r.maanden + " maanden). Bij 1 procentpunt hogere rente stijgt de maandlast met circa " + eur(r.impact) + ".", "pensioen");
+    else if (r.maanden <= 24) pt("info", r.naam + ": de rente wordt herzien op " + fmtDatum(r.datum) + ". Bij 1 procentpunt hogere rente stijgt de maandlast met circa " + eur(r.impact) + ".", "pensioen");
+  });
   if (getal(m.verm.spaar) > 0 || (S.verm.deposito || []).length) {
     var min = getal(S.grote.minimum), lag = null;
     sim.maand.slice(0, 13).forEach(function (r) { if (r.min < min && (!lag || r.min < lag.min)) lag = r; });
@@ -2356,8 +2449,13 @@ function BronnenEditor(p) {
         : h("div", null,
           h("div", { className: "raster" },
             h(BedragVeld, { label: "Bruto per maand" + (b.soort === "loon" ? " (bij 100% werktijd)" : ""), value: b.bruto, onChange: function (v) { w({ bruto: v }); }, naam: "bron-bruto" }),
-            h(BedragVeld, { label: "Netto per maand", hint: "Zoals op je specificatie. Leeg laten: de app schat het netto. De heffingskorting past de app automatisch toe op je hoogste inkomen.", value: b.netto, onChange: function (v) { w({ netto: v }); }, naam: "bron-netto" })),
+            h(BedragVeld, { label: "Netto per maand", hint: "Zoals op je specificatie. Weet je het netto niet? Laat het leeg en vul alleen het bruto in: de app berekent het netto, inclusief de heffingskorting op je hoogste inkomen.", value: b.netto, onChange: function (v) { w({ netto: v }); }, naam: "bron-netto" })),
           b.soort === "loon" ? h(BedragVeld, { label: "Werktijd (%)", hint: "100 = het ingevulde bedrag; 67 = tweederde.", value: b.werktijd, pct: true, onChange: function (v) { w({ werktijd: v }); }, naam: "bron-werktijd" }) : null),
+        (!vrij && (b.netto === "" || b.netto == null) && getal(b.bruto) > 0) ? (function () {
+          var dd = geldigeDatum(b.start) && eerstVanMaand(geldigeDatum(b.start)) > eerstVanMaand(m.peil) ? eerstVanMaand(geldigeDatum(b.start)) : eerstVanMaand(m.peil);
+          var e = persoonMaand(m, b.persoon, dd).lijst.filter(function (x) { return x.id === b.id; })[0];
+          return e ? h("p", { className: "groen klein", "data-berekend-netto": "1" }, "Berekend netto: circa " + eur(e.netto) + " per maand (met heffingskorting op je hoogste inkomen).") : h("p", { className: "klein" }, "Het netto berekent de app zodra het inkomen loopt.");
+        })() : null,
         h("div", { className: "raster" },
           h(DatumVeld, { label: "Start (leeg = loopt al)", value: b.start, onChange: function (v) { w({ start: v }); }, naam: "bron-start" }),
           h(DatumVeld, { label: "Einde (vanaf deze dag geen inkomen meer)", hint: "Leeg = loopt door.", value: b.einde, onChange: function (v) { w({ einde: v }); }, naam: "bron-einde" })),
@@ -2435,23 +2533,51 @@ function PottenEditor() {
     }
   });
 }
+var HYP_VORMEN = [["annuiteit", "Annuïteit"], ["lineair", "Lineair"], ["aflossingsvrij", "Aflossingsvrij"], ["spaar", "Spaar- of beleggingshypotheek"]];
+function nieuwHypDeel() { return { id: nieuwId(), box: "", bedrag: "", rente: "", maandlast: "", aflossing: "", vorm: "annuiteit", aflosEinde: "", herzienDatum: "", variabel: false, nieuweRente: "" }; }
+function foutenHypDeel(dl, i) {
+  var n = "Hypotheekdeel " + (i + 1);
+  return leeg([dl.box !== "1" && dl.box !== "3" ? n + ": kies box 1 (eigen woning) of box 3 (niet aan de eigen woning besteed)." : null,
+    getal(dl.bedrag) <= 0 ? n + ": vul het openstaande bedrag in." : null, dl.rente === "" ? n + ": vul de rente in." : null, nietNeg(dl.rente, n + " rente"),
+    dl.maandlast === "" ? n + ": vul de maandlast in." : null, nietNeg(dl.maandlast, n + " maandlast"),
+    datumFout(dl.aflosEinde, n + " einde aflossing"),
+    (!dl.variabel && !geldigeDatum(dl.herzienDatum)) ? n + ": vul de renteherzieningsdatum in (of vink variabele rente aan). Dit is een belangrijk risico." : null,
+    nietNeg(dl.nieuweRente, n + " verwachte rente")]);
+}
 function HypotheekForm() {
-  var c = useC(), hy = c.S.hyp;
-  function z(patch) { c.zet("hyp", patch); }
+  var c = useC(), L = c.lijst("hyp", "delen"), m = c.m, hy = c.S.hyp;
   if (c.S.profiel.leef.woning !== "koop") return h("p", { className: "klein" }, "Een hypotheek is alleen van toepassing bij een koopwoning. Je hebt bij de algemene intake een andere woonsituatie gekozen.");
+  var risico = hypRisico(m);
+  var geenInkomen = !m.bronnen.some(function (b) { return b.soort !== "toeslag"; });
   return h("div", null,
-    h(Uitleg, null, "Heb je geen hypotheek meer? Laat dan alles leeg."),
-    h("div", { className: "raster" },
-      h(BedragVeld, { label: "Openstaand bedrag", value: hy.bedrag, onChange: function (v) { z({ bedrag: v }); }, naam: "hyp-bedrag" }),
-      h(BedragVeld, { label: "Rente (%)", value: hy.rente, pct: true, onChange: function (v) { z({ rente: v }); } })),
-    h("div", { className: "raster" },
-      h(BedragVeld, { label: "Maandlast (rente en aflossing)", value: hy.maandlast, onChange: function (v) { z({ maandlast: v }); }, naam: "hyp-maandlast" }),
-      h(BedragVeld, { label: "Waarvan aflossing per maand", hint: "Bij aflossingsvrij: 0.", value: hy.aflossing, onChange: function (v) { z({ aflossing: v }); } })),
-    h("div", { className: "raster" },
-      h(KeuzeVeld, { label: "Aflossingsvorm", value: hy.vorm, opties: [["annuiteit", "Annuïteit"], ["lineair", "Lineair"], ["aflossingsvrij", "Aflossingsvrij"]], onChange: function (v) { z({ vorm: v }); } }),
-      h(DatumVeld, { label: "Einde aflossing (daarna aflossingsvrij)", value: hy.aflosEinde, onChange: function (v) { z({ aflosEinde: v }); } })),
-    h(DatumVeld, { label: "Einde rentevaste periode", value: hy.renteVastTot, onChange: function (v) { z({ renteVastTot: v }); } }),
-    h(Uitleg, null, "Na de einddatum van de aflossing rekent de app met alleen rente over het dan openstaande bedrag."));
+    h(Uitleg, null, "Voeg elk hypotheekdeel apart toe. Heb je geen hypotheek (meer), laat het dan leeg. Geef per deel aan of het in box 1 valt (besteed aan de eigen woning, rente aftrekbaar) of in box 3 (niet aan de eigen woning besteed, bijvoorbeeld voor een auto of studie; geen renteaftrek)."),
+    h(LijstEditor, {
+      naam: "hypdeel", items: L.items, leeg: "Nog geen hypotheekdelen.", voegTekst: "Hypotheekdeel toevoegen",
+      kop: function (dl, i) { return "Hypotheekdeel " + (i + 1) + (dl.box === "1" ? " · box 1" : dl.box === "3" ? " · box 3" : "") + (getal(dl.bedrag) ? " · " + eur(dl.bedrag) : ""); },
+      onVoeg: function () { L.voeg(nieuwHypDeel()); }, onWis: L.wis, onWijzig: L.wijzig,
+      velden: function (dl, w) {
+        var idx = L.items.indexOf(dl), r = risico.filter(function (x) { return x.naam.indexOf("Hypotheekdeel " + (idx + 1)) === 0; })[0];
+        return h("div", null,
+          h(KeuzeVeld, { label: "In welke box valt dit deel?", value: dl.box, opties: [["", "Kies box 1 of box 3"], ["1", "Box 1: besteed aan de eigen woning"], ["3", "Box 3: niet aan de eigen woning besteed"]], onChange: function (v) { w({ box: v }); }, naam: "hyp-box" }),
+          h("div", { className: "raster" },
+            h(BedragVeld, { label: "Openstaand bedrag", value: dl.bedrag, onChange: function (v) { w({ bedrag: v }); }, naam: "hyp-bedrag" }),
+            h(BedragVeld, { label: "Rente (%)", value: dl.rente, pct: true, onChange: function (v) { w({ rente: v }); }, naam: "hyp-rente" })),
+          h("div", { className: "raster" },
+            h(BedragVeld, { label: "Maandlast van dit deel (rente en aflossing, bruto)", value: dl.maandlast, onChange: function (v) { w({ maandlast: v }); }, naam: "hyp-maandlast" }),
+            h(BedragVeld, { label: "Waarvan aflossing per maand", hint: "Bij aflossingsvrij: 0.", value: dl.aflossing, onChange: function (v) { w({ aflossing: v }); } })),
+          h("div", { className: "raster" },
+            h(KeuzeVeld, { label: "Aflossingsvorm", value: dl.vorm, opties: HYP_VORMEN, onChange: function (v) { w({ vorm: v }); } }),
+            h(DatumVeld, { label: "Einde aflossing (daarna alleen rente)", value: dl.aflosEinde, onChange: function (v) { w({ aflosEinde: v }); } })),
+          h(Vink, { label: "Variabele rente (geen vaste rentevaste periode)", value: !!dl.variabel, onChange: function (v) { w({ variabel: v }); } }),
+          !dl.variabel ? h("div", { className: "raster" },
+            h(DatumVeld, { label: "Renteherzieningsdatum (einde rentevaste periode)", hint: "Staat op je hypotheekoverzicht. Daarna wordt de rente opnieuw vastgesteld: een risico.", value: dl.herzienDatum, onChange: function (v) { w({ herzienDatum: v }); }, naam: "hyp-herzien" }),
+            h(BedragVeld, { label: "Verwachte rente daarna (%), leeg = gelijk", value: dl.nieuweRente, pct: true, onChange: function (v) { w({ nieuweRente: v }); } })) : null,
+          r ? h("p", { className: r.variabel || (r.dagen != null && r.dagen <= 730) ? "oranje klein" : "klein" }, r.variabel ? "Variabele rente: bij 1 procentpunt hogere rente stijgt de maandlast met circa " + eur(r.impact) + "." : r.onbekend ? "Geen herzieningsdatum bekend." : (r.dagen < 0 ? "De renteherzieningsdatum is verstreken: werk de rente en datum bij." : "Rente wordt herzien over " + r.maanden + " maanden (" + fmtDatum(r.datum) + "). Bij 1 procentpunt hogere rente stijgt de maandlast met circa " + eur(r.impact) + ".")) : null);
+      }
+    }),
+    h(Vink, { label: "Het belastingvoordeel van de hypotheekrente zit al in mijn netto salaris", hint: "Laat uit staan als je het voordeel apart terugkrijgt van de Belastingdienst (voorlopige teruggaaf). De app rekent het voordeel dan zelf uit en telt het mee.", value: !!hy.voordeelInNetto, onChange: function (v) { c.zet("hyp", { voordeelInNetto: v }); } }),
+    geenInkomen && L.items.length ? h("p", { className: "oranje klein" }, "Voor het belastingvoordeel van de rente is je inkomen nodig. Vul bij Inkomen minstens het bruto bedrag in; het netto rekent de app uit.") : null,
+    h(Uitleg, null, "De app rekent het voordeel uit: rente van de box 1-delen minus het eigenwoningforfait (0,35% van de WOZ-waarde), met de beperking in de hoogste schijf en de Hillen-regeling bij een lage hypotheek. Het voordeel wordt toegerekend aan de persoon met het hoogste inkomen."));
 }
 
 /* ----- Vaste lasten: vaste omschrijvingen op basis van de intake ----- */
@@ -2850,9 +2976,9 @@ INTAKE.pensioen = {
     var st = [];
     if (c.S.profiel.gebruik.pensioen) st.push({ id: "potten", titel: "Lijfrente en pensioenpotten", uitleg: "Voeg elke pot toe die je zelf gaat opnemen: saldo, wanneer hij vrijkomt, verwacht rendement en de looptijd van de uitkering.", render: function () { return h(PottenEditor, null); },
       valideer: function (cc) { return foutenLijst(cc.S.potten, foutenPot); }, overslaan: "deze uitkeringen tellen dan niet mee in je inkomen na pensionering." });
-    if (c.S.profiel.leef.woning === "koop") st.push({ id: "hypotheek", titel: "Hypotheek", uitleg: "Openstaand bedrag, rente, maandlast en wanneer de aflossing stopt.", render: function () { return h(HypotheekForm, null); },
-      valideer: function (cc) { var hy = cc.S.hyp; return getal(hy.bedrag) > 0 ? leeg([hy.maandlast === "" ? "Vul de maandlast in." : null, nietNeg(hy.rente, "Rente"), datumFout(hy.aflosEinde, "Einde aflossing"), datumFout(hy.renteVastTot, "Einde rentevaste periode")]) : []; },
-      overslaan: "de hypotheeklast telt dan niet mee." });
+    if (c.S.profiel.leef.woning === "koop") st.push({ id: "hypotheek", titel: "Hypotheek", uitleg: "Per hypotheekdeel: in welke box het valt, het openstaande bedrag, de rente, de maandlast en de renteherzieningsdatum (een belangrijk risico).", render: function () { return h(HypotheekForm, null); },
+      valideer: function (cc) { return foutenLijst(cc.S.hyp.delen.map(function (dl, i) { return [dl, i]; }), function (x) { return foutenHypDeel(x[0], x[1]); }); },
+      overslaan: "de hypotheeklast en het belastingvoordeel van de rente tellen dan niet mee." });
     return st;
   }
 };
@@ -3016,7 +3142,7 @@ var HELP_ITEMS = [
   ["Kind met een beperking", "gehandicapt beperking intensieve zorg dubbele kinderbijslag extra kinderbijslag wlz ciz pgb", "Vink bij het kind aan dat het een beperking met intensieve zorg heeft (bijvoorbeeld Wlz-indicatie of positief CIZ-advies, minstens 4 nachten per week thuis). De app rekent dan dubbele kinderbijslag voor 3 tot en met 17 jaar en biedt extra posten aan: extra kinderbijslag (vast bedrag per jaar), een tegemoetkoming of vergoeding, en extra zorg- en vervoerskosten. Voer die bedragen zelf in; de SVB, het CIZ en je gemeente geven ze door. Een persoonsgebonden budget (pgb) is geld voor zorg en telt niet mee als inkomen."],
   ["Auto's", "auto eigen lease deelauto taxi", "Je kunt meer dan één auto hebben: kies het aantal eigen auto's en leaseauto's (ook 0), en of je een deelauto of taxi gebruikt. Per auto komen de passende lasten: verzekering, belasting, onderhoud bij een eigen auto, de leasetermijn bij een leaseauto."],
   ["Huur, koop of geen woning", "woning huur koop hypotheek inwonend", "De vragen en lasten passen zich aan. Huurder: huur, servicekosten en eventueel huurtoeslag. Eigenaar: hypotheek, OZB, opstalverzekering, onderhoud en WOZ-waarde. Geen woning: een eventuele bijdrage voor woonkosten."],
-  ["Hypotheek", "hypotheek rente aflossing rentevast", "Alleen bij een koopwoning. Vul openstaand bedrag, rente, maandlast en aflossing in. Na de einddatum van de aflossing rekent de app met alleen rente. De hypotheekrenteaftrek zit niet in de berekening; vul je netto inkomen in zoals je het ontvangt."],
+  ["Hypotheek", "hypotheek rente aflossing rentevast renteherziening box 1 box 3 hypotheekrenteaftrek eigenwoningforfait", "Voeg elk hypotheekdeel apart toe en kies de box: box 1 is besteed aan de eigen woning (rente aftrekbaar), box 3 is niet aan de eigen woning besteed (geen aftrek, telt als schuld in box 3). Vul per deel het bedrag, de rente, de maandlast en de renteherzieningsdatum in: daarna wordt de rente opnieuw vastgesteld en dat is een risico. De app rekent het belastingvoordeel van de renteaftrek zelf uit en toont wat 1 procentpunt hogere rente kost."],
   ["Spaargeld en rente", "sparen spaarrekening rente saldo bank", "Vul per rekening alleen de bank, het soort rekening en het saldo in. De rente wordt per dag berekend en op 31 december bijgeschreven."],
   ["Deposito's", "deposito bank looptijd rente vrijval verlengen", "Vul bank, bedrag, rente, start en looptijd of einddatum in. Bij vrijval gaat het geld naar je spaarrekening. De app verlengt nooit zelf: een nieuw deposito voeg je zelf toe met een nieuwe startdatum."],
   ["Beleggen en beleggingsadvies", "beleggen advies etf isin portefeuille degiro", "Alleen zichtbaar als je belegt of wilt beginnen. De app toont ISIN's en bedragen, geen koersen. Upload je portefeuille (csv of tekst) voor een voorstel in vier stappen. Het is een rekenvoorbeeld, geen persoonlijk advies."],
@@ -3328,7 +3454,7 @@ function SchermPensioen() {
   var hy = hypOp(m, m.peil);
   return h("div", null,
     h(IntakeKnop, { menu: "pensioen" }),
-    ((m.profiel.gebruik.pensioen || m.profiel.leef.woning === "koop") && !m.potten.length && !getal(m.hyp.bedrag)) ? h(LegeStaat, { menu: "pensioen", tekst: "Er zijn nog geen lijfrentes, pensioenpotten of hypotheek ingevuld." }) : null,
+    ((m.profiel.gebruik.pensioen || m.profiel.leef.woning === "koop") && !m.potten.length && !(m.hyp.delen || []).length) ? h(LegeStaat, { menu: "pensioen", tekst: "Er zijn nog geen lijfrentes, pensioenpotten of hypotheek ingevuld." }) : null,
     m.profiel.gebruik.pensioen ? h(Kaart, { titel: "Lijfrente en pensioenpotten" }, h(PottenEditor, null)) : h(Kaart, { titel: "Lijfrente en pensioenpotten" }, h("p", { className: "klein" }, "Je hebt aangegeven geen lijfrente of pensioenpotten te hebben die je zelf opneemt."), h(Knop, { soort: "sec", klein: true, onClick: function () { c.zetPad("profiel", ["gebruik", "pensioen"], true); c.openIntake("pensioen"); }, naam: "start-pensioen" }, "Lijfrente of pensioenpot toevoegen")),
     m.potten.length ? h(Kaart, { titel: "Netto-opbouw van het inkomen na de AOW" }, m.personen.map(function (p) {
       if (!p.aow) return h("p", { key: p.id, className: "klein" }, p.naam + ": geen AOW-datum bekend.");
@@ -3337,7 +3463,11 @@ function SchermPensioen() {
         h(Tabel, { kop: ["Bron", "Bruto", "Netto"], get: [1, 2], rijen: pm.lijst.map(function (x) { return [x.naam, eur(x.bruto), eur(x.netto)]; }).concat([{ klasse: "totaal", cellen: ["Totaal per maand", eur(pm.bruto), eur(pm.netto)] }]) }));
     }), h("p", { className: "klein" }, "Netto is een schatting met de fiscale tabel; zie Fiscaliteit & AOW voor de aannames.")) : null,
     m.profiel.leef.woning === "koop" ? h(Kaart, { titel: "Hypotheek" }, h(HypotheekForm, null),
-      getal(m.hyp.bedrag) > 0 ? h(KV, { rijen: [["Maandlast nu", eur(hy.maandlast)], ["Openstaand over 5 jaar", eur(hypOp(m, plusJaren(m.peil, 5)).saldo)], ["Maandlast na einde aflossing", geldigeDatum(m.hyp.aflosEinde) ? eur(hypOp(m, plusMaanden(geldigeDatum(m.hyp.aflosEinde), 1)).maandlast) : "–"]] }) : null) : null);
+      (m.hyp.delen || []).length ? h("div", null,
+        h("h4", { style: { marginTop: ".6rem" } }, "Overzicht"),
+        h(Tabel, { kop: ["Deel", "Openstaand", "Maandlast", "Rente herzien"], get: [1, 2], rijen: m.hyp.delen.map(function (dl, i) { var r = hypDeelOp(m, dl, m.peil); return ["Deel " + (i + 1) + " (box " + (dl.box || "?") + ")", eur(r.saldo), eur(r.maandlast), dl.variabel ? "variabel" : fmtDatum(dl.herzienDatum)]; }).concat([{ klasse: "totaal", cellen: ["Totaal", eur(hy.saldo), eur(hy.maandlast), ""] }]) }),
+        (function () { var v = hypVoordeel(m, m.peil); return v ? h("p", { className: "klein" }, (v.maand >= 0 ? "Belastingvoordeel van de rente: circa " : "Belastingnadeel door het eigenwoningforfait: circa ") + eur(Math.abs(v.maand)) + " per maand (rente box 1 " + eur(v.rente) + " per jaar, eigenwoningforfait " + eur(v.ewf) + "), toegerekend aan " + persoonVan(m, v.pid).naam + ".") : null; })(),
+        h("p", { className: "klein" }, "Openstaand over 5 jaar: " + eur(hypOp(m, plusJaren(m.peil, 5)).saldo) + ".")) : null) : null);
 }
 
 /* ----- Vaste lasten en dagelijkse uitgaven ----- */
@@ -3571,7 +3701,7 @@ function SchermFiscaal() {
   var c = useC(), m = c.m, t = c.vr[0].t, items = c.vr[0].items, T = fiscaalTabel(m);
   var bank = t.sparen + t.deposito + t.reserv, beleg = t.beleggen;
   var overig = items.filter(function (x) { return x.comp === "overig" && x.box3; }).reduce(function (s, x) { return s + x.waarde; }, 0);
-  var schuld = -t.schuld;
+  var schuld = schuldBox3(items, t);
   var b3 = box3Indicatie(m, bank, beleg, overig, schuld, m.peil);
   var jaar = m.peil.getFullYear();
   var tabelRijen = [];
@@ -3591,7 +3721,7 @@ function SchermFiscaal() {
       h("p", { className: "klein" }, "Dit is een indicatie met vereenvoudigingen (geen schuldendrempel, geen groene beleggingen, geen verdeling tussen partners). Controleer je aangifte bij de Belastingdienst.")),
     h(Kaart, { titel: "Aannames en beperkingen" }, h("ul", { className: "lijst" },
       h("li", null, "Belasting wordt per persoon over box 1 berekend, met algemene heffingskorting, ouderenkorting, arbeidskorting en Zvw-bijdrage op pensioen."),
-      h("li", null, "Hypotheekrenteaftrek en eigenwoningforfait zijn niet gemodelleerd; vul bij inkomen het netto in dat je werkelijk ontvangt."),
+      h("li", null, "Hypotheekrenteaftrek: rente van box 1-delen min eigenwoningforfait (0,35% van de WOZ-waarde), beperkt tot het tarief van de tweede schijf, met de Hillen-regeling bij een lage hypotheek. Het voordeel gaat naar de persoon met het hoogste inkomen. Delen in box 3 geven geen aftrek en tellen als schuld in box 3 (zonder schuldendrempel)."),
       h("li", null, "Arbeidskorting rekent alleen het afbouwtraject door: bij lagere inkomens is dit een bovengrens. Vul bij loon bij voorkeur zelf het netto in."),
       h("li", null, "AOW: alleenstaand 70% van het minimumloon, met partner 50% per persoon. Woon je samen met iemand die niet je partner is, dan verandert je AOW niet. De kostendelersnorm geldt wel voor AIO-aanvulling, Anw en bijstand; die zijn niet gemodelleerd. De AOW wordt per jaar geïndexeerd en telt vanaf de maand van de AOW-datum."),
       h("li", null, "Heffingskorting (algemene korting, arbeidskorting, ouderenkorting) wordt automatisch toegepast op het hoogste inkomen van elke persoon, op basis van leeftijd (AOW-leeftijd), arbeid (loon of winst) en de hoogte van het inkomen."),
@@ -3938,6 +4068,7 @@ function RapportInhoud() {
     rpAan(c, "fases") ? h(RpSectie, { key: "fases", id: "fases", titel: "Inkomen per fase" }, fasen.length ? h(FasenTabel, { m: m }) : h("p", null, "Nog geen inkomen ingevuld.")) : null,
     rpAan(c, "lasten") ? h(RpSectie, { key: "lasten", id: "lasten", titel: "Vaste lasten en dagelijkse uitgaven" },
       (S.lasten || []).length ? h(Tabel, { className: "rp-tabel", kop: ["Post", "Bedrag", "Hoe vaak", "Indexatie"], get: [1], rijen: S.lasten.map(function (p) { return [p.naam || "–", eur(p.bedrag), (FREQ_KEUZES.filter(function (f) { return f[0] === p.freq; })[0] || ["", ""])[1], p.index === "cpi" ? "CPI" : p.index === "vast" ? pct(p.indexPct, 1) : "geen"]; }) }) : null,
+      (m.hyp.delen || []).length ? h(Tabel, { className: "rp-tabel", kop: ["Hypotheekdeel", "Box", "Openstaand", "Rente", "Maandlast", "Rente herzien"], get: [2, 3, 4], rijen: m.hyp.delen.map(function (dl, i) { var r = hypDeelOp(m, dl, m.peil); return ["Deel " + (i + 1), dl.box || "?", eur(r.saldo), pct(dl.rente, 2), eur(r.maandlast), dl.variabel ? "variabel" : fmtDatum(dl.herzienDatum)]; }) }) : null,
       h(KV, { rijen: [["Vaste lasten per maand (gemiddeld)", eur(l0.vast)], ["Dagelijkse uitgaven per maand", eur(l0.dagelijks)], ["Hypotheek per maand", eur(l0.hypotheek)], ["Totaal per maand", eur(l0.totaal), true]] })) : null
   ]));
   // Pagina 8: grote posten en automatische boekingen

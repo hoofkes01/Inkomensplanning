@@ -129,3 +129,36 @@ ok("beperking schakelt extra posten in", LL.beperking === true && c.BRON_CAT.fil
 const f26 = c.fiscaalJaar(c.maakModel(S, c.geldigeDatum("2026-10-18")), 2026), f27 = c.fiscaalJaar(c.maakModel(S, c.geldigeDatum("2027-10-18")), 2027);
 ok("toeslaggrenzen 2026 (zorgtoeslag inkomen, vermogen)", f26.toeslag_inkomen_zorg_alleen === 40857 && f26.toeslag_vermogen_partner === 184633);
 ok("vermogensgrens 2027 lager (119.122 / 158.748)", f27.toeslag_vermogen_alleen === 119122 && f27.toeslag_vermogen_partner === 158748);
+
+// Hypotheek: delen, box 1/box 3, renteherziening, belastingvoordeel
+const SH = JSON.parse(JSON.stringify(S));
+SH.profiel.leef.woning = "koop"; SH.profiel.leef.woz = 400000; SH.profiel.gebruik.hypotheek = true; SH.profiel.gebruik.aanvulling = false;
+SH.profiel.type = "man"; SH.profiel.partner = false;
+SH.bronnen = [{ id: "x", persoon: "A", code: "loon", naam: "Loon", soort: "loon", bruto: 5000, netto: "", start: "", einde: "", werktijd: 100, index: "geen", indexPct: "" }];
+SH.hyp = { delen: [
+  { id: "a", box: "1", bedrag: 200000, rente: 3.5, maandlast: 1100, aflossing: 400, vorm: "annuiteit", aflosEinde: "", herzienDatum: "2028-01-01", variabel: false, nieuweRente: 5.5 },
+  { id: "b", box: "3", bedrag: 30000, rente: 5, maandlast: 300, aflossing: 150, vorm: "annuiteit", aflosEinde: "", herzienDatum: "2030-01-01", variabel: false, nieuweRente: "" }
+], voordeelInNetto: false };
+const mH = c.maakModel(SH, c.geldigeDatum("2026-10-18"));
+const h0 = c.hypOp(mH, c.geldigeDatum("2026-11-01"));
+ok("hypotheek: maandlast = som van de delen (1.400)", Math.round(h0.maandlast) === 1400, h0.maandlast);
+ok("hypotheek: saldo box 1 en box 3 apart", Math.round(h0.saldoBox1) > 190000 && Math.round(h0.saldoBox3) > 28000);
+const hv = c.hypVoordeel(mH, c.geldigeDatum("2026-11-01"));
+const rente1 = h0.renteBox1 * 12, ewf = 400000 * 0.0035;
+ok("belastingvoordeel: alleen box 1-rente, minus eigenwoningforfait", hv && Math.abs(hv.verschil - (rente1 - ewf)) < 1, hv && Math.round(hv.verschil));
+ok("belastingvoordeel positief en hoogstens aftrek x 37,56% + korting", hv.jaar > 0 && hv.jaar <= (rente1 - ewf) * 0.3756 + 3000, Math.round(hv.jaar));
+const pH = c.persoonMaand(mH, "A", c.geldigeDatum("2026-11-01"));
+ok("voordeel staat als aparte regel in het inkomen", pH.lijst.some(x => /Hypotheekrenteaftrek/.test(x.naam)));
+SH.hyp.voordeelInNetto = true;
+ok("voordeel al in netto: geen extra regel", !c.persoonMaand(c.maakModel(SH, c.geldigeDatum("2026-10-18")), "A", c.geldigeDatum("2026-11-01")).lijst.some(x => /Hypotheekrenteaftrek/.test(x.naam)));
+SH.hyp.voordeelInNetto = false;
+const r1 = c.hypRisico(mH);
+ok("risico per deel: herzieningsdatum en effect van 1 procentpunt", r1.length === 2 && r1[0].datum && Math.abs(r1[0].impact - r1[0].saldoDan * 0.01 / 12) < 0.01, r1.map(x => c.fmtDatum(x.datum) + " " + Math.round(x.impact)).join(" | "));
+const vorige = c.hypDeelOp(mH, SH.hyp.delen[0], c.geldigeDatum("2027-12-01")).maandlast, daarna = c.hypDeelOp(mH, SH.hyp.delen[0], c.geldigeDatum("2028-02-01")).maandlast;
+ok("na renteherziening stijgt de maandlast (3,5% -> 5,5%)", daarna > vorige + 300, Math.round(vorige) + " -> " + Math.round(daarna));
+const itemsH = c.vermogenItems(mH, c.geldigeDatum("2026-10-18"), 0, {});
+ok("box 3-deel telt als schuld in box 3", Math.round(c.schuldBox3(itemsH, c.vermogenTotalen(itemsH)) - 30000) === 0, c.schuldBox3(itemsH, c.vermogenTotalen(itemsH)));
+// Hillen: lage hypotheek -> bijtelling kleiner dan zonder Hillen
+SH.hyp.delen = [{ id: "c", box: "1", bedrag: 20000, rente: 3, maandlast: 100, aflossing: 50, vorm: "annuiteit", aflosEinde: "", herzienDatum: "2030-01-01", variabel: false, nieuweRente: "" }];
+const hv2 = c.hypVoordeel(c.maakModel(SH, c.geldigeDatum("2026-10-18")), c.geldigeDatum("2026-11-01"));
+ok("lage hypotheek: eigenwoningforfait geeft een (beperkt) nadeel", hv2 && hv2.verschil < 0 && hv2.jaar < 0 && hv2.jaar > hv2.verschil * 0.4, hv2 && Math.round(hv2.jaar) + " vs " + Math.round(hv2.verschil));

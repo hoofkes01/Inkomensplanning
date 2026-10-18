@@ -65,6 +65,9 @@ const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undef
     await page.click('[data-knop="menu"]'); await page.click('[data-menu="inkomen"]'); await page.click('[data-knop="menu"]'); await page.click('[data-menu="dashboard"]');
     ok(`[${breedte}] fout blijft zichtbaar als aandachtspunt`, /Het bijwerken van de cijfers is op .* mislukt/.test(await page.textContent("#aandacht")));
     await page.unroute("**/cijfers.json*");
+    await page.click('[data-knop="menu"]'); await page.click('[data-menu="pensioen"]');
+    const hypT = await page.textContent("main");
+    ok(`[${breedte}] hypotheek: delen met box, herziening en risico`, /Hypotheekdeel 1 · box 1/.test(hypT) && /Hypotheekdeel 2 · box 3/.test(hypT) && /1 procentpunt hogere rente/.test(hypT) && /Belastingvoordeel van de rente/.test(hypT), hypT.slice(0, 60));
     // Help, Actualiseren, Cijfers bijwerken (bestand)
     await page.click('[data-knop="help"]'); await page.fill('[data-veld="help-zoek"]', "toeslag");
     ok(`[${breedte}] help vindt toeslagen`, /Toeslagen en kinderbijslag/.test(await page.textContent("[role=dialog]")));

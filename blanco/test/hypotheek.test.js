@@ -1,0 +1,45 @@
+const { chromium } = require("playwright");
+const path = require("path");
+const url = "file://" + path.join(__dirname, "..", "index.html");
+let fouten = 0;
+const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undefined ? "  -> " + x : "")); if (!c) { fouten++; process.exitCode = 1; } };
+(async () => {
+  const browser = await chromium.launch({ executablePath: process.env.CHROMIUM });
+  const ctx = await browser.newContext({ viewport: { width: 411, height: 900 }, timezoneId: "Europe/Amsterdam" });
+  const page = await ctx.newPage(); const pe = [];
+  page.on("pageerror", e => pe.push(e.message)); page.on("dialog", d => d.accept());
+  await page.goto(url); await page.waitForSelector("[role=dialog]");
+  const dlg = "[role=dialog] ", v = (s, w) => page.fill(`${dlg}[data-veld="${s}"]`, w), volgende = () => page.click('[data-knop="intake-volgende"]'), tekst = () => page.textContent("[role=dialog]");
+  await page.check(`${dlg}input[type=checkbox]`); await volgende();
+  await page.check(`${dlg}[data-huishouden="man"]`); await volgende();
+  await v("geboorteA", "15-09-1980"); await volgende(); await volgende(); await volgende();
+  await page.check(`${dlg}[data-woning="koop"]`); await v("woz", "400000"); await volgende();
+  await page.selectOption(`${dlg}[data-veld="auto-eigen"]`, "0"); await page.selectOption(`${dlg}[data-veld="auto-lease"]`, "0"); await volgende();
+  await volgende(); await v("minimum", "5000"); await volgende(); await volgende();
+  await page.waitForSelector("[role=dialog]", { state: "detached" });
+  // Inkomen: alleen bruto -> netto berekend
+  await page.click('[data-knop="menu"]'); await page.click('[data-menu="inkomen"]'); await page.waitForSelector("[role=dialog]");
+  await page.selectOption(`${dlg}[data-veld="bron-soort-kies"]`, "loon"); await page.click(`${dlg}[data-knop="voeg-bron"]`);
+  await v("bron-bruto", "5000");
+  const bn = await page.textContent(`${dlg}[data-berekend-netto]`);
+  ok("alleen bruto ingevuld: de app toont het berekende netto", /Berekend netto: circa € [34]\.\d{3}/.test(bn), bn);
+  await page.keyboard.press("Escape");
+  // Hypotheek-intake
+  await page.click('[data-knop="menu"]'); await page.click('[data-menu="pensioen"]'); await page.waitForSelector("[role=dialog]");
+  await page.click(`${dlg}[data-knop="voeg-hypdeel"]`); await volgende();
+  const e1 = await tekst();
+  ok("box is verplicht", /kies box 1/.test(e1), e1.slice(-300));
+  ok("renteherzieningsdatum is verplicht", /renteherzieningsdatum/.test(e1));
+  await page.selectOption(`${dlg}[data-veld="hyp-box"]`, "1"); await v("hyp-bedrag", "200000"); await v("hyp-rente", "3,5"); await v("hyp-maandlast", "1100"); await v("hyp-herzien", "01-03-2027");
+  const risico = await tekst();
+  ok("risico per deel: herziening en effect 1 procentpunt", /Rente wordt herzien over \d+ maanden/.test(risico) && /1 procentpunt hogere rente/.test(risico), risico.match(/Rente wordt herzien[^.]*\.[^.]*\./) && risico.match(/Rente wordt herzien[^.]*\.[^.]*\./)[0]);
+  await volgende();
+  await page.waitForSelector("[role=dialog]", { state: "detached" });
+  await page.click('[data-knop="menu"]'); await page.click('[data-menu="dashboard"]');
+  const dash = await page.textContent("#aandacht");
+  ok("dashboard waarschuwt voor renteherziening binnen een jaar", /Hypotheekdeel 1 \(box 1\): de rente wordt herzien op 01-03-2027/.test(dash), dash.slice(0, 200));
+  await page.click('[data-knop="menu"]'); await page.click('[data-menu="pensioen"]');
+  ok("overzicht toont belastingvoordeel van de rente", /Belastingvoordeel van de rente/.test(await page.textContent("main")));
+  ok("geen pageerror", pe.length === 0, pe.join("|"));
+  await browser.close(); console.log(fouten ? "FOUTEN" : "Alles OK");
+})();

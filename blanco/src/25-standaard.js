@@ -28,7 +28,7 @@ var STANDAARD = {
   werkJaren: { A: {}, B: {} },
   aanv: { naam: "Inkomensaanvulling", maand: "", opnameVanaf: "", totType: "aow", totPersoon: "A", einde: "", bron: "sparen", startsaldo: "", rendement: 3, kosten: 0, opnameAan: true, mutaties: [] },
   potten: [],
-  hyp: { bedrag: "", rente: "", maandlast: "", aflossing: "", vorm: "annuiteit", aflosEinde: "", renteVastTot: "" },
+  hyp: { delen: [], voordeelInNetto: false },
   lasten: [],
   dagelijks: { bedrag: "" },
   verm: { rekeningen: [], deposito: [], beleggingen: [], overig: [], schulden: [] },

@@ -49,9 +49,9 @@ INTAKE.pensioen = {
     var st = [];
     if (c.S.profiel.gebruik.pensioen) st.push({ id: "potten", titel: "Lijfrente en pensioenpotten", uitleg: "Voeg elke pot toe die je zelf gaat opnemen: saldo, wanneer hij vrijkomt, verwacht rendement en de looptijd van de uitkering.", render: function () { return h(PottenEditor, null); },
       valideer: function (cc) { return foutenLijst(cc.S.potten, foutenPot); }, overslaan: "deze uitkeringen tellen dan niet mee in je inkomen na pensionering." });
-    if (c.S.profiel.leef.woning === "koop") st.push({ id: "hypotheek", titel: "Hypotheek", uitleg: "Openstaand bedrag, rente, maandlast en wanneer de aflossing stopt.", render: function () { return h(HypotheekForm, null); },
-      valideer: function (cc) { var hy = cc.S.hyp; return getal(hy.bedrag) > 0 ? leeg([hy.maandlast === "" ? "Vul de maandlast in." : null, nietNeg(hy.rente, "Rente"), datumFout(hy.aflosEinde, "Einde aflossing"), datumFout(hy.renteVastTot, "Einde rentevaste periode")]) : []; },
-      overslaan: "de hypotheeklast telt dan niet mee." });
+    if (c.S.profiel.leef.woning === "koop") st.push({ id: "hypotheek", titel: "Hypotheek", uitleg: "Per hypotheekdeel: in welke box het valt, het openstaande bedrag, de rente, de maandlast en de renteherzieningsdatum (een belangrijk risico).", render: function () { return h(HypotheekForm, null); },
+      valideer: function (cc) { return foutenLijst(cc.S.hyp.delen.map(function (dl, i) { return [dl, i]; }), function (x) { return foutenHypDeel(x[0], x[1]); }); },
+      overslaan: "de hypotheeklast en het belastingvoordeel van de rente tellen dan niet mee." });
     return st;
   }
 };

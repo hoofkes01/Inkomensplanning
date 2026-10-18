@@ -123,7 +123,7 @@ function SchermPensioen() {
   var hy = hypOp(m, m.peil);
   return h("div", null,
     h(IntakeKnop, { menu: "pensioen" }),
-    ((m.profiel.gebruik.pensioen || m.profiel.leef.woning === "koop") && !m.potten.length && !getal(m.hyp.bedrag)) ? h(LegeStaat, { menu: "pensioen", tekst: "Er zijn nog geen lijfrentes, pensioenpotten of hypotheek ingevuld." }) : null,
+    ((m.profiel.gebruik.pensioen || m.profiel.leef.woning === "koop") && !m.potten.length && !(m.hyp.delen || []).length) ? h(LegeStaat, { menu: "pensioen", tekst: "Er zijn nog geen lijfrentes, pensioenpotten of hypotheek ingevuld." }) : null,
     m.profiel.gebruik.pensioen ? h(Kaart, { titel: "Lijfrente en pensioenpotten" }, h(PottenEditor, null)) : h(Kaart, { titel: "Lijfrente en pensioenpotten" }, h("p", { className: "klein" }, "Je hebt aangegeven geen lijfrente of pensioenpotten te hebben die je zelf opneemt."), h(Knop, { soort: "sec", klein: true, onClick: function () { c.zetPad("profiel", ["gebruik", "pensioen"], true); c.openIntake("pensioen"); }, naam: "start-pensioen" }, "Lijfrente of pensioenpot toevoegen")),
     m.potten.length ? h(Kaart, { titel: "Netto-opbouw van het inkomen na de AOW" }, m.personen.map(function (p) {
       if (!p.aow) return h("p", { key: p.id, className: "klein" }, p.naam + ": geen AOW-datum bekend.");
@@ -132,7 +132,11 @@ function SchermPensioen() {
         h(Tabel, { kop: ["Bron", "Bruto", "Netto"], get: [1, 2], rijen: pm.lijst.map(function (x) { return [x.naam, eur(x.bruto), eur(x.netto)]; }).concat([{ klasse: "totaal", cellen: ["Totaal per maand", eur(pm.bruto), eur(pm.netto)] }]) }));
     }), h("p", { className: "klein" }, "Netto is een schatting met de fiscale tabel; zie Fiscaliteit & AOW voor de aannames.")) : null,
     m.profiel.leef.woning === "koop" ? h(Kaart, { titel: "Hypotheek" }, h(HypotheekForm, null),
-      getal(m.hyp.bedrag) > 0 ? h(KV, { rijen: [["Maandlast nu", eur(hy.maandlast)], ["Openstaand over 5 jaar", eur(hypOp(m, plusJaren(m.peil, 5)).saldo)], ["Maandlast na einde aflossing", geldigeDatum(m.hyp.aflosEinde) ? eur(hypOp(m, plusMaanden(geldigeDatum(m.hyp.aflosEinde), 1)).maandlast) : "–"]] }) : null) : null);
+      (m.hyp.delen || []).length ? h("div", null,
+        h("h4", { style: { marginTop: ".6rem" } }, "Overzicht"),
+        h(Tabel, { kop: ["Deel", "Openstaand", "Maandlast", "Rente herzien"], get: [1, 2], rijen: m.hyp.delen.map(function (dl, i) { var r = hypDeelOp(m, dl, m.peil); return ["Deel " + (i + 1) + " (box " + (dl.box || "?") + ")", eur(r.saldo), eur(r.maandlast), dl.variabel ? "variabel" : fmtDatum(dl.herzienDatum)]; }).concat([{ klasse: "totaal", cellen: ["Totaal", eur(hy.saldo), eur(hy.maandlast), ""] }]) }),
+        (function () { var v = hypVoordeel(m, m.peil); return v ? h("p", { className: "klein" }, (v.maand >= 0 ? "Belastingvoordeel van de rente: circa " : "Belastingnadeel door het eigenwoningforfait: circa ") + eur(Math.abs(v.maand)) + " per maand (rente box 1 " + eur(v.rente) + " per jaar, eigenwoningforfait " + eur(v.ewf) + "), toegerekend aan " + persoonVan(m, v.pid).naam + ".") : null; })(),
+        h("p", { className: "klein" }, "Openstaand over 5 jaar: " + eur(hypOp(m, plusJaren(m.peil, 5)).saldo) + ".")) : null) : null);
 }
 
 /* ----- Vaste lasten en dagelijkse uitgaven ----- */

@@ -215,7 +215,7 @@ function SchermFiscaal() {
   var c = useC(), m = c.m, t = c.vr[0].t, items = c.vr[0].items, T = fiscaalTabel(m);
   var bank = t.sparen + t.deposito + t.reserv, beleg = t.beleggen;
   var overig = items.filter(function (x) { return x.comp === "overig" && x.box3; }).reduce(function (s, x) { return s + x.waarde; }, 0);
-  var schuld = -t.schuld;
+  var schuld = schuldBox3(items, t);
   var b3 = box3Indicatie(m, bank, beleg, overig, schuld, m.peil);
   var jaar = m.peil.getFullYear();
   var tabelRijen = [];
@@ -235,7 +235,7 @@ function SchermFiscaal() {
       h("p", { className: "klein" }, "Dit is een indicatie met vereenvoudigingen (geen schuldendrempel, geen groene beleggingen, geen verdeling tussen partners). Controleer je aangifte bij de Belastingdienst.")),
     h(Kaart, { titel: "Aannames en beperkingen" }, h("ul", { className: "lijst" },
       h("li", null, "Belasting wordt per persoon over box 1 berekend, met algemene heffingskorting, ouderenkorting, arbeidskorting en Zvw-bijdrage op pensioen."),
-      h("li", null, "Hypotheekrenteaftrek en eigenwoningforfait zijn niet gemodelleerd; vul bij inkomen het netto in dat je werkelijk ontvangt."),
+      h("li", null, "Hypotheekrenteaftrek: rente van box 1-delen min eigenwoningforfait (0,35% van de WOZ-waarde), beperkt tot het tarief van de tweede schijf, met de Hillen-regeling bij een lage hypotheek. Het voordeel gaat naar de persoon met het hoogste inkomen. Delen in box 3 geven geen aftrek en tellen als schuld in box 3 (zonder schuldendrempel)."),
       h("li", null, "Arbeidskorting rekent alleen het afbouwtraject door: bij lagere inkomens is dit een bovengrens. Vul bij loon bij voorkeur zelf het netto in."),
       h("li", null, "AOW: alleenstaand 70% van het minimumloon, met partner 50% per persoon. Woon je samen met iemand die niet je partner is, dan verandert je AOW niet. De kostendelersnorm geldt wel voor AIO-aanvulling, Anw en bijstand; die zijn niet gemodelleerd. De AOW wordt per jaar geïndexeerd en telt vanaf de maand van de AOW-datum."),
       h("li", null, "Heffingskorting (algemene korting, arbeidskorting, ouderenkorting) wordt automatisch toegepast op het hoogste inkomen van elke persoon, op basis van leeftijd (AOW-leeftijd), arbeid (loon of winst) en de hoogte van het inkomen."),

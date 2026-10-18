@@ -110,6 +110,7 @@ function RapportInhoud() {
     rpAan(c, "fases") ? h(RpSectie, { key: "fases", id: "fases", titel: "Inkomen per fase" }, fasen.length ? h(FasenTabel, { m: m }) : h("p", null, "Nog geen inkomen ingevuld.")) : null,
     rpAan(c, "lasten") ? h(RpSectie, { key: "lasten", id: "lasten", titel: "Vaste lasten en dagelijkse uitgaven" },
       (S.lasten || []).length ? h(Tabel, { className: "rp-tabel", kop: ["Post", "Bedrag", "Hoe vaak", "Indexatie"], get: [1], rijen: S.lasten.map(function (p) { return [p.naam || "–", eur(p.bedrag), (FREQ_KEUZES.filter(function (f) { return f[0] === p.freq; })[0] || ["", ""])[1], p.index === "cpi" ? "CPI" : p.index === "vast" ? pct(p.indexPct, 1) : "geen"]; }) }) : null,
+      (m.hyp.delen || []).length ? h(Tabel, { className: "rp-tabel", kop: ["Hypotheekdeel", "Box", "Openstaand", "Rente", "Maandlast", "Rente herzien"], get: [2, 3, 4], rijen: m.hyp.delen.map(function (dl, i) { var r = hypDeelOp(m, dl, m.peil); return ["Deel " + (i + 1), dl.box || "?", eur(r.saldo), pct(dl.rente, 2), eur(r.maandlast), dl.variabel ? "variabel" : fmtDatum(dl.herzienDatum)]; }) }) : null,
       h(KV, { rijen: [["Vaste lasten per maand (gemiddeld)", eur(l0.vast)], ["Dagelijkse uitgaven per maand", eur(l0.dagelijks)], ["Hypotheek per maand", eur(l0.hypotheek)], ["Totaal per maand", eur(l0.totaal), true]] })) : null
   ]));
   // Pagina 8: grote posten en automatische boekingen

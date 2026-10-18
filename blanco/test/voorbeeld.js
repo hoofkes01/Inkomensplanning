@@ -16,7 +16,7 @@ S.werkJaren = { A: { 2027: false }, B: {} };
 S.aanv = { naam: "Inkomensaanvulling", maand: 1500, opnameVanaf: "2027-01-01", totType: "aow", totPersoon: "A", einde: "", bron: "beleggen", startsaldo: "", rendement: 3, kosten: 0, opnameAan: true, mutaties: [{ id: "m1", datum: "2027-06-01", bedrag: 5000 }] };
 S.grote.minimum = 7500; S.advies.risico = "offensief"; S.advies.broker = "DEGIRO";
 S.potten = [{ id: "p1", persoon: "A", naam: "Lijfrente Anna", soort: "lijfrente", saldo: 120000, geblokkeerdTot: "", start: "", rendVoor: 4, rendTijdens: 3, looptijd: 20, inleg: 3000, inlegTot: "2030-01-01" }];
-S.hyp = { bedrag: 150000, rente: 3.2, maandlast: 900, aflossing: 300, vorm: "annuiteit", aflosEinde: "2033-12-31", renteVastTot: "2027-05-01" };
+S.hyp = { delen: [{ id: "h1", box: "1", bedrag: 150000, rente: 3.2, maandlast: 900, aflossing: 300, vorm: "annuiteit", aflosEinde: "2033-12-31", herzienDatum: "2027-05-01", variabel: false, nieuweRente: 4.2 }, { id: "h2", box: "3", bedrag: 20000, rente: 4.5, maandlast: 250, aflossing: 150, vorm: "annuiteit", aflosEinde: "", herzienDatum: "2031-01-01", variabel: false, nieuweRente: "" }], voordeelInNetto: false };
 S.lasten = [
   { id: "l0", code: "zorgverz", persoon: "A", naam: "Zorgverzekering (basis) (Man)", bedrag: 140, freq: "maand", eersteMaand: 1, index: "cpi", indexPct: "", start: "", einde: "" },
   { id: "l1", code: "energie", naam: "Gas, elektriciteit en stadsverwarming", bedrag: 1100, freq: "maand", eersteMaand: 1, index: "cpi", indexPct: "", start: "", einde: "" },
