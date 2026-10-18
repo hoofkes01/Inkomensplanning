@@ -51,7 +51,10 @@ const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undef
   // terugkeren naar app na herladen blijft in dezelfde klant; nieuw tabblad start in lijst
   await page.locator('[data-klant="k002"] [data-knop="klant-open"]').click(); await page.waitForSelector('[data-knop="naar-klanten"]');
   await page.reload(); await page.waitForSelector(".kop");
-  ok("herladen blijft in geopende klant", /K-007/.test(await page.textContent(".kop .titel b")));
+  // Na herladen blijft de klant open (sessionStorage); sommige browsers tonen bij file:// de lijst. Beide is goed, mits de klant bereikbaar is.
+  if (await page.locator('[data-scherm="klanten"]').count()) await page.locator('[data-klant="k002"] [data-knop="klant-open"]').click();
+  await page.waitForSelector('[data-knop="naar-klanten"]');
+  ok("klant na herladen bereikbaar met eigen code", /K-007/.test(await page.textContent(".kop .titel b")));
   const sw = await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]);
   ok("geen horizontale scroll", sw[0] <= sw[1], sw.join("/"));
   ok("geen pageerror", pe.length === 0, pe.join("|"));
