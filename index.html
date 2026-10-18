@@ -6850,6 +6850,11 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     const P = adviesParams || {};
     const euribor = Number(P.euribor) || 0, drempel = Number(P.drempel) || 0;
     const doel = { def: Number(P.def) || 0, neu: Number(P.neu) || 0, off: Number(P.off) || 0 };
+    // Haalt geen enkel defensief fonds Raisin 6 maanden plus marge, dan loop je risico voor een rendement dat na belasting
+    // niet beter is dan veilig sparen: het defensieve deel gaat dan naar neutraal.
+    const defVervangen = doel.def > 0 && !ADVIES_FONDSEN.some(f => f.cat === "def" && adviesVoldoetMin(f, P));
+    const defOrigineel = doel.def;
+    if (defVervangen) { doel.neu += doel.def; doel.def = 0; }
     const somDoel = doel.def + doel.neu + doel.off;
     const nu = totaalVermogenOpDatum(APP_VANDAAG);
     const spaarNu = Number(nu.sparen) || 0;
@@ -6911,6 +6916,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     const waarnemingen = [];
     if (totaalNu > 0) {
       const off = pct(huidig.off, totaalNu);
+      if (defVervangen) waarnemingen.push("Geen defensief fonds levert na kosten meer dan Raisin 6 maanden plus marge (" + vmPct(adviesMinDef(P), 2) + "). Je loopt dan risico en houdt na belasting niet meer over dan veilig sparen. Het defensieve deel (" + defOrigineel + "%) is daarom naar neutraal verschoven; defensief geld hoort in een deposito.");
       waarnemingen.push("Je vrij belegde vermogen (Hoofkes02) is " + vmEuro(totaalNu) + ", waarvan " + off + "% offensief, " + pct(huidig.neu, totaalNu) + "% neutraal en " + pct(huidig.def, totaalNu) + "% defensief (doel " + pct(doel.off, somDoel) + "/" + pct(doel.neu, somDoel) + "/" + pct(doel.def, somDoel) + "% offensief/neutraal/defensief).");
       const grootsteNietChip = grootste.filter(g => !/semiconductor/i.test(g.naam))[0];
       if (grootsteNietChip && grootsteNietChip.waarde / totaalNu > 0.25) waarnemingen.push("Grootste positie: " + grootsteNietChip.naam + " is " + pct(grootsteNietChip.waarde, totaalNu) + "% van je vrij beleggen (" + vmEuro(grootsteNietChip.waarde) + "). Dat is veel voor één fonds.");
@@ -6918,7 +6924,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
       if (thema / totaalNu > 0.2) waarnemingen.push("Overige thematische fondsen (robotica, banken) vormen samen " + pct(thema, totaalNu) + "% van je vrij beleggen. Breed gespreide wereldfondsen geven meer spreiding.");
       if (huidig.def === 0) waarnemingen.push("Je hebt geen defensief deel in je beleggingen. Dat past bij een lange horizon; je spaargeld en deposito's vormen nu je buffer.");
     }
-    return { P, euribor, drempel, doel, somDoel, nu, spaarNu, ruimteNu, blijvendNu, koopBasis, koop, somBeh, behoefte, maandEinden, laagsteKomend, tekortKomend, pf, delen, huidig, totaalNu, vrijWaarde, waarnemingen, pct };
+    return { defVervangen, defOrigineel, P, euribor, drempel, doel, somDoel, nu, spaarNu, ruimteNu, blijvendNu, koopBasis, koop, somBeh, behoefte, maandEinden, laagsteKomend, tekortKomend, pf, delen, huidig, totaalNu, vrijWaarde, waarnemingen, pct };
   }
   // Stressaanname bij een aandelencorrectie van 25%: neutraal verliest circa de helft daarvan, defensief weinig.
   const ADVIES_STRESS = { off: -0.25, neu: -0.12, def: -0.03 };
@@ -6969,6 +6975,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
   function adviesSamenvatting(A) {
     const plan = herbalanceerPlan(A);
     const regels = [];
+    if (A.defVervangen) regels.push("Geen defensief fonds verslaat veilig sparen na kosten (minimaal " + vmPct(adviesMinDef(A.P), 2) + " nodig). Het defensieve deel is daarom vervangen door neutraal; defensief geld blijft in deposito's.");
     const upDatum = geldigeDatum((A.P || {}).portefeuilleDatum || "2026-10-18");
     const dagenOud = upDatum ? Math.round((APP_VANDAAG - upDatum) / 86400000) : 0;
     if (dagenOud > 30) regels.push("Je portefeuille is " + dagenOud + " dagen geleden bijgewerkt. Upload hem opnieuw voor een actueel advies.");
@@ -8302,7 +8309,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     className: "font-mono text-xs uppercase tracking-widest bg-slate-700/60 border border-slate-500 rounded-full px-3 py-1"
   }, "peildatum ", fmtDate(PEILDATUM)), /*#__PURE__*/React.createElement("span", {
     className: "w-full text-xs text-slate-400 no-print"
-  }, "App-versie ", "18-10-2026 · 17:30")), /*#__PURE__*/React.createElement("p", {
+  }, "App-versie ", "18-10-2026 · 18:10")), /*#__PURE__*/React.createElement("p", {
     className: "mt-2 text-slate-300 text-sm max-w-2xl"
   }, "Bedragen zijn nominaal per peildatum, tenzij een indexatiepercentage is ingevuld. Alle basisbedragen zijn zelf aanpasbaar bij \"Basisgegevens\"." + (actieveTab === "fiscaliteit" ? " Alle aannames staan onderaan bij \"Aannames & beperkingen\". Bij het openen checkt dit bestand automatisch vier fiscale kerncijfers (zie bovenaan) — bij een afwijking wordt er niets automatisch aangepast, dat blijft een bewuste stap." : "")), /*#__PURE__*/React.createElement("div", {
     className: "mt-4 flex flex-wrap gap-2 items-center no-print"
