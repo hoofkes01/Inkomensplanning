@@ -25,6 +25,10 @@ const ok = (n, c, x) => { console.log((c ? "OK   " : "FOUT ") + n + (x !== undef
   ok("verzekeringen samengevoegd", /Verzekeringen doorlopen/.test(t));
   ok("zorgverzekering-moment genoemd", /Zorgverzekering/.test(t));
   ok("reserveren genoemd", /Reserveren voor grote uitgaven/.test(t) || /reserveer/i.test(t), (t.match(/Reserveren voor grote uitgaven.{0,300}/) || [""])[0]);
+  ok("belasting en wonen aanwezig", /Belasting en aftrek/.test(t) && /Wonen/.test(t) && /WOZ/.test(t));
+  ok("begin hiermee en vinkjes", /Begin hiermee/.test(t) && /☐/.test(t));
+  const kal = await page.textContent('[data-rp="kalender"]');
+  ok("jaarkalender met vaste en eigen data", /Aangifte inkomstenbelasting/.test(kal) && /renteherziening/.test(kal));
   ok("Raisin genoemd", /Raisin/.test(t));
   // marktrente invullen op dashboard
   await page.click('[data-knop="menu"]'); await page.click('[data-menu="dashboard"]'); await page.waitForTimeout(150);
