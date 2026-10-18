@@ -133,7 +133,7 @@ function RapportInhoud() {
       h("ul", { className: "rp-lijst" },
         h("li", null, "Dit rapport bevat rekenvoorbeelden op basis van de gegevens en aannames hierboven. Het is geen persoonlijk financieel, fiscaal of beleggingsadvies."),
         h("li", null, "Toekomstige bedragen zijn geschat met de ingevulde indexatie en rendementen. De werkelijkheid kan afwijken."),
-        h("li", null, "Bronnen: Belastingdienst, SVB, CBS en Rijksoverheid voor fiscale cijfers en AOW; Raisin, ECB en Euribor-bronnen voor rentes; DEGIRO en de aanbieder voor fondsen."),
+        h("li", null, "Bronnen: Belastingdienst, SVB, CBS en Rijksoverheid voor fiscale cijfers en AOW; de eigen bank voor spaar- en depositorentes; DEGIRO en de aanbieder voor fondsen."),
         h("li", null, "Alle gegevens staan alleen op het apparaat waarop je de app gebruikt."))) : null
   ]));
   return h("div", null, out.filter(function (x) { return x; }));

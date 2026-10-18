@@ -49,7 +49,6 @@ function aandachtspunten(c) {
   if (S.profiel.gebruik.beleggen) {
     var pfd = geldigeDatum((S.advies || {}).pfDatum);
     if ((S.advies.pf || []).length && (!pfd || dagenTussen(pfd, nu) > 30)) pt("waarschuw", "De portefeuille bij Beleggingsadvies is ouder dan een maand. Upload hem opnieuw.", "advies");
-    if ((S.advies.pf || []).length && ouderDan(S.advies.raisinStand, 7, nu)) pt("info", "De Raisin-rente en Euribor zijn ouder dan 7 dagen. Druk op 'Cijfers bijwerken'.", "advies");
   }
   fiscaalWaarschuwingen(m, nu).forEach(function (t) { pt("info", t, "fiscaal"); });
   var bm = backupMeta();

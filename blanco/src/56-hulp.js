@@ -29,20 +29,13 @@ function cijfersGeldig(j) {
   }
   return "";
 }
-// Past een cijferbestand toe: fiscale tabel, AOW, box 3, rentes, CPI, marktbeeld en fondsrendementen.
+// Past een cijferbestand toe: fiscale tabel, AOW, box 3, CPI, marktbeeld en fondsrendementen.
 function pasCijfersToe(c, j) {
   var f = cijfersGeldig(j);
   if (f) return f;
   var m = c.m, delen = [];
   c.zetPad("cijfers", [], j);
   if (j.fiscaal) delen.push("belasting, AOW en box 3 (jaren " + Object.keys(j.fiscaal).join(", ") + ")");
-  if (j.rentes) {
-    var p = {};
-    if (j.rentes.euribor12 != null) { p.euribor = j.rentes.euribor12; p.euriborStand = j.rentes.euriborStand || j.rentes.stand; }
-    if (j.rentes.raisin6 != null) { p.raisin6 = j.rentes.raisin6; p.raisinStand = j.rentes.raisinStand || j.rentes.stand; }
-    if (Object.keys(p).length) { c.zet("advies", p); delen.push("rentes (Euribor " + pct(j.rentes.euribor12, 2) + ", Raisin 6 maanden " + pct(j.rentes.raisin6, 2) + ")"); }
-    if (j.rentes.spaarrente != null && !(c.S.verm.rekeningen || []).some(function (r) { return r.rente !== "" && r.rente != null; })) { c.zet("inst", { spaarrente: j.rentes.spaarrente, spaarrenteStand: j.rentes.stand }); }
-  }
   var inst = { cijfersDatum: isoDatum(vandaag()) };
   if (j.cpi && j.cpi.maand && Number(j.cpi.pct) >= 0) {
     var ijk = c.S.inst.cpiIjk || isoDatum(m.peil).slice(0, 7);
@@ -66,7 +59,7 @@ function CijfersKnop() {
     }).then(function () { setBezig(false); });
   }
   return h("div", { "data-cijfers": "1" },
-    h("p", { className: oud ? "oranje" : "" }, "Cijfers laatst bijgewerkt: " + (stand ? fmtDatum(stand) : "nog nooit") + (oud ? ". Druk op de knop om belasting, AOW, inflatie en rentes te vernieuwen." : ".")),
+    h("p", { className: oud ? "oranje" : "" }, "Cijfers laatst bijgewerkt: " + (stand ? fmtDatum(stand) : "nog nooit") + (oud ? ". Druk op de knop om belasting, AOW en inflatie te vernieuwen." : ".")),
     h("div", { className: "rij" },
       h(Knop, { onClick: klik, disabled: bezig, naam: "cijfers-bijwerken" }, bezig ? "Bezig…" : "Cijfers bijwerken"),
       h("label", { className: "knop sec klein2", style: { display: "inline-block", cursor: "pointer" } }, "Cijferbestand kiezen",

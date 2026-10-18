@@ -17,6 +17,7 @@ function maakModel(S, nu) {
   m.verm = Object.assign({}, S.verm, { spaar: totaal });
   m.inst = Object.assign({}, S.inst, { spaarrente: totaal > 0 ? wr / totaal : getal(S.inst.spaarrente) });
   m.cijfers = S.cijfers || {};
+  m.spaarStandaard = getal(S.inst.spaarrente);
   m._cache = {};
   // Inkomensaanvulling: de gebruiker geeft het gewenste maandbedrag; de app berekent het benodigde kapitaal en reserveert dat uit spaargeld of beleggingen.
   m.aanv = Object.assign({}, S.aanv);

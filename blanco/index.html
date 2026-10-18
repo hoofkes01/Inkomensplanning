@@ -410,7 +410,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 })();
 </script>
 <script>
-var APP_VERSIE = "18-10-2026 · 18:15";
+var APP_VERSIE = "18-10-2026 · 18:17";
 /* ===== Basis: hulpfuncties, opslag, invoervelden ===== */
 var h = React.createElement;
 var useState = React.useState, useEffect = React.useEffect, useMemo = React.useMemo, useRef = React.useRef, useContext = React.useContext;
@@ -954,7 +954,7 @@ var STANDAARD = {
   box3: { stelsel: "huidig", tarief: "", vrijPP: "", sparenPct: "", beleggenPct: "" },
   advies: {
     risico: "", broker: "", eigenDoel: false, doelOff: 50, doelNeu: 30, doelDef: 20, drempel: "", marge: 0.3, belasting: 36, stelsel: "forfait", forfaitSparen: 1.28, forfaitBeleg: 6,
-    euribor: 2.99, euriborStand: "", raisin6: 3.15, raisinStand: "", wachtTot: "", behoudAan: false,
+    refOverride: "", wachtTot: "", behoudAan: false,
     pf: [], pfDatum: "", rekeningId: "", rend: {},
     markt: { datum: "", punten: [] }
   },
@@ -1077,6 +1077,7 @@ function maakModel(S, nu) {
   m.verm = Object.assign({}, S.verm, { spaar: totaal });
   m.inst = Object.assign({}, S.inst, { spaarrente: totaal > 0 ? wr / totaal : getal(S.inst.spaarrente) });
   m.cijfers = S.cijfers || {};
+  m.spaarStandaard = getal(S.inst.spaarrente);
   m._cache = {};
   // Inkomensaanvulling: de gebruiker geeft het gewenste maandbedrag; de app berekent het benodigde kapitaal en reserveert dat uit spaargeld of beleggingen.
   m.aanv = Object.assign({}, S.aanv);
@@ -1607,6 +1608,20 @@ var RISICO_PROFIELEN = {
 };
 function profielVerlies(pr) { return (pr.off * 0.25 + pr.neu * 0.12 + pr.def * 0.03); }
 var BROKERS = ["DEGIRO", "Saxo", "Lynx", "Interactive Brokers", "Bux", "Trade Republic", "Bolero", "Bank of broker via je eigen bank", "Anders of weet ik niet"];
+// Vergelijkingsrente voor het defensieve deel: de hoogste rente die de gebruiker zelf krijgt op spaargeld of deposito's, bij welke bank dan ook.
+function eigenBesteRente(m) {
+  var best = null, bron = "";
+  (m.verm.rekeningen || []).forEach(function (r) {
+    var rate = r.rente === "" || r.rente == null ? m.spaarStandaard : getal(r.rente);
+    if (best === null || rate > best) { best = rate; bron = (r.bank || "spaarrekening") + " (spaargeld)"; }
+  });
+  if (m.profiel.gebruik.deposito) (m.verm.deposito || []).forEach(function (d) {
+    if (d.rente === "" || d.rente == null) return;
+    var rate = getal(d.rente);
+    if (best === null || rate > best) { best = rate; bron = (d.bank || "deposito") + " (deposito)"; }
+  });
+  return best === null ? { rente: getal(m.spaarStandaard), bron: "je standaard spaarrente" } : { rente: best, bron: bron };
+}
 function adviesParams(m) {
   var A = m.advies || {};
   var N = function (v, d) { return v === "" || v == null || !isFinite(Number(v)) ? d : Number(v); };
@@ -1616,7 +1631,7 @@ function adviesParams(m) {
     doel: doel, risico: RISICO_PROFIELEN[A.risico] ? A.risico : "", broker: A.broker || "",
     drempel: N(m.grote && m.grote.minimum, 0), marge: N(A.marge, 0.3), belasting: N(A.belasting, 36),
     stelsel: A.stelsel === "werkelijk" ? "werkelijk" : "forfait", fSparen: N(A.forfaitSparen, 1.28), fBeleg: N(A.forfaitBeleg, 6),
-    euribor: N(A.euribor, 0), raisin: N(A.raisin6, 0), wachtTot: N(A.wachtTot, 0), behoudAan: !!A.behoudAan
+    ref: (A.refOverride !== "" && A.refOverride != null && isFinite(Number(A.refOverride))) ? Number(A.refOverride) : eigenBesteRente(m).rente, refBron: (A.refOverride !== "" && A.refOverride != null && isFinite(Number(A.refOverride))) ? "door jou ingevuld" : eigenBesteRente(m).bron, wachtTot: N(A.wachtTot, 0), behoudAan: !!A.behoudAan
   };
 }
 function fondsRend(m, f) {
@@ -1626,9 +1641,9 @@ function fondsRend(m, f) {
   if (ext && ext.rend != null) return { rend: Number(ext.rend), datum: ext.datum || (m.cijfers || {}).versie || "", eigen: false };
   return { rend: f.rend, datum: f.rend != null ? ADVIES_CHECK_DATUM : "", eigen: false };
 }
-function adviesNettoRaisin(P) { var t = P.belasting / 100; return P.stelsel === "forfait" ? P.raisin - t * P.fSparen : P.raisin * (1 - t); }
+function adviesNettoRef(P) { var t = P.belasting / 100; return P.stelsel === "forfait" ? P.ref - t * P.fSparen : P.ref * (1 - t); }
 function adviesMinDef(P) {
-  var t = P.belasting / 100, doelNetto = adviesNettoRaisin(P) + P.marge;
+  var t = P.belasting / 100, doelNetto = adviesNettoRef(P) + P.marge;
   return Math.round((P.stelsel === "forfait" ? doelNetto + t * P.fBeleg : doelNetto / (1 - t)) * 100) / 100;
 }
 function adviesVoldoetMin(m, f, P) { var r = fondsRend(m, f); return r.rend != null && r.rend - f.ter >= adviesMinDef(P); }
@@ -1686,7 +1701,7 @@ function adviesBerekening(m, sim) {
   defVermogen = vt.sparen + vt.deposito;
   var P100 = function (a, b) { return b > 0 ? Math.round(a / b * 100) : 0; };
   var waarnemingen = [];
-  if (defVervangen) waarnemingen.push("Een obligatiefonds levert na kosten en belasting nu niet meer op dan sparen of een deposito. Houd het defensieve deel (" + defOrigineel + "%) daarom in deposito's of spaargeld; de app verdeelt het beleggingsdeel over neutraal en offensief.");
+  if (defVervangen) waarnemingen.push("Een obligatiefonds levert na kosten en belasting nu niet meer op dan je eigen spaargeld of deposito (hoogste rente die je nu krijgt: " + pct(P.ref, 2) + " bij " + P.refBron + "). Houd het defensieve deel (" + defOrigineel + "%) daarom in deposito's of spaargeld; de app verdeelt het beleggingsdeel over neutraal en offensief.");
   if (totaalNu > 0) {
     waarnemingen.push("Je vrij belegde vermogen is " + eur(totaalNu) + ": " + P100(huidig.off, totaalNu) + "% offensief, " + P100(huidig.neu, totaalNu) + "% neutraal en " + P100(huidig.def, totaalNu) + "% defensief (doel " + P100(doel.off, somDoel) + "/" + P100(doel.neu, somDoel) + "/" + P100(doel.def, somDoel) + "%).");
     if (defVermogen > 0) waarnemingen.push("Je defensieve vermogen (sparen " + eur(vt.sparen) + " + deposito's " + eur(vt.deposito) + ") is " + eur(defVermogen) + ". Samen met je vrij beleggen is dat " + eur(defVermogen + totaalNu) + ": " + P100(totaalNu, defVermogen + totaalNu) + "% belegd en " + P100(defVermogen, defVermogen + totaalNu) + "% defensief. " + (P100(defVermogen, defVermogen + totaalNu) >= 50 ? "Bij zo'n groot defensief deel past een offensievere opzet van je beleggingen." : "Het defensieve deel is beperkt; houd je buffer in de gaten."));
@@ -1762,7 +1777,7 @@ function adviesSamenvatting(m, A) {
   var plan = herbalanceerPlan(m, A), regels = [];
   if (!A.P.risico) regels.push("Kies eerst je beleggingsprofiel (defensief, neutraal of offensief). Tot die tijd rekent de app met neutraal.");
   else regels.push("Jouw profiel: " + RISICO_PROFIELEN[A.P.risico].naam.toLowerCase() + " (" + A.P.doel.off + "% offensief, " + A.P.doel.neu + "% neutraal, " + A.P.doel.def + "% defensief).");
-  if (A.defVervangen) regels.push("Voor het defensieve deel is sparen of een deposito nu aantrekkelijker dan een obligatiefonds, ook na belasting. Houd dat deel in spaargeld of deposito's.");
+  if (A.defVervangen) regels.push("Voor het defensieve deel is je eigen spaargeld of deposito (" + pct(A.P.ref, 2) + " bij " + A.P.refBron + ") nu aantrekkelijker dan een obligatiefonds, ook na belasting. Houd dat deel in spaargeld of deposito's.");
   var pfDatum = geldigeDatum((m.advies || {}).pfDatum);
   if (A.totaalNu > 0 && pfDatum && dagenTussen(pfDatum, m.nu) > 30) regels.push("Je portefeuille is " + dagenTussen(pfDatum, m.nu) + " dagen geleden bijgewerkt. Upload hem opnieuw voor een actueel advies.");
   if (A.koopBasis > 0) regels.push("Bijbeleggen: je kunt ongeveer " + eur(afr10(A.koopBasis)) + " beleggen en blijft boven je minimale buffer van " + eur(A.P.drempel) + ".");
@@ -1924,7 +1939,6 @@ function aandachtspunten(c) {
   if (S.profiel.gebruik.beleggen) {
     var pfd = geldigeDatum((S.advies || {}).pfDatum);
     if ((S.advies.pf || []).length && (!pfd || dagenTussen(pfd, nu) > 30)) pt("waarschuw", "De portefeuille bij Beleggingsadvies is ouder dan een maand. Upload hem opnieuw.", "advies");
-    if ((S.advies.pf || []).length && ouderDan(S.advies.raisinStand, 7, nu)) pt("info", "De Raisin-rente en Euribor zijn ouder dan 7 dagen. Druk op 'Cijfers bijwerken'.", "advies");
   }
   fiscaalWaarschuwingen(m, nu).forEach(function (t) { pt("info", t, "fiscaal"); });
   var bm = backupMeta();
@@ -2716,8 +2730,7 @@ INTAKE.advies = {
   titel: "Beleggingsadvies", stappen: [
     { id: "profiel", titel: "Wat voor belegger ben je?", uitleg: "Kies defensief, neutraal of offensief. De app past het advies daarop aan; de rest regelt ze op de achtergrond.", render: function () { return h(AdviesProfielVelden, null); },
       valideer: function (c) { return leeg([!c.S.advies.risico ? "Kies een beleggingsprofiel." : null, !c.S.advies.broker ? "Kies waar je belegt (of 'Anders of weet ik niet')." : null]); } },
-    { id: "pf", titel: "Je portefeuille", uitleg: "Upload het overzicht van je broker (csv), plak de lijst of de tekst uit de app, of vul de posities zelf in.", render: function () { return h(AdviesPortefeuille, null); }, overslaan: "er is dan alleen advies over bijbeleggen, niet over je bestaande portefeuille." },
-    { id: "rente", titel: "Cijfers bijwerken", uitleg: "De rentes die het advies gebruikt haalt de app voor je op.", render: function () { return h(CijfersKnop, null); }, overslaan: "de app rekent met standaardwaarden en meldt dat ze niet zijn bijgewerkt." }
+    { id: "pf", titel: "Je portefeuille", uitleg: "Upload het overzicht van je broker (csv), plak de lijst of de tekst uit de app, of vul de posities zelf in.", render: function () { return h(AdviesPortefeuille, null); }, overslaan: "er is dan alleen advies over bijbeleggen, niet over je bestaande portefeuille." }
   ]
 };
 INTAKE.rapport = {
@@ -2759,20 +2772,13 @@ function cijfersGeldig(j) {
   }
   return "";
 }
-// Past een cijferbestand toe: fiscale tabel, AOW, box 3, rentes, CPI, marktbeeld en fondsrendementen.
+// Past een cijferbestand toe: fiscale tabel, AOW, box 3, CPI, marktbeeld en fondsrendementen.
 function pasCijfersToe(c, j) {
   var f = cijfersGeldig(j);
   if (f) return f;
   var m = c.m, delen = [];
   c.zetPad("cijfers", [], j);
   if (j.fiscaal) delen.push("belasting, AOW en box 3 (jaren " + Object.keys(j.fiscaal).join(", ") + ")");
-  if (j.rentes) {
-    var p = {};
-    if (j.rentes.euribor12 != null) { p.euribor = j.rentes.euribor12; p.euriborStand = j.rentes.euriborStand || j.rentes.stand; }
-    if (j.rentes.raisin6 != null) { p.raisin6 = j.rentes.raisin6; p.raisinStand = j.rentes.raisinStand || j.rentes.stand; }
-    if (Object.keys(p).length) { c.zet("advies", p); delen.push("rentes (Euribor " + pct(j.rentes.euribor12, 2) + ", Raisin 6 maanden " + pct(j.rentes.raisin6, 2) + ")"); }
-    if (j.rentes.spaarrente != null && !(c.S.verm.rekeningen || []).some(function (r) { return r.rente !== "" && r.rente != null; })) { c.zet("inst", { spaarrente: j.rentes.spaarrente, spaarrenteStand: j.rentes.stand }); }
-  }
   var inst = { cijfersDatum: isoDatum(vandaag()) };
   if (j.cpi && j.cpi.maand && Number(j.cpi.pct) >= 0) {
     var ijk = c.S.inst.cpiIjk || isoDatum(m.peil).slice(0, 7);
@@ -2796,7 +2802,7 @@ function CijfersKnop() {
     }).then(function () { setBezig(false); });
   }
   return h("div", { "data-cijfers": "1" },
-    h("p", { className: oud ? "oranje" : "" }, "Cijfers laatst bijgewerkt: " + (stand ? fmtDatum(stand) : "nog nooit") + (oud ? ". Druk op de knop om belasting, AOW, inflatie en rentes te vernieuwen." : ".")),
+    h("p", { className: oud ? "oranje" : "" }, "Cijfers laatst bijgewerkt: " + (stand ? fmtDatum(stand) : "nog nooit") + (oud ? ". Druk op de knop om belasting, AOW en inflatie te vernieuwen." : ".")),
     h("div", { className: "rij" },
       h(Knop, { onClick: klik, disabled: bezig, naam: "cijfers-bijwerken" }, bezig ? "Bezig…" : "Cijfers bijwerken"),
       h("label", { className: "knop sec klein2", style: { display: "inline-block", cursor: "pointer" } }, "Cijferbestand kiezen",
@@ -3383,23 +3389,15 @@ function AdviesRenteVelden() {
   function z(patch) { c.zet("advies", patch); }
   var P = adviesParams(c.m);
   return h("div", null,
+    h(BedragVeld, { label: "Vergelijkingsrente handmatig (%), leeg = automatisch", hint: "Standaard gebruikt de app de hoogste rente die je zelf krijgt op spaargeld of deposito's.", value: a.refOverride, pct: true, onChange: function (v) { z({ refOverride: v }); }, naam: "refOverride" }),
     h("div", { className: "raster" },
-      h(BedragVeld, { label: "Raisin deposito 6 maanden: hoogste rente (%)", value: a.raisin6, pct: true, onChange: function (v) { z({ raisin6: v }); }, naam: "raisin6" }),
-      h(DatumVeld, { label: "Stand Raisin op", value: a.raisinStand, onChange: function (v) { z({ raisinStand: v }); }, naam: "raisinStand" })),
-    h("div", { className: "raster" },
-      h(BedragVeld, { label: "Euribor 12 maanden (%)", value: a.euribor, pct: true, onChange: function (v) { z({ euribor: v }); } }),
-      h(DatumVeld, { label: "Stand Euribor op", value: a.euriborStand, onChange: function (v) { z({ euriborStand: v }); } })),
-    h("div", { className: "rij" }, h(Knop, { soort: "sec", klein: true, onClick: function () { z({ raisinStand: isoDatum(vandaag()), euriborStand: isoDatum(vandaag()) }); }, naam: "rente-vandaag" }, "Beide rentes zijn vandaag gecontroleerd")),
-    ouderDan(a.raisinStand, 7, c.m.nu) ? h("p", { className: "oranje klein" }, "De Raisin-stand is ouder dan 7 dagen of niet ingevuld.") : null,
-    h("details", null, h("summary", { className: "klein" }, "Belasting en marge"),
-      h("div", { className: "raster" },
-        h(BedragVeld, { label: "Belastingtarief box 3 (%)", value: a.belasting, pct: true, onChange: function (v) { z({ belasting: v }); } }),
-        h(KeuzeVeld, { label: "Stelsel", value: a.stelsel, opties: [["forfait", "Huidig (fictief rendement)"], ["werkelijk", "Werkelijk rendement"]], onChange: function (v) { z({ stelsel: v }); } })),
-      h("div", { className: "raster3" },
-        h(BedragVeld, { label: "Fictief rendement sparen (%)", value: a.forfaitSparen, pct: true, onChange: function (v) { z({ forfaitSparen: v }); } }),
-        h(BedragVeld, { label: "Fictief rendement beleggen (%)", value: a.forfaitBeleg, pct: true, onChange: function (v) { z({ forfaitBeleg: v }); } }),
-        h(BedragVeld, { label: "Marge na belasting (procentpunt)", value: a.marge, pct: true, onChange: function (v) { z({ marge: v }); } }))),
-    h("p", { className: "klein" }, "Ondergrens defensief fonds: " + pct(adviesMinDef(P), 2) + " bruto na kosten (Raisin na belasting " + pct(adviesNettoRaisin(P), 2) + " plus marge)."));
+      h(BedragVeld, { label: "Belastingtarief box 3 (%)", value: a.belasting, pct: true, onChange: function (v) { z({ belasting: v }); } }),
+      h(KeuzeVeld, { label: "Stelsel", value: a.stelsel, opties: [["forfait", "Huidig (fictief rendement)"], ["werkelijk", "Werkelijk rendement"]], onChange: function (v) { z({ stelsel: v }); } })),
+    h("div", { className: "raster3" },
+      h(BedragVeld, { label: "Fictief rendement sparen (%)", value: a.forfaitSparen, pct: true, onChange: function (v) { z({ forfaitSparen: v }); } }),
+      h(BedragVeld, { label: "Fictief rendement beleggen (%)", value: a.forfaitBeleg, pct: true, onChange: function (v) { z({ forfaitBeleg: v }); } }),
+      h(BedragVeld, { label: "Marge na belasting (procentpunt)", value: a.marge, pct: true, onChange: function (v) { z({ marge: v }); } })),
+    h("p", { className: "klein" }, "Vergelijkingsrente nu: " + pct(P.ref, 2) + " (" + P.refBron + "), na belasting " + pct(adviesNettoRef(P), 2) + ". Ondergrens defensief fonds: " + pct(adviesMinDef(P), 2) + " bruto na kosten."));
 }
 
 /* ----- Portefeuille invoeren ----- */
@@ -3564,12 +3562,13 @@ function SchermAdvies() {
     tab === "markt" ? h(Kaart, { titel: "Marktbeeld" }, h(AdviesMarkt, null)) : null,
     tab === "instellingen" ? h("div", null,
       h(Kaart, { titel: "Jouw profiel en broker" }, h(AdviesProfielVelden, null), h(Uitleg, null, "Je minimale buffer (" + eur(getal(m.grote.minimum)) + ") pas je aan bij Vermogen of Grote posten. Er wordt nooit bijbelegd met geld dat voor die buffer nodig is.")),
-      h(Kaart, { titel: "Rentes en cijfers" }, h("p", { className: "klein" }, "Raisin 6 maanden: " + pct(adviesParams(m).raisin, 2) + " (stand " + (m.advies.raisinStand ? fmtDatum(m.advies.raisinStand) : "niet bijgewerkt") + "). Euribor 12 maanden: " + pct(adviesParams(m).euribor, 2) + "."), h(CijfersKnop, null)),
+      h(Kaart, { titel: "Vergelijking met je eigen spaargeld" }, h("p", null, "Een obligatiefonds komt pas in aanmerking als het na kosten en belasting meer oplevert dan wat je nu zelf krijgt op spaargeld of deposito's. Dat is nu " + pct(adviesParams(m).ref, 2) + " (" + adviesParams(m).refBron + "). Heb je spaargeld of deposito's bij meer banken, dan telt de hoogste rente.")),
+      h(Kaart, { titel: "Cijfers" }, h(CijfersKnop, null)),
       h("details", null, h("summary", { className: "klein" }, "Geavanceerd (niet nodig voor gewoon gebruik)"),
         h("div", { className: "kaart waarschuw", style: { marginTop: ".4rem" } },
           h("h4", null, "Eigen verdeling"), h(AdviesDoelVelden, null),
           h("h4", { style: { marginTop: ".6rem" } }, "Voorkeuren"), h(AdviesVoorkeurVelden, null),
-          h("h4", { style: { marginTop: ".6rem" } }, "Rentes en belasting handmatig"), h(AdviesRenteVelden, null),
+          h("h4", { style: { marginTop: ".6rem" } }, "Vergelijkingsrente en belasting handmatig"), h(AdviesRenteVelden, null),
           h("h4", { style: { marginTop: ".6rem" } }, "Fondsen en rendementen"), h(AdviesFondsen, null)))) : null,
     h("p", { className: "klein" }, "Rekenvoorbeeld, geen persoonlijk beleggingsadvies. Koersen en aantallen zoek je zelf op; de app toont namen, ISIN's en bedragen."));
 }
@@ -3709,7 +3708,7 @@ function RapportInhoud() {
       h("ul", { className: "rp-lijst" },
         h("li", null, "Dit rapport bevat rekenvoorbeelden op basis van de gegevens en aannames hierboven. Het is geen persoonlijk financieel, fiscaal of beleggingsadvies."),
         h("li", null, "Toekomstige bedragen zijn geschat met de ingevulde indexatie en rendementen. De werkelijkheid kan afwijken."),
-        h("li", null, "Bronnen: Belastingdienst, SVB, CBS en Rijksoverheid voor fiscale cijfers en AOW; Raisin, ECB en Euribor-bronnen voor rentes; DEGIRO en de aanbieder voor fondsen."),
+        h("li", null, "Bronnen: Belastingdienst, SVB, CBS en Rijksoverheid voor fiscale cijfers en AOW; de eigen bank voor spaar- en depositorentes; DEGIRO en de aanbieder voor fondsen."),
         h("li", null, "Alle gegevens staan alleen op het apparaat waarop je de app gebruikt."))) : null
   ]));
   return h("div", null, out.filter(function (x) { return x; }));

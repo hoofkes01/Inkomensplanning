@@ -37,7 +37,7 @@ var STANDAARD = {
   box3: { stelsel: "huidig", tarief: "", vrijPP: "", sparenPct: "", beleggenPct: "" },
   advies: {
     risico: "", broker: "", eigenDoel: false, doelOff: 50, doelNeu: 30, doelDef: 20, drempel: "", marge: 0.3, belasting: 36, stelsel: "forfait", forfaitSparen: 1.28, forfaitBeleg: 6,
-    euribor: 2.99, euriborStand: "", raisin6: 3.15, raisinStand: "", wachtTot: "", behoudAan: false,
+    refOverride: "", wachtTot: "", behoudAan: false,
     pf: [], pfDatum: "", rekeningId: "", rend: {},
     markt: { datum: "", punten: [] }
   },

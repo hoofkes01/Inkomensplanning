@@ -33,23 +33,15 @@ function AdviesRenteVelden() {
   function z(patch) { c.zet("advies", patch); }
   var P = adviesParams(c.m);
   return h("div", null,
+    h(BedragVeld, { label: "Vergelijkingsrente handmatig (%), leeg = automatisch", hint: "Standaard gebruikt de app de hoogste rente die je zelf krijgt op spaargeld of deposito's.", value: a.refOverride, pct: true, onChange: function (v) { z({ refOverride: v }); }, naam: "refOverride" }),
     h("div", { className: "raster" },
-      h(BedragVeld, { label: "Raisin deposito 6 maanden: hoogste rente (%)", value: a.raisin6, pct: true, onChange: function (v) { z({ raisin6: v }); }, naam: "raisin6" }),
-      h(DatumVeld, { label: "Stand Raisin op", value: a.raisinStand, onChange: function (v) { z({ raisinStand: v }); }, naam: "raisinStand" })),
-    h("div", { className: "raster" },
-      h(BedragVeld, { label: "Euribor 12 maanden (%)", value: a.euribor, pct: true, onChange: function (v) { z({ euribor: v }); } }),
-      h(DatumVeld, { label: "Stand Euribor op", value: a.euriborStand, onChange: function (v) { z({ euriborStand: v }); } })),
-    h("div", { className: "rij" }, h(Knop, { soort: "sec", klein: true, onClick: function () { z({ raisinStand: isoDatum(vandaag()), euriborStand: isoDatum(vandaag()) }); }, naam: "rente-vandaag" }, "Beide rentes zijn vandaag gecontroleerd")),
-    ouderDan(a.raisinStand, 7, c.m.nu) ? h("p", { className: "oranje klein" }, "De Raisin-stand is ouder dan 7 dagen of niet ingevuld.") : null,
-    h("details", null, h("summary", { className: "klein" }, "Belasting en marge"),
-      h("div", { className: "raster" },
-        h(BedragVeld, { label: "Belastingtarief box 3 (%)", value: a.belasting, pct: true, onChange: function (v) { z({ belasting: v }); } }),
-        h(KeuzeVeld, { label: "Stelsel", value: a.stelsel, opties: [["forfait", "Huidig (fictief rendement)"], ["werkelijk", "Werkelijk rendement"]], onChange: function (v) { z({ stelsel: v }); } })),
-      h("div", { className: "raster3" },
-        h(BedragVeld, { label: "Fictief rendement sparen (%)", value: a.forfaitSparen, pct: true, onChange: function (v) { z({ forfaitSparen: v }); } }),
-        h(BedragVeld, { label: "Fictief rendement beleggen (%)", value: a.forfaitBeleg, pct: true, onChange: function (v) { z({ forfaitBeleg: v }); } }),
-        h(BedragVeld, { label: "Marge na belasting (procentpunt)", value: a.marge, pct: true, onChange: function (v) { z({ marge: v }); } }))),
-    h("p", { className: "klein" }, "Ondergrens defensief fonds: " + pct(adviesMinDef(P), 2) + " bruto na kosten (Raisin na belasting " + pct(adviesNettoRaisin(P), 2) + " plus marge)."));
+      h(BedragVeld, { label: "Belastingtarief box 3 (%)", value: a.belasting, pct: true, onChange: function (v) { z({ belasting: v }); } }),
+      h(KeuzeVeld, { label: "Stelsel", value: a.stelsel, opties: [["forfait", "Huidig (fictief rendement)"], ["werkelijk", "Werkelijk rendement"]], onChange: function (v) { z({ stelsel: v }); } })),
+    h("div", { className: "raster3" },
+      h(BedragVeld, { label: "Fictief rendement sparen (%)", value: a.forfaitSparen, pct: true, onChange: function (v) { z({ forfaitSparen: v }); } }),
+      h(BedragVeld, { label: "Fictief rendement beleggen (%)", value: a.forfaitBeleg, pct: true, onChange: function (v) { z({ forfaitBeleg: v }); } }),
+      h(BedragVeld, { label: "Marge na belasting (procentpunt)", value: a.marge, pct: true, onChange: function (v) { z({ marge: v }); } })),
+    h("p", { className: "klein" }, "Vergelijkingsrente nu: " + pct(P.ref, 2) + " (" + P.refBron + "), na belasting " + pct(adviesNettoRef(P), 2) + ". Ondergrens defensief fonds: " + pct(adviesMinDef(P), 2) + " bruto na kosten."));
 }
 
 /* ----- Portefeuille invoeren ----- */
@@ -214,12 +206,13 @@ function SchermAdvies() {
     tab === "markt" ? h(Kaart, { titel: "Marktbeeld" }, h(AdviesMarkt, null)) : null,
     tab === "instellingen" ? h("div", null,
       h(Kaart, { titel: "Jouw profiel en broker" }, h(AdviesProfielVelden, null), h(Uitleg, null, "Je minimale buffer (" + eur(getal(m.grote.minimum)) + ") pas je aan bij Vermogen of Grote posten. Er wordt nooit bijbelegd met geld dat voor die buffer nodig is.")),
-      h(Kaart, { titel: "Rentes en cijfers" }, h("p", { className: "klein" }, "Raisin 6 maanden: " + pct(adviesParams(m).raisin, 2) + " (stand " + (m.advies.raisinStand ? fmtDatum(m.advies.raisinStand) : "niet bijgewerkt") + "). Euribor 12 maanden: " + pct(adviesParams(m).euribor, 2) + "."), h(CijfersKnop, null)),
+      h(Kaart, { titel: "Vergelijking met je eigen spaargeld" }, h("p", null, "Een obligatiefonds komt pas in aanmerking als het na kosten en belasting meer oplevert dan wat je nu zelf krijgt op spaargeld of deposito's. Dat is nu " + pct(adviesParams(m).ref, 2) + " (" + adviesParams(m).refBron + "). Heb je spaargeld of deposito's bij meer banken, dan telt de hoogste rente.")),
+      h(Kaart, { titel: "Cijfers" }, h(CijfersKnop, null)),
       h("details", null, h("summary", { className: "klein" }, "Geavanceerd (niet nodig voor gewoon gebruik)"),
         h("div", { className: "kaart waarschuw", style: { marginTop: ".4rem" } },
           h("h4", null, "Eigen verdeling"), h(AdviesDoelVelden, null),
           h("h4", { style: { marginTop: ".6rem" } }, "Voorkeuren"), h(AdviesVoorkeurVelden, null),
-          h("h4", { style: { marginTop: ".6rem" } }, "Rentes en belasting handmatig"), h(AdviesRenteVelden, null),
+          h("h4", { style: { marginTop: ".6rem" } }, "Vergelijkingsrente en belasting handmatig"), h(AdviesRenteVelden, null),
           h("h4", { style: { marginTop: ".6rem" } }, "Fondsen en rendementen"), h(AdviesFondsen, null)))) : null,
     h("p", { className: "klein" }, "Rekenvoorbeeld, geen persoonlijk beleggingsadvies. Koersen en aantallen zoek je zelf op; de app toont namen, ISIN's en bedragen."));
 }

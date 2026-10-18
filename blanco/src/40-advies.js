@@ -31,6 +31,20 @@ var RISICO_PROFIELEN = {
 };
 function profielVerlies(pr) { return (pr.off * 0.25 + pr.neu * 0.12 + pr.def * 0.03); }
 var BROKERS = ["DEGIRO", "Saxo", "Lynx", "Interactive Brokers", "Bux", "Trade Republic", "Bolero", "Bank of broker via je eigen bank", "Anders of weet ik niet"];
+// Vergelijkingsrente voor het defensieve deel: de hoogste rente die de gebruiker zelf krijgt op spaargeld of deposito's, bij welke bank dan ook.
+function eigenBesteRente(m) {
+  var best = null, bron = "";
+  (m.verm.rekeningen || []).forEach(function (r) {
+    var rate = r.rente === "" || r.rente == null ? m.spaarStandaard : getal(r.rente);
+    if (best === null || rate > best) { best = rate; bron = (r.bank || "spaarrekening") + " (spaargeld)"; }
+  });
+  if (m.profiel.gebruik.deposito) (m.verm.deposito || []).forEach(function (d) {
+    if (d.rente === "" || d.rente == null) return;
+    var rate = getal(d.rente);
+    if (best === null || rate > best) { best = rate; bron = (d.bank || "deposito") + " (deposito)"; }
+  });
+  return best === null ? { rente: getal(m.spaarStandaard), bron: "je standaard spaarrente" } : { rente: best, bron: bron };
+}
 function adviesParams(m) {
   var A = m.advies || {};
   var N = function (v, d) { return v === "" || v == null || !isFinite(Number(v)) ? d : Number(v); };
@@ -40,7 +54,7 @@ function adviesParams(m) {
     doel: doel, risico: RISICO_PROFIELEN[A.risico] ? A.risico : "", broker: A.broker || "",
     drempel: N(m.grote && m.grote.minimum, 0), marge: N(A.marge, 0.3), belasting: N(A.belasting, 36),
     stelsel: A.stelsel === "werkelijk" ? "werkelijk" : "forfait", fSparen: N(A.forfaitSparen, 1.28), fBeleg: N(A.forfaitBeleg, 6),
-    euribor: N(A.euribor, 0), raisin: N(A.raisin6, 0), wachtTot: N(A.wachtTot, 0), behoudAan: !!A.behoudAan
+    ref: (A.refOverride !== "" && A.refOverride != null && isFinite(Number(A.refOverride))) ? Number(A.refOverride) : eigenBesteRente(m).rente, refBron: (A.refOverride !== "" && A.refOverride != null && isFinite(Number(A.refOverride))) ? "door jou ingevuld" : eigenBesteRente(m).bron, wachtTot: N(A.wachtTot, 0), behoudAan: !!A.behoudAan
   };
 }
 function fondsRend(m, f) {
@@ -50,9 +64,9 @@ function fondsRend(m, f) {
   if (ext && ext.rend != null) return { rend: Number(ext.rend), datum: ext.datum || (m.cijfers || {}).versie || "", eigen: false };
   return { rend: f.rend, datum: f.rend != null ? ADVIES_CHECK_DATUM : "", eigen: false };
 }
-function adviesNettoRaisin(P) { var t = P.belasting / 100; return P.stelsel === "forfait" ? P.raisin - t * P.fSparen : P.raisin * (1 - t); }
+function adviesNettoRef(P) { var t = P.belasting / 100; return P.stelsel === "forfait" ? P.ref - t * P.fSparen : P.ref * (1 - t); }
 function adviesMinDef(P) {
-  var t = P.belasting / 100, doelNetto = adviesNettoRaisin(P) + P.marge;
+  var t = P.belasting / 100, doelNetto = adviesNettoRef(P) + P.marge;
   return Math.round((P.stelsel === "forfait" ? doelNetto + t * P.fBeleg : doelNetto / (1 - t)) * 100) / 100;
 }
 function adviesVoldoetMin(m, f, P) { var r = fondsRend(m, f); return r.rend != null && r.rend - f.ter >= adviesMinDef(P); }
@@ -110,7 +124,7 @@ function adviesBerekening(m, sim) {
   defVermogen = vt.sparen + vt.deposito;
   var P100 = function (a, b) { return b > 0 ? Math.round(a / b * 100) : 0; };
   var waarnemingen = [];
-  if (defVervangen) waarnemingen.push("Een obligatiefonds levert na kosten en belasting nu niet meer op dan sparen of een deposito. Houd het defensieve deel (" + defOrigineel + "%) daarom in deposito's of spaargeld; de app verdeelt het beleggingsdeel over neutraal en offensief.");
+  if (defVervangen) waarnemingen.push("Een obligatiefonds levert na kosten en belasting nu niet meer op dan je eigen spaargeld of deposito (hoogste rente die je nu krijgt: " + pct(P.ref, 2) + " bij " + P.refBron + "). Houd het defensieve deel (" + defOrigineel + "%) daarom in deposito's of spaargeld; de app verdeelt het beleggingsdeel over neutraal en offensief.");
   if (totaalNu > 0) {
     waarnemingen.push("Je vrij belegde vermogen is " + eur(totaalNu) + ": " + P100(huidig.off, totaalNu) + "% offensief, " + P100(huidig.neu, totaalNu) + "% neutraal en " + P100(huidig.def, totaalNu) + "% defensief (doel " + P100(doel.off, somDoel) + "/" + P100(doel.neu, somDoel) + "/" + P100(doel.def, somDoel) + "%).");
     if (defVermogen > 0) waarnemingen.push("Je defensieve vermogen (sparen " + eur(vt.sparen) + " + deposito's " + eur(vt.deposito) + ") is " + eur(defVermogen) + ". Samen met je vrij beleggen is dat " + eur(defVermogen + totaalNu) + ": " + P100(totaalNu, defVermogen + totaalNu) + "% belegd en " + P100(defVermogen, defVermogen + totaalNu) + "% defensief. " + (P100(defVermogen, defVermogen + totaalNu) >= 50 ? "Bij zo'n groot defensief deel past een offensievere opzet van je beleggingen." : "Het defensieve deel is beperkt; houd je buffer in de gaten."));
@@ -186,7 +200,7 @@ function adviesSamenvatting(m, A) {
   var plan = herbalanceerPlan(m, A), regels = [];
   if (!A.P.risico) regels.push("Kies eerst je beleggingsprofiel (defensief, neutraal of offensief). Tot die tijd rekent de app met neutraal.");
   else regels.push("Jouw profiel: " + RISICO_PROFIELEN[A.P.risico].naam.toLowerCase() + " (" + A.P.doel.off + "% offensief, " + A.P.doel.neu + "% neutraal, " + A.P.doel.def + "% defensief).");
-  if (A.defVervangen) regels.push("Voor het defensieve deel is sparen of een deposito nu aantrekkelijker dan een obligatiefonds, ook na belasting. Houd dat deel in spaargeld of deposito's.");
+  if (A.defVervangen) regels.push("Voor het defensieve deel is je eigen spaargeld of deposito (" + pct(A.P.ref, 2) + " bij " + A.P.refBron + ") nu aantrekkelijker dan een obligatiefonds, ook na belasting. Houd dat deel in spaargeld of deposito's.");
   var pfDatum = geldigeDatum((m.advies || {}).pfDatum);
   if (A.totaalNu > 0 && pfDatum && dagenTussen(pfDatum, m.nu) > 30) regels.push("Je portefeuille is " + dagenTussen(pfDatum, m.nu) + " dagen geleden bijgewerkt. Upload hem opnieuw voor een actueel advies.");
   if (A.koopBasis > 0) regels.push("Bijbeleggen: je kunt ongeveer " + eur(afr10(A.koopBasis)) + " beleggen en blijft boven je minimale buffer van " + eur(A.P.drempel) + ".");

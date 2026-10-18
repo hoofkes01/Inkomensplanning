@@ -4,7 +4,7 @@ const S = JSON.parse(JSON.stringify(c.STANDAARD));
 S.profiel.type = "man+vrouw"; S.profiel.partner = true; S.profiel.akkoordAnoniem = true; S.profiel.naamA = "Man"; S.profiel.naamB = "Vrouw"; S.profiel.werk = { A: ["loon"], B: ["loon", "pensioen"] }; S.profiel.leef = { woning: "koop", woz: 400000, woningGeen: "", auto: "eigen", kinderen: 1, opvang: false, studerend: true, huisdier: false }; S.profiel.geboorteA = "1966-09-15"; S.profiel.geboorteB = "1964-11-09"; S.profiel.peildatum = "2026-10-18";
 S.profiel.gebruik = { hypotheek: true, deposito: true, beleggen: true, aanvulling: true, pensioen: true };
 S.inst.cpiStand = "2026-10-10"; S.inst.spaarrenteStand = "2026-10-15"; S.inst.cijfersDatum = "2026-10-15";
-S.advies.raisinStand = "2026-10-15"; S.advies.euriborStand = "2026-10-15"; S.advies.pfDatum = "2026-10-10"; S.advies.wachtTot = 55000; S.advies.behoudAan = true;
+S.advies.pfDatum = "2026-10-10"; S.advies.wachtTot = 55000; S.advies.behoudAan = true;
 S.bronnen = [
   { id: "b1", persoon: "A", code: "loon", naam: "Loon (dienstverband)", soort: "loon", bruto: 5000, netto: 3300, start: "", einde: "2027-01-01", werktijd: 100, index: "vast", indexPct: 2, wijzigDatum: "", wijzigBruto: "", wijzigNetto: "" },
   { id: "b2", persoon: "B", code: "loon", naam: "Loon (dienstverband)", soort: "loon", bruto: 3000, netto: 2300, start: "", einde: "", werktijd: 100, index: "cpi", indexPct: "", wijzigDatum: "", wijzigBruto: "", wijzigNetto: "" },

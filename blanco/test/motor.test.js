@@ -93,3 +93,9 @@ ok("totaal netto = netto van het totale bruto (korting één keer)", Math.abs(pk
 ok("tweede baan krijgt het restant (zonder extra korting)", Math.abs(pk.lijst[1].netto - (totaalNetto - 2300)) < 1, Math.round(pk.lijst[1].netto));
 const pOud = c.persoonMaand(c.maakModel(Object.assign({}, S2, { profiel: Object.assign({}, S2.profiel, { geboorteA: "1950-01-01" }) }), c.geldigeDatum("2026-10-18")), "A", c.geldigeDatum("2026-12-01"));
 ok("na AOW-leeftijd geen loon meer en AOW telt (ouderenkorting-regels)", pOud.naAOW === true && pOud.lijst.some(x => x.soort === "aow"));
+// Vergelijkingsrente: hoogste eigen rente (spaargeld of deposito), geen Raisin
+const mR = c.maakModel(S, c.geldigeDatum("2026-10-18"));
+const PR = c.adviesParams(mR);
+ok("vergelijkingsrente = hoogste eigen rente (deposito 3,2% of spaar 2%)", Math.abs(PR.ref - Math.max(2, ...S.verm.deposito.map(d => Number(d.rente) || 0))) < 1e-9, PR.ref + " " + PR.refBron);
+S.advies.refOverride = 4.5;
+ok("handmatige vergelijkingsrente gaat voor", c.adviesParams(c.maakModel(S, c.geldigeDatum("2026-10-18"))).ref === 4.5);

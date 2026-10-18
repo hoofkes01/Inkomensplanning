@@ -101,8 +101,7 @@ INTAKE.advies = {
   titel: "Beleggingsadvies", stappen: [
     { id: "profiel", titel: "Wat voor belegger ben je?", uitleg: "Kies defensief, neutraal of offensief. De app past het advies daarop aan; de rest regelt ze op de achtergrond.", render: function () { return h(AdviesProfielVelden, null); },
       valideer: function (c) { return leeg([!c.S.advies.risico ? "Kies een beleggingsprofiel." : null, !c.S.advies.broker ? "Kies waar je belegt (of 'Anders of weet ik niet')." : null]); } },
-    { id: "pf", titel: "Je portefeuille", uitleg: "Upload het overzicht van je broker (csv), plak de lijst of de tekst uit de app, of vul de posities zelf in.", render: function () { return h(AdviesPortefeuille, null); }, overslaan: "er is dan alleen advies over bijbeleggen, niet over je bestaande portefeuille." },
-    { id: "rente", titel: "Cijfers bijwerken", uitleg: "De rentes die het advies gebruikt haalt de app voor je op.", render: function () { return h(CijfersKnop, null); }, overslaan: "de app rekent met standaardwaarden en meldt dat ze niet zijn bijgewerkt." }
+    { id: "pf", titel: "Je portefeuille", uitleg: "Upload het overzicht van je broker (csv), plak de lijst of de tekst uit de app, of vul de posities zelf in.", render: function () { return h(AdviesPortefeuille, null); }, overslaan: "er is dan alleen advies over bijbeleggen, niet over je bestaande portefeuille." }
   ]
 };
 INTAKE.rapport = {
