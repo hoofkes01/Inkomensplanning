@@ -4084,7 +4084,7 @@ function nettoMarginaal(bestaandBrutoJaar, extraBrutoJaar, naAOW, datum, metExtr
   }
   const [cpiPrognose, setCpiPrognose] = useOpslag("cpiPrognose", 3);
   const [vmDetail, setVmDetail] = React.useState(null);
-  const [adviesParams, setAdviesParams] = useOpslag("adviesParams", { euribor: 3.2, euriborDatum: "2026-10-16", drempel: 15000, def: 20, neu: 30, off: 50, semisBehouden: true, defMin: 3.1, raisin6: 3.15, raisinDatum: "2026-10-15", defMarge: 0.3, belasting: 36, wachtTot: 55500, overigDefensief: 180000 });
+  const [adviesParams, setAdviesParams] = useOpslag("adviesParams", { euribor: 3.2, euriborDatum: "2026-10-16", drempel: 15000, def: 20, neu: 30, off: 50, semisBehouden: true, defMin: 3.1, raisin6: 3.15, raisinDatum: "2026-10-15", defMarge: 0.3, belasting: 36, wachtTot: 55500 });
   const [kortDepoMeetellen, setKortDepoMeetellen] = useOpslag("kortDepoMeetellen", true);
   const [nieuweBron, setNieuweBron] = useOpslag("nieuweBronFormulier", { naam: "", persoon: "man", soort: "werk", bedrag: "", indexType: "vast", index: "", caoTot: "", start: "", eind: "" });
   function voegBronToe() {
@@ -6926,8 +6926,8 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     const waarnemingen = [];
     if (totaalNu > 0) {
       const off = pct(huidig.off, totaalNu);
-      const overigDef = Number(P.overigDefensief != null ? P.overigDefensief : 180000);
-      if (overigDef > 0) waarnemingen.push("Naast dit deel heb je ongeveer " + vmEuro(overigDef) + " defensief in deposito's (" + pct(overigDef, overigDef + totaalNu) + "% van je totale beleggings- en depositovermogen). Daardoor past een offensieve opzet in je vrij beleggen: het risico dat je neemt blijft beperkt tot " + pct(totaalNu, overigDef + totaalNu) + "% van dat totaal, en dat durf je aan.");
+      const overigDef = Math.max(0, Number(nu.sparen) || 0) + Math.max(0, Number(nu.depositos) || 0);
+      if (overigDef > 0) waarnemingen.push("Je defensieve vermogen (sparen " + vmEuro(Number(nu.sparen) || 0) + " + deposito's " + vmEuro(Number(nu.depositos) || 0) + ") is " + vmEuro(overigDef) + ". Daartegenover staat je vrij beleggen van " + vmEuro(totaalNu) + ": samen " + vmEuro(overigDef + totaalNu) + ", waarvan " + pct(totaalNu, overigDef + totaalNu) + "% belegd en " + pct(overigDef, overigDef + totaalNu) + "% defensief. Daardoor past een offensieve opzet in je vrij beleggen: het risico dat je neemt blijft beperkt tot " + pct(totaalNu, overigDef + totaalNu) + "% van dit totaal.");
       if (defVervangen) waarnemingen.push("Geen defensief fonds levert na kosten meer dan Raisin 6 maanden plus marge (" + vmPct(adviesMinDef(P), 2) + "). Je loopt dan risico en houdt na belasting niet meer over dan veilig sparen. Het defensieve deel (" + defOrigineel + "%) is daarom naar neutraal verschoven; defensief geld hoort in een deposito.");
       waarnemingen.push("Je vrij belegde vermogen (Hoofkes02) is " + vmEuro(totaalNu) + ", waarvan " + off + "% offensief, " + pct(huidig.neu, totaalNu) + "% neutraal en " + pct(huidig.def, totaalNu) + "% defensief (doel " + pct(doel.off, somDoel) + "/" + pct(doel.neu, somDoel) + "/" + pct(doel.def, somDoel) + "% offensief/neutraal/defensief).");
       const grootsteNietChip = grootste.filter(g => !/semiconductor/i.test(g.naam))[0];
@@ -7107,7 +7107,6 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
         inv("Raisin 6-maandsdeposito (hoogste rente)", adviesRaisin(P), v => { zet("raisin6", v); zet("raisinDatum", new Date().toISOString().slice(0, 10)); }, "%", "0.01"),
         inv("Extra rendement na belasting boven Raisin", adviesMargeNetto(P), v => zet("defMarge", v), "%", "0.1"),
         inv("Herbalanceren pas als portefeuille minimaal", Number(P.wachtTot != null ? P.wachtTot : 55500), v => zet("wachtTot", v), "€"),
-        inv("Overig vermogen defensief (deposito's, ong.)", Number(P.overigDefensief != null ? P.overigDefensief : 180000), v => zet("overigDefensief", v), "€"),
         inv("Belasting over rendement", adviesBelasting(P), v => zet("belasting", v), "%", "1"),
         H("div", { className: "flex gap-2 py-1.5 text-sm" }, [["forfait", "Huidig stelsel (fictief)"], ["werkelijk", "Werkelijk rendement"]].map(([id, nm]) => H("button", { key: id, type: "button", onClick: () => zet("stelsel", id), className: "px-3 py-1.5 rounded-lg border " + (adviesStelsel(P) === id ? "bg-slate-800 text-white border-slate-800" : "bg-white border-slate-300") }, nm))),
         adviesStelsel(P) === "forfait" ? [inv("Fictief rendement sparen (2026, voorlopig)", adviesForfaitSparen(P), v => zet("forfaitSparen", v), "%", "0.01"), inv("Fictief rendement beleggen (2026)", adviesForfaitBeleg(P), v => zet("forfaitBeleg", v), "%", "0.01")] : null,
@@ -8328,7 +8327,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     className: "font-mono text-xs uppercase tracking-widest bg-slate-700/60 border border-slate-500 rounded-full px-3 py-1"
   }, "peildatum ", fmtDate(PEILDATUM)), /*#__PURE__*/React.createElement("span", {
     className: "w-full text-xs text-slate-400 no-print"
-  }, "App-versie ", "18-10-2026 · 20:30")), /*#__PURE__*/React.createElement("p", {
+  }, "App-versie ", "18-10-2026 · 21:00")), /*#__PURE__*/React.createElement("p", {
     className: "mt-2 text-slate-300 text-sm max-w-2xl"
   }, "Bedragen zijn nominaal per peildatum, tenzij een indexatiepercentage is ingevuld. Alle basisbedragen zijn zelf aanpasbaar bij \"Basisgegevens\"." + (actieveTab === "fiscaliteit" ? " Alle aannames staan onderaan bij \"Aannames & beperkingen\". Bij het openen checkt dit bestand automatisch vier fiscale kerncijfers (zie bovenaan) — bij een afwijking wordt er niets automatisch aangepast, dat blijft een bewuste stap." : "")), /*#__PURE__*/React.createElement("div", {
     className: "mt-4 flex flex-wrap gap-2 items-center no-print"
