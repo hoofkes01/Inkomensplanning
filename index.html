@@ -4083,7 +4083,7 @@ function nettoMarginaal(bestaandBrutoJaar, extraBrutoJaar, naAOW, datum, metExtr
   }
   const [cpiPrognose, setCpiPrognose] = useOpslag("cpiPrognose", 3);
   const [vmDetail, setVmDetail] = React.useState(null);
-  const [adviesParams, setAdviesParams] = useOpslag("adviesParams", { euribor: 3.2, euriborDatum: "2026-10-16", drempel: 15000, def: 20, neu: 30, off: 50 });
+  const [adviesParams, setAdviesParams] = useOpslag("adviesParams", { euribor: 3.2, euriborDatum: "2026-10-16", drempel: 15000, def: 20, neu: 30, off: 50, semisGedaald: true });
   const [kortDepoMeetellen, setKortDepoMeetellen] = useOpslag("kortDepoMeetellen", true);
   const [nieuweBron, setNieuweBron] = useOpslag("nieuweBronFormulier", { naam: "", persoon: "man", soort: "werk", bedrag: "", indexType: "vast", index: "", caoTot: "", start: "", eind: "" });
   function voegBronToe() {
@@ -6732,8 +6732,9 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     punten: [
       "Rente: de ECB verhoogde de depositorente op 10 september naar 2,50% (geldig vanaf 16 september). Het volgende besluit is op 29 oktober; economen verwachten dan geen verandering en mogelijk een verhoging in december. De Euribor 12 maanden staat rond 3,2%. Bij stijgende rente dalen de koersen van langlopende obligaties; kortlopende zijn veiliger. (Raisin, Reuters-peiling, euribor-rates.eu)",
       "Inflatie: 3,4% in september in Nederland (CBS). Sparen en defensief beleggen tegen een rente rond 3% levert daardoor weinig reëel rendement op.",
-      "Aandelen: de MSCI World stond op 16 oktober op circa 4.908 dollar, ruim 10% hoger dan begin dit jaar en dicht bij het hoogste niveau van de afgelopen 52 weken (circa 5.040). De Amerikaanse markt is ongeveer 69% van de index en de waardering is hoog; strategen noemden eerder een flinke kans op een correctie. (Investing.com, beurs.nl, MarketScreener, Reuters)",
-      "Halfgeleiders: de sector draait een sterke winstcyclus door AI-investeringen, maar wordt tegen veeleisende waarderingen verhandeld en is cyclisch, met soms forse correcties. (VanEck, Test-Aankoop)"
+      "Rente in de VS: de Amerikaanse inflatie steeg in september naar 3,7% door duurdere brandstof. Beleggers rekenen daardoor op meer renteverhogingen van de Fed, wat techaandelen onder druk zet. (Newsbit, NOS)",
+      "Aandelen: de MSCI World stond op 16 oktober op circa 4.908 dollar, nog ruim 10% hoger dan begin dit jaar en dicht bij het hoogste niveau van de afgelopen 52 weken (circa 5.040). De Amerikaanse markt is ongeveer 69% van de index en de waardering is hoog. (Investing.com, beurs.nl, MarketScreener)",
+      "Halfgeleiders: de Philadelphia Semiconductor Index (SOX) daalde acht handelsdagen op rij, de langste reeks sinds 2008, en verloor circa 16% (stand 16 oktober: 11.137) na een stijging van meer dan 60% dit jaar. Oorzaken: twijfels over AI-uitgaven en de financiering daarvan, hogere inflatie en renteverwachtingen. ASML staat ruim 18% onder zijn piek. Een herstel is nog niet gezien. Je VanEck-fonds stond in je DEGIRO-overzicht op 89,02, circa 20% onder het record van 111,18 van 30 juni. (Bloomberg, Investing.com, 24/7 Wall St, NOS, Newsbit, Börse Express)"
     ]
   };
   // Alle berekeningen van het beleggingsadvies, voor het tabblad en het rapport.
@@ -6805,7 +6806,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
       const off = pct(huidig.off, totaalNu);
       waarnemingen.push("Je totale beleggingsportefeuille is " + vmEuro(totaalNu) + ", waarvan " + off + "% offensief, " + pct(huidig.neu, totaalNu) + "% neutraal en " + pct(huidig.def, totaalNu) + "% defensief (doel " + pct(doel.off, somDoel) + "/" + pct(doel.neu, somDoel) + "/" + pct(doel.def, somDoel) + "% offensief/neutraal/defensief).");
       if (grootste[0] && grootste[0].waarde / totaalNu > 0.15) waarnemingen.push("Grootste positie: " + grootste[0].naam + " is " + pct(grootste[0].waarde, totaalNu) + "% van je totale portefeuille (" + vmEuro(grootste[0].waarde) + "). Dat is veel voor één fonds.");
-      if (semis > 0 && semis / totaalNu > 0.1) waarnemingen.push("Halfgeleiders zijn " + pct(semis, totaalNu) + "% van je totale portefeuille (" + vmEuro(semis) + ") en zitten in vrij beleggen én in de pensioenpot. De sector is cyclisch en hoog gewaardeerd; voeg hier niet bij en overweeg het gewicht naar 10 tot 15% terug te brengen.");
+      if (semis > 0 && semis / totaalNu > 0.1) waarnemingen.push("Halfgeleiders zijn " + pct(semis, totaalNu) + "% van je totale portefeuille (" + vmEuro(semis) + ") en zitten in vrij beleggen én in de pensioenpot. " + (P.semisGedaald !== false ? "De sector is de afgelopen weken flink gedaald (SOX circa −16% in 8 handelsdagen). Verkopen na zo'n daling is minder aantrekkelijk en een herstel is nog niet gezien: voeg niet bij, verkoop eerst andere offensieve posities en verlaag het gewicht (doel 10 tot 15%) gefaseerd bij herstel." : "De sector is cyclisch en hoog gewaardeerd; voeg hier niet bij en overweeg het gewicht naar 10 tot 15% terug te brengen."));
       if (thema / totaalNu > 0.2) waarnemingen.push("Thematische fondsen (halfgeleiders, robotica, banken) vormen samen " + pct(thema, totaalNu) + "% van je portefeuille. Breed gespreide wereldfondsen geven meer spreiding.");
       if (huidig.def === 0) waarnemingen.push("Je hebt geen defensief deel in je beleggingen. Dat past bij een lange horizon; je spaargeld en deposito's vormen nu je buffer.");
     }
@@ -6827,7 +6828,8 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     const S1 = Math.min(handelOff, Math.round(verkoopTotaal / 4 / 100) * 100);
     const needDef = Math.max(0, gap.def), needNeu = Math.max(0, gap.neu);
     const neuAandeel = needDef + needNeu > 0 ? needNeu / (needDef + needNeu) : 0.5;
-    const prio = n => (/semiconductor/i.test(n) ? 0 : /robotics|automation|banks/i.test(n) ? 1 : /small cap/i.test(n) ? 2 : 3);
+    const semisGedaald = (A.P || {}).semisGedaald !== false;
+    const prio = n => (/semiconductor/i.test(n) ? (semisGedaald ? 5 : 0) : /robotics|automation|banks/i.test(n) ? 1 : /small cap/i.test(n) ? 2 : 3);
     const stap = [];
     rek.forEach(d => {
       const deel = handelOff > 0 ? S1 * d.som.off / handelOff : 0;
@@ -6920,7 +6922,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
               H("div", { className: "text-xs font-mono text-slate-700" }, "ISIN " + f.isin + " · TER " + f.ter),
               H("div", { className: "text-xs text-slate-500" }, f.soort))),
             c === "def" ? H("div", { className: "text-xs text-slate-500 mt-1" }, "Verdeeld over een kortlopend en een langer fonds, omdat de rente nog stijgt.") : null,
-            c === "off" ? H("div", { className: "text-xs text-slate-500 mt-1" }, "Spreid dit over 3 maandelijkse aankopen van ongeveer " + vmEuro(Math.round(koop[c] / 3 / 10) * 10) + ": de markt staat hoog en de waardering is veeleisend.") : null);
+            c === "off" ? H("div", { className: "text-xs text-slate-500 mt-1" }, "Spreid dit over 3 maandelijkse aankopen van ongeveer " + vmEuro(Math.round(koop[c] / 3 / 10) * 10) + ": de markt is volatiel en de waardering is hoog.") : null);
         }),
         somBeh === 0 ? H("p", { className: "text-sm text-slate-600" }, "Je totale portefeuille zit al op of boven de doelverdeling; zet het bedrag naar eigen inzicht in.") : null,
         H("p", { className: "text-xs text-slate-500 mt-2" }, "Zoek in DEGIRO op de ISIN. Het bedrag per categorie is zo verdeeld dat je totale portefeuille (vrij beleggen plus pensioenpotten) dichter bij je doelverdeling komt.")),
@@ -6940,10 +6942,11 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
             s.verkoop.map((v, j) => H("div", { key: j, className: "text-xs" }, "Verkoop " + vmEuro(v.bedrag) + " " + v.naam)),
             s.neu > 0 ? H("div", { className: "text-xs" }, "Koop " + vmEuro(s.neu) + " " + ADVIES_FONDSEN.find(f => f.cat === "neu" && f.hoofd).naam + " (ISIN " + ADVIES_FONDSEN.find(f => f.cat === "neu" && f.hoofd).isin + ")") : null,
             s.def > 0 ? H("div", { className: "text-xs" }, "Koop " + vmEuro(Math.round(s.def / 2 / 10) * 10) + " " + ADVIES_FONDSEN.find(f => f.cat === "def" && f.hoofd).naam + " (ISIN " + ADVIES_FONDSEN.find(f => f.cat === "def" && f.hoofd).isin + ") en " + vmEuro(s.def - Math.round(s.def / 2 / 10) * 10) + " " + ADVIES_FONDSEN.find(f => f.cat === "def" && !f.hoofd).naam + " (ISIN " + ADVIES_FONDSEN.find(f => f.cat === "def" && !f.hoofd).isin + ")") : null)),
+          P.semisGedaald !== false ? H("p", { className: "text-xs text-amber-800" }, "Chipfondsen zijn recent flink gedaald. Daarom verkoop ik nu eerst andere offensieve posities; het chipgewicht verlaag je later gefaseerd bij herstel.") : null,
           H("p", { className: "text-xs text-slate-500" }, "Verkopen en kopen blijven binnen dezelfde rekening. De volgende stappen herhaal je per kwartaal na een nieuwe controle van dit advies.")) : null,
         H("div", { className: "mt-2 font-semibold text-sm" }, "Je opties"),
         H("div", { className: "text-sm py-1 border-t border-slate-100" }, H("b", null, "Niets doen: "), "geen kosten. Bij een aandelencorrectie van 25% verlies je nu circa " + vmEuro(-plan.stressNu) + " (" + pct(-plan.stressNu, plan.totaal) + "% van de portefeuille)."),
-        H("div", { className: "text-sm py-1 border-t border-slate-100" }, H("b", null, "Gefaseerd herbalanceren: "), "in 4 stappen naar de doelverdeling. Het verlies bij dezelfde correctie wordt circa " + vmEuro(-plan.stressDoel) + ". De markt staat hoog, dus winst nemen is verdedigbaar; spreiden beperkt het risico van een verkeerd moment."),
+        H("div", { className: "text-sm py-1 border-t border-slate-100" }, H("b", null, "Gefaseerd herbalanceren: "), "in 4 stappen naar de doelverdeling. Het verlies bij dezelfde correctie wordt circa " + vmEuro(-plan.stressDoel) + ". De markt is volatiel (chipdaling, renteverwachtingen) en staat nog dicht bij de top; spreiden over de tijd beperkt het risico van een verkeerd moment."),
         H("div", { className: "text-sm py-1 border-t border-slate-100" }, H("b", null, "In één keer: "), "snel op doel, maar meer kosten en een groter timingrisico. Voorlopig niet aanbevolen."),
         H("p", { className: "text-xs text-slate-500 mt-1" }, "Stressaanname: aandelen −25%, neutraal −12%, defensief −3%; geen voorspelling. Beleggingswinst is in box 3 niet apart belast, dus verkopen kost vooral transactiekosten en spread; controleer de kosten in DEGIRO. De pensioenpot van de vrouw (BND) is niet meegenomen in de stappen, omdat de fondsindeling ontbreekt.")),
       H("div", { className: kaart },
@@ -6955,6 +6958,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
         inv("Euribor 12 maanden", euribor, v => zet("euribor", v), "%", "0.01"),
         H("p", { className: "text-xs text-slate-500" }, "Stand " + P.euriborDatum + ": 3,2% (euribor-rates.eu, global-rates.com). Pas aan als het verandert."),
         inv("Drempel direct opneembaar spaargeld", drempel, v => zet("drempel", v), "€"),
+        H("label", { className: "flex items-center gap-2 text-sm py-1.5" }, H("input", { type: "checkbox", checked: P.semisGedaald !== false, onChange: e => zet("semisGedaald", e.target.checked) }), "Chipfondsen zijn recent flink gedaald (niet eerst verkopen)"),
         H("div", { className: "text-xs uppercase tracking-wide text-slate-500 mt-3 mb-1" }, "Doelverdeling totale portefeuille (in %)"),
         inv("Defensief", P.def, v => zet("def", v), "%"), inv("Neutraal", P.neu, v => zet("neu", v), "%"), inv("Offensief", P.off, v => zet("off", v), "%"),
         somDoel !== 100 ? H("p", { className: "text-xs text-amber-700" }, "Let op: de percentages tellen op tot " + somDoel + "%. De app rekent ze om naar 100%.") : null),
@@ -8159,7 +8163,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     className: "font-mono text-xs uppercase tracking-widest bg-slate-700/60 border border-slate-500 rounded-full px-3 py-1"
   }, "peildatum ", fmtDate(PEILDATUM)), /*#__PURE__*/React.createElement("span", {
     className: "w-full text-xs text-slate-400 no-print"
-  }, "App-versie ", "18-10-2026 · 12:00")), /*#__PURE__*/React.createElement("p", {
+  }, "App-versie ", "18-10-2026 · 13:00")), /*#__PURE__*/React.createElement("p", {
     className: "mt-2 text-slate-300 text-sm max-w-2xl"
   }, "Bedragen zijn nominaal per peildatum, tenzij een indexatiepercentage is ingevuld. Alle basisbedragen zijn zelf aanpasbaar bij \"Basisgegevens\"." + (actieveTab === "fiscaliteit" ? " Alle aannames staan onderaan bij \"Aannames & beperkingen\". Bij het openen checkt dit bestand automatisch vier fiscale kerncijfers (zie bovenaan) — bij een afwijking wordt er niets automatisch aangepast, dat blijft een bewuste stap." : "")), /*#__PURE__*/React.createElement("div", {
     className: "mt-4 flex flex-wrap gap-2 items-center no-print"
@@ -8196,7 +8200,7 @@ React.createElement("button",{type:"button","data-no-print":"true",onClick:()=>{
   ),
   React.createElement("span",{className:"underline"}, totaalUpdateAantal>0 || overallStatus!=="done" || fiscaalTabelMelding ? "bekijk en update →" : "bekijk →")
 ),
-menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-slate-200 rounded-xl p-3 shadow-sm"},React.createElement("div",{className:"text-xs text-slate-500 mb-2"},"Kies een onderwerp"),React.createElement("select",{defaultValue:"",autoFocus:true,onChange:e=>{const id=e.target.value;if(!id)return;setActieveTab(id);setMenuOpen(false);},className:"w-full bg-white border border-slate-300 rounded-lg px-3 py-3 text-sm text-slate-800"},React.createElement("option",{value:"",disabled:true},"Selecteer een onderwerp…"),React.createElement("option",{value:"dashboard"},"Dashboard actueel"),React.createElement("option",{value:"inkomen"},"Inkomen"),React.createElement("option",{value:"inkomensaanvulling"},"Toevoeging inkomen"),React.createElement("option",{value:"lijfrente"},"Lijfrente en pensioen"),React.createElement("option",{value:"vaste_lasten"},"Vaste lasten en dagelijkse uitgaven"),React.createElement("option",{value:"spaarpot"},"Vermogen"),React.createElement("option",{value:"grote_uitgaven"},"Grote posten en reserveringen"),React.createElement("option",{value:"fiscaliteit"},"Fiscaliteit & AOW"),React.createElement("option",{value:"beleggingsadvies"},"Beleggingsadvies"),React.createElement("option",{value:"rapport"},"Rapport (PDF)"))), actieveTab === "dashboard" && React.createElement(React.Fragment, null, renderAdviesOpening(), React.createElement("section", null, /*#__PURE__*/React.createElement("h2", {
+menuOpen && React.createElement("div",{className:"mt-2 bg-white border border-slate-200 rounded-xl p-3 shadow-sm"},React.createElement("div",{className:"text-xs text-slate-500 mb-2"},"Kies een onderwerp"),React.createElement("div",{className:"flex flex-col gap-1"},[["dashboard","Dashboard actueel"],["inkomen","Inkomen"],["inkomensaanvulling","Toevoeging inkomen"],["lijfrente","Lijfrente en pensioen"],["vaste_lasten","Vaste lasten en dagelijkse uitgaven"],["spaarpot","Vermogen"],["grote_uitgaven","Grote posten en reserveringen"],["fiscaliteit","Fiscaliteit & AOW"],["beleggingsadvies","Beleggingsadvies"],["rapport","Rapport (PDF)"]].map(([id,naam])=>React.createElement("button",{key:id,type:"button","data-menu":id,onClick:()=>{setActieveTab(id);setMenuOpen(false);},className:"w-full text-left px-3 py-3 rounded-lg text-sm "+(actieveTab===id?"bg-slate-900 text-white":"bg-white border border-slate-200 text-slate-800")},naam)))), actieveTab === "dashboard" && React.createElement(React.Fragment, null, renderAdviesOpening(), React.createElement("section", null, /*#__PURE__*/React.createElement("h2", {
     className: "font-serif text-xl mb-4"
   }, "Fasenoverzicht — netto huishouden per maand"),
   React.createElement("div", { className: "mb-4 flex flex-wrap gap-2" },
