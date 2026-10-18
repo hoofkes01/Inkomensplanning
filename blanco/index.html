@@ -410,7 +410,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 })();
 </script>
 <script>
-var APP_VERSIE = "18-10-2026 · 18:13";
+var APP_VERSIE = "18-10-2026 · 18:15";
 /* ===== Basis: hulpfuncties, opslag, invoervelden ===== */
 var h = React.createElement;
 var useState = React.useState, useEffect = React.useEffect, useMemo = React.useMemo, useRef = React.useRef, useContext = React.useContext;
@@ -1219,31 +1219,30 @@ function persoonMaand(m, pid, d, kas) {
       vrijNetto += perMaand;
       return;
     }
-    lijst.push({ naam: b.naam || SOORT_NAAM[b.soort], soort: b.soort, bruto: v.bruto, netto: v.netto, korting: b.kortingInNetto !== false });
+    lijst.push({ naam: b.naam || SOORT_NAAM[b.soort], soort: b.soort, bruto: v.bruto, netto: v.netto });
   });
-  if (na) lijst.push({ naam: "AOW", soort: "aow", bruto: aowBrutoMaand(m, d), netto: null, korting: true });
+  if (na) lijst.push({ naam: "AOW", soort: "aow", bruto: aowBrutoMaand(m, d), netto: null });
   m.potten.forEach(function (pt) {
     if (pt.persoon !== pid) return;
     var pl = potPlan(m, pt);
-    if (pl && d >= eerstVanMaand(pl.start) && d < eerstVanMaand(pl.eind) && pl.maand > 0) lijst.push({ naam: pt.naam || "Pensioenpot", soort: "pot", bruto: pl.maand, netto: null, korting: true });
+    if (pl && d >= eerstVanMaand(pl.start) && d < eerstVanMaand(pl.eind) && pl.maand > 0) lijst.push({ naam: pt.naam || "Pensioenpot", soort: "pot", bruto: pl.maand, netto: null });
   });
-  var brutoAlles = 0, brutoGeg = 0, arbeidAlles = 0, arbeidGeg = 0, nettoGeg = 0, zonderKortingBruto = 0;
+  // Heffingskorting: automatisch toegepast op het hoogste inkomen van de persoon (loonheffingskorting geldt bij één uitkeerder).
+  // Welke kortingen er gelden volgt uit leeftijd (AOW-leeftijd), arbeidsinkomen (loon of winst) en de hoogte van het inkomen.
+  var brutoAlles = 0, arbeidAlles = 0, nettoGeg = 0, hoogste = null;
   lijst.forEach(function (x) {
     if (x.vrij) return;
     brutoAlles += x.bruto; if (x.soort === "loon") arbeidAlles += x.bruto;
-    if (x.netto != null) { brutoGeg += x.bruto; nettoGeg += x.netto; if (x.soort === "loon") arbeidGeg += x.bruto; if (!x.korting) zonderKortingBruto += x.bruto; }
+    if (x.netto != null) nettoGeg += x.netto;
+    if (!hoogste || x.bruto > hoogste.bruto) hoogste = x;
   });
-  var nettoModel = 0, extraKorting = 0;
-  if (lijst.some(function (x) { return !x.vrij && x.netto == null; })) {
-    nettoModel = (nettoJaarPersoon(m, brutoAlles * 12, arbeidAlles * 12, na, d) - nettoJaarPersoon(m, brutoGeg * 12, arbeidGeg * 12, na, d)) / 12;
-  }
-  if (zonderKortingBruto > 0) {
-    var jb = jaarBerekening(m, zonderKortingBruto * 12, 0, na, d);
-    extraKorting = jb.kortingToegepast / 12;
-  }
-  var modelBruto = lijst.reduce(function (s2, x) { return s2 + (!x.vrij && x.netto == null ? x.bruto : 0); }, 0);
+  if (hoogste) hoogste.kortingHier = true;
+  var modelleerd = lijst.filter(function (x) { return !x.vrij && x.netto == null; });
+  var nettoModel = 0;
+  if (modelleerd.length) nettoModel = Math.max(0, nettoJaarPersoon(m, brutoAlles * 12, arbeidAlles * 12, na, d) / 12 - nettoGeg);
+  var modelBruto = modelleerd.reduce(function (s2, x) { return s2 + x.bruto; }, 0);
   lijst.forEach(function (x) { if (!x.vrij && x.netto == null) x.netto = modelBruto > 0 ? nettoModel * x.bruto / modelBruto : 0; });
-  var res = { id: pid, naam: pers.naam, bruto: brutoAlles, netto: nettoGeg + nettoModel + extraKorting + vrijNetto, lijst: lijst, naAOW: na };
+  var res = { id: pid, naam: pers.naam, bruto: brutoAlles, netto: nettoGeg + nettoModel + vrijNetto, lijst: lijst, naAOW: na, kortingBij: hoogste ? hoogste.naam : "" };
   m._cache.pm[sleutel] = res;
   return res;
 }
@@ -2138,7 +2137,7 @@ function foutenAlgemeen(c) {
 /* ----- Inkomensbronnen: vaste omschrijvingen ----- */
 function nieuweBron(pid, cat) {
   var vrij = cat.soort === "toeslag";
-  return { id: nieuwId(), persoon: pid, code: cat.code, naam: cat.code === "overig" ? "" : cat.label, soort: cat.soort, bruto: "", netto: "", freq: cat.freq, eersteMaand: 1, start: "", einde: "", werktijd: 100, index: vrij ? "geen" : "cpi", indexPct: "", kortingInNetto: true, wijzigDatum: "", wijzigBruto: "", wijzigNetto: "" };
+  return { id: nieuwId(), persoon: pid, code: cat.code, naam: cat.code === "overig" ? "" : cat.label, soort: cat.soort, bruto: "", netto: "", freq: cat.freq, eersteMaand: 1, start: "", einde: "", werktijd: 100, index: vrij ? "geen" : "cpi", indexPct: "", wijzigDatum: "", wijzigBruto: "", wijzigNetto: "" };
 }
 function foutenBron(b) {
   var n = b.naam || "Inkomen";
@@ -2177,8 +2176,7 @@ function BronnenEditor(p) {
         : h("div", null,
           h("div", { className: "raster" },
             h(BedragVeld, { label: "Bruto per maand" + (b.soort === "loon" ? " (bij 100% werktijd)" : ""), value: b.bruto, onChange: function (v) { w({ bruto: v }); }, naam: "bron-bruto" }),
-            h(BedragVeld, { label: "Netto per maand", hint: "Leeg laten: de app schat het netto uit het bruto.", value: b.netto, onChange: function (v) { w({ netto: v }); }, naam: "bron-netto" })),
-          b.netto !== "" ? h(Vink, { label: "Dit netto bedrag is al na heffingskorting", hint: "Vink uit als het netto zonder heffingskorting is; de app telt dan de korting er één keer bij.", value: b.kortingInNetto !== false, onChange: function (v) { w({ kortingInNetto: v }); } }) : null,
+            h(BedragVeld, { label: "Netto per maand", hint: "Zoals op je specificatie. Leeg laten: de app schat het netto. De heffingskorting past de app automatisch toe op je hoogste inkomen.", value: b.netto, onChange: function (v) { w({ netto: v }); }, naam: "bron-netto" })),
           b.soort === "loon" ? h(BedragVeld, { label: "Werktijd (%)", hint: "100 = het ingevulde bedrag; 67 = tweederde.", value: b.werktijd, pct: true, onChange: function (v) { w({ werktijd: v }); }, naam: "bron-werktijd" }) : null),
         h("div", { className: "raster" },
           h(DatumVeld, { label: "Start (leeg = loopt al)", value: b.start, onChange: function (v) { w({ start: v }); }, naam: "bron-start" }),
@@ -2818,7 +2816,7 @@ var HELP_ITEMS = [
   ["Een tweede persoon of alleen jezelf", "partner twee personen alleen man vrouw", "Je kunt de planning voor een man, een vrouw, of voor twee personen maken (man en vrouw, twee mannen of twee vrouwen). Elke volwassene kan een eigen planning maken. Kies bij de algemene intake het juiste huishouden."],
   ["Peildatum", "datum vandaag peil", "De datum waarop je bedragen gelden. Leeg laten betekent: vandaag. Handig om een eerdere stand na te rekenen."],
   ["Bruto en netto", "bruto netto salaris loon heffingskorting", "Bruto is voor belasting, netto is wat je ontvangt. Vul bij voorkeur beide in. Vul je alleen het bruto in, dan schat de app het netto met de fiscale tabel."],
-  ["Netto na of zonder heffingskorting", "heffingskorting netto korting", "Staat op je loonstrook een netto bedrag met loonheffingskorting, vink dan 'al na heffingskorting' aan. Is het netto zonder korting, vink het uit: de app telt de korting dan één keer bij."],
+  ["Heffingskorting", "heffingskorting netto korting ouderenkorting arbeidskorting", "Je hoeft niets in te vullen. De app past de heffingskorting automatisch toe op je hoogste inkomen, op basis van je leeftijd (voor of na de AOW-leeftijd), of je werkt (arbeidskorting) en de hoogte van je inkomen. Vul bij elk inkomen het netto in zoals op je specificatie staat."],
   ["Toeslagen en kinderbijslag", "huurtoeslag zorgtoeslag kinderopvangtoeslag kindgebonden budget kinderbijslag toeslag", "Toeslagen en kinderbijslag zijn belastingvrij en tellen volledig mee als inkomen. Vul het bedrag per betaling in en hoe vaak je het ontvangt (kinderbijslag komt per kwartaal). Pas het bedrag aan zodra de Belastingdienst een nieuw bedrag doorgeeft."],
   ["Huur, koop of geen woning", "woning huur koop hypotheek inwonend", "De vragen en lasten passen zich aan. Huurder: huur, servicekosten en eventueel huurtoeslag. Eigenaar: hypotheek, OZB, opstalverzekering, onderhoud en WOZ-waarde. Geen woning: een eventuele bijdrage voor woonkosten."],
   ["Hypotheek", "hypotheek rente aflossing rentevast", "Alleen bij een koopwoning. Vul openstaand bedrag, rente, maandlast en aflossing in. Na de einddatum van de aflossing rekent de app met alleen rente. De hypotheekrenteaftrek zit niet in de berekening; vul je netto inkomen in zoals je het ontvangt."],
@@ -3037,7 +3035,7 @@ function SchermInkomen() {
       return h(Kaart, { key: p.id, titel: p.naam },
         h("p", { className: "klein" }, p.aow ? "AOW-datum: " + fmtDatum(p.aow) : "Geen geboortedatum bekend, dus geen AOW-datum."),
         h(BronnenEditor, { persoon: p.id }),
-        pm.lijst.length ? h("div", { style: { marginTop: ".6rem" } }, h("h4", null, "Nu per maand"),
+        pm.lijst.length ? h("div", { style: { marginTop: ".6rem" } }, h("h4", null, "Nu per maand"), pm.kortingBij ? h("p", { className: "klein" }, "Heffingskorting is automatisch toegepast op je hoogste inkomen: " + pm.kortingBij + ".") : null,
           h(Tabel, { kop: ["Bron", "Bruto", "Netto"], get: [1, 2], rijen: pm.lijst.map(function (x) { return [x.naam, eur(x.bruto), eur(x.netto)]; }).concat([{ klasse: "totaal", cellen: ["Totaal", eur(pm.bruto), eur(pm.netto)] }]) })) : null);
     }),
     m.bronnen.some(function (b) { return b.soort === "loon"; }) ? h(Kaart, { titel: "Werken of stoppen per jaar" }, h(WerkJarenTabel, null)) : null,
@@ -3336,7 +3334,8 @@ function SchermFiscaal() {
       h("li", null, "Belasting wordt per persoon over box 1 berekend, met algemene heffingskorting, ouderenkorting, arbeidskorting en Zvw-bijdrage op pensioen."),
       h("li", null, "Hypotheekrenteaftrek en eigenwoningforfait zijn niet gemodelleerd; vul bij inkomen het netto in dat je werkelijk ontvangt."),
       h("li", null, "Arbeidskorting rekent alleen het afbouwtraject door: bij lagere inkomens is dit een bovengrens. Vul bij loon bij voorkeur zelf het netto in."),
-      h("li", null, "AOW-bedragen gelden per persoon met partner of alleenstaand en worden per jaar geïndexeerd; de AOW telt vanaf de maand van de AOW-datum. De kostendelersnorm is niet gemodelleerd."),
+      h("li", null, "AOW: alleenstaand 70% van het minimumloon, met partner 50% per persoon. Woon je samen met iemand die niet je partner is, dan verandert je AOW niet. De kostendelersnorm geldt wel voor AIO-aanvulling, Anw en bijstand; die zijn niet gemodelleerd. De AOW wordt per jaar geïndexeerd en telt vanaf de maand van de AOW-datum."),
+      h("li", null, "Heffingskorting (algemene korting, arbeidskorting, ouderenkorting) wordt automatisch toegepast op het hoogste inkomen van elke persoon, op basis van leeftijd (AOW-leeftijd), arbeid (loon of winst) en de hoogte van het inkomen."),
       h("li", null, "Toeslagen en kinderbijslag tellen volledig mee als belastingvrij inkomen; de app berekent niet of je er recht op hebt."),
       h("li", null, "De AOW-leeftijd voor latere geboortejaren is verwacht, niet vastgesteld."),
       h("li", null, "De app geeft rekenvoorbeelden, geen persoonlijk fiscaal advies."))),

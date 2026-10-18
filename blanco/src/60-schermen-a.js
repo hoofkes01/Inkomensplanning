@@ -83,7 +83,7 @@ function SchermInkomen() {
       return h(Kaart, { key: p.id, titel: p.naam },
         h("p", { className: "klein" }, p.aow ? "AOW-datum: " + fmtDatum(p.aow) : "Geen geboortedatum bekend, dus geen AOW-datum."),
         h(BronnenEditor, { persoon: p.id }),
-        pm.lijst.length ? h("div", { style: { marginTop: ".6rem" } }, h("h4", null, "Nu per maand"),
+        pm.lijst.length ? h("div", { style: { marginTop: ".6rem" } }, h("h4", null, "Nu per maand"), pm.kortingBij ? h("p", { className: "klein" }, "Heffingskorting is automatisch toegepast op je hoogste inkomen: " + pm.kortingBij + ".") : null,
           h(Tabel, { kop: ["Bron", "Bruto", "Netto"], get: [1, 2], rijen: pm.lijst.map(function (x) { return [x.naam, eur(x.bruto), eur(x.netto)]; }).concat([{ klasse: "totaal", cellen: ["Totaal", eur(pm.bruto), eur(pm.netto)] }]) })) : null);
     }),
     m.bronnen.some(function (b) { return b.soort === "loon"; }) ? h(Kaart, { titel: "Werken of stoppen per jaar" }, h(WerkJarenTabel, null)) : null,

@@ -6,10 +6,10 @@ S.profiel.gebruik = { hypotheek: true, deposito: true, beleggen: true, aanvullin
 S.inst.cpiStand = "2026-10-10"; S.inst.spaarrenteStand = "2026-10-15"; S.inst.cijfersDatum = "2026-10-15";
 S.advies.raisinStand = "2026-10-15"; S.advies.euriborStand = "2026-10-15"; S.advies.pfDatum = "2026-10-10"; S.advies.wachtTot = 55000; S.advies.behoudAan = true;
 S.bronnen = [
-  { id: "b1", persoon: "A", code: "loon", naam: "Loon (dienstverband)", soort: "loon", bruto: 5000, netto: 3300, start: "", einde: "2027-01-01", werktijd: 100, index: "vast", indexPct: 2, kortingInNetto: true, wijzigDatum: "", wijzigBruto: "", wijzigNetto: "" },
-  { id: "b2", persoon: "B", code: "loon", naam: "Loon (dienstverband)", soort: "loon", bruto: 3000, netto: 2300, start: "", einde: "", werktijd: 100, index: "cpi", indexPct: "", kortingInNetto: true, wijzigDatum: "", wijzigBruto: "", wijzigNetto: "" },
-  { id: "b3", persoon: "A", code: "pensioen", naam: "Pensioen van een pensioenfonds of verzekeraar", soort: "pensioen", bruto: 1500, netto: "", start: "2033-12-15", einde: "", werktijd: "", index: "vast", indexPct: 1, kortingInNetto: true, wijzigDatum: "2035-01-01", wijzigBruto: 1700, wijzigNetto: "" },
-  { id: "b4", persoon: "B", code: "pensioen", naam: "Pensioen van een pensioenfonds of verzekeraar", soort: "pensioen", bruto: 900, netto: 800, start: "2032-02-09", einde: "", werktijd: "", index: "geen", indexPct: "", kortingInNetto: false, wijzigDatum: "", wijzigBruto: "", wijzigNetto: "" }
+  { id: "b1", persoon: "A", code: "loon", naam: "Loon (dienstverband)", soort: "loon", bruto: 5000, netto: 3300, start: "", einde: "2027-01-01", werktijd: 100, index: "vast", indexPct: 2, wijzigDatum: "", wijzigBruto: "", wijzigNetto: "" },
+  { id: "b2", persoon: "B", code: "loon", naam: "Loon (dienstverband)", soort: "loon", bruto: 3000, netto: 2300, start: "", einde: "", werktijd: 100, index: "cpi", indexPct: "", wijzigDatum: "", wijzigBruto: "", wijzigNetto: "" },
+  { id: "b3", persoon: "A", code: "pensioen", naam: "Pensioen van een pensioenfonds of verzekeraar", soort: "pensioen", bruto: 1500, netto: "", start: "2033-12-15", einde: "", werktijd: "", index: "vast", indexPct: 1, wijzigDatum: "2035-01-01", wijzigBruto: 1700, wijzigNetto: "" },
+  { id: "b4", persoon: "B", code: "pensioen", naam: "Pensioen van een pensioenfonds of verzekeraar", soort: "pensioen", bruto: 900, netto: 800, start: "2032-02-09", einde: "", werktijd: "", index: "geen", indexPct: "", wijzigDatum: "", wijzigBruto: "", wijzigNetto: "" }
   ,{ id: "b5", persoon: "A", code: "zorgtoeslag", naam: "Zorgtoeslag", soort: "toeslag", bruto: "", netto: 120, freq: "maand", eersteMaand: 1, start: "", einde: "", index: "geen", indexPct: "" },
   { id: "b6", persoon: "A", code: "kinderbijslag", naam: "Kinderbijslag", soort: "toeslag", bruto: "", netto: 300, freq: "kwartaal", eersteMaand: 1, start: "", einde: "2030-01-01", index: "geen", indexPct: "" }
 ];

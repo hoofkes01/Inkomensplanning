@@ -159,31 +159,30 @@ function persoonMaand(m, pid, d, kas) {
       vrijNetto += perMaand;
       return;
     }
-    lijst.push({ naam: b.naam || SOORT_NAAM[b.soort], soort: b.soort, bruto: v.bruto, netto: v.netto, korting: b.kortingInNetto !== false });
+    lijst.push({ naam: b.naam || SOORT_NAAM[b.soort], soort: b.soort, bruto: v.bruto, netto: v.netto });
   });
-  if (na) lijst.push({ naam: "AOW", soort: "aow", bruto: aowBrutoMaand(m, d), netto: null, korting: true });
+  if (na) lijst.push({ naam: "AOW", soort: "aow", bruto: aowBrutoMaand(m, d), netto: null });
   m.potten.forEach(function (pt) {
     if (pt.persoon !== pid) return;
     var pl = potPlan(m, pt);
-    if (pl && d >= eerstVanMaand(pl.start) && d < eerstVanMaand(pl.eind) && pl.maand > 0) lijst.push({ naam: pt.naam || "Pensioenpot", soort: "pot", bruto: pl.maand, netto: null, korting: true });
+    if (pl && d >= eerstVanMaand(pl.start) && d < eerstVanMaand(pl.eind) && pl.maand > 0) lijst.push({ naam: pt.naam || "Pensioenpot", soort: "pot", bruto: pl.maand, netto: null });
   });
-  var brutoAlles = 0, brutoGeg = 0, arbeidAlles = 0, arbeidGeg = 0, nettoGeg = 0, zonderKortingBruto = 0;
+  // Heffingskorting: automatisch toegepast op het hoogste inkomen van de persoon (loonheffingskorting geldt bij één uitkeerder).
+  // Welke kortingen er gelden volgt uit leeftijd (AOW-leeftijd), arbeidsinkomen (loon of winst) en de hoogte van het inkomen.
+  var brutoAlles = 0, arbeidAlles = 0, nettoGeg = 0, hoogste = null;
   lijst.forEach(function (x) {
     if (x.vrij) return;
     brutoAlles += x.bruto; if (x.soort === "loon") arbeidAlles += x.bruto;
-    if (x.netto != null) { brutoGeg += x.bruto; nettoGeg += x.netto; if (x.soort === "loon") arbeidGeg += x.bruto; if (!x.korting) zonderKortingBruto += x.bruto; }
+    if (x.netto != null) nettoGeg += x.netto;
+    if (!hoogste || x.bruto > hoogste.bruto) hoogste = x;
   });
-  var nettoModel = 0, extraKorting = 0;
-  if (lijst.some(function (x) { return !x.vrij && x.netto == null; })) {
-    nettoModel = (nettoJaarPersoon(m, brutoAlles * 12, arbeidAlles * 12, na, d) - nettoJaarPersoon(m, brutoGeg * 12, arbeidGeg * 12, na, d)) / 12;
-  }
-  if (zonderKortingBruto > 0) {
-    var jb = jaarBerekening(m, zonderKortingBruto * 12, 0, na, d);
-    extraKorting = jb.kortingToegepast / 12;
-  }
-  var modelBruto = lijst.reduce(function (s2, x) { return s2 + (!x.vrij && x.netto == null ? x.bruto : 0); }, 0);
+  if (hoogste) hoogste.kortingHier = true;
+  var modelleerd = lijst.filter(function (x) { return !x.vrij && x.netto == null; });
+  var nettoModel = 0;
+  if (modelleerd.length) nettoModel = Math.max(0, nettoJaarPersoon(m, brutoAlles * 12, arbeidAlles * 12, na, d) / 12 - nettoGeg);
+  var modelBruto = modelleerd.reduce(function (s2, x) { return s2 + x.bruto; }, 0);
   lijst.forEach(function (x) { if (!x.vrij && x.netto == null) x.netto = modelBruto > 0 ? nettoModel * x.bruto / modelBruto : 0; });
-  var res = { id: pid, naam: pers.naam, bruto: brutoAlles, netto: nettoGeg + nettoModel + extraKorting + vrijNetto, lijst: lijst, naAOW: na };
+  var res = { id: pid, naam: pers.naam, bruto: brutoAlles, netto: nettoGeg + nettoModel + vrijNetto, lijst: lijst, naAOW: na, kortingBij: hoogste ? hoogste.naam : "" };
   m._cache.pm[sleutel] = res;
   return res;
 }

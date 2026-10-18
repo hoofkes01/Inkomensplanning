@@ -8,9 +8,9 @@ const S = c.S;
 S.profiel.type = "man+vrouw"; S.profiel.partner = true; S.profiel.geboorteA = "1966-09-15"; S.profiel.geboorteB = "1964-11-09"; S.profiel.leef.woning = "huur"; S.profiel.gebruik.deposito = true; S.profiel.gebruik.beleggen = true;
 S.profiel.peildatum = "2026-10-18";
 S.bronnen = [
-  { id: "1", persoon: "A", naam: "Salaris A", soort: "loon", bruto: 5000, netto: 3300, start: "", einde: "2027-01-01", werktijd: 100, index: "geen", indexPct: "", kortingInNetto: true },
-  { id: "2", persoon: "B", naam: "Salaris B", soort: "loon", bruto: 3000, netto: 2300, start: "", einde: "", werktijd: 100, index: "cpi", indexPct: "", kortingInNetto: true },
-  { id: "3", persoon: "A", naam: "Pensioen A", soort: "pensioen", bruto: 1500, netto: "", start: "2033-12-15", einde: "", index: "vast", indexPct: 1, kortingInNetto: true }
+  { id: "1", persoon: "A", naam: "Salaris A", soort: "loon", bruto: 5000, netto: 3300, start: "", einde: "2027-01-01", werktijd: 100, index: "geen", indexPct: "" },
+  { id: "2", persoon: "B", naam: "Salaris B", soort: "loon", bruto: 3000, netto: 2300, start: "", einde: "", werktijd: 100, index: "cpi", indexPct: "" },
+  { id: "3", persoon: "A", naam: "Pensioen A", soort: "pensioen", bruto: 1500, netto: "", start: "2033-12-15", einde: "", index: "vast", indexPct: 1 }
 ];
 S.verm.rekeningen = [{ id: "k", bank: "ING", naam: "Spaarrekening", saldo: 40000, rente: "" }];
 S.verm.deposito = [{ id: "d1", naam: "Dep 1", bedrag: 20000, rente: 3, start: "2026-06-01", looptijd: 12, eind: "2027-06-01", uitkering: "einde" }];
@@ -77,3 +77,19 @@ ok("reservering verandert het totale vermogen niet", Math.abs(tA.totaal - t0b.to
 S.aanv.maand = 4000;
 const mB = c.maakModel(S, c.geldigeDatum("2026-10-18"));
 ok("aanvulling 4.000 per maand kan niet uit spaargeld", mB.aanvB.kanS === false && mB.aanvB.maxXS < 4000, Math.round(mB.aanvB.maxXS));
+
+// Heffingskorting automatisch op het hoogste inkomen
+const S2 = JSON.parse(JSON.stringify(S));
+S2.bronnen = [
+  { id: "a", persoon: "A", naam: "Hoofdbaan", soort: "loon", bruto: 3000, netto: 2300, start: "", einde: "", werktijd: 100, index: "geen", indexPct: "" },
+  { id: "b", persoon: "A", naam: "Tweede baan", soort: "loon", bruto: 500, netto: "", start: "", einde: "", werktijd: 100, index: "geen", indexPct: "" }
+];
+S2.profiel.gebruik.aanvulling = false;
+const m2k = c.maakModel(S2, c.geldigeDatum("2026-10-18"));
+const pk = c.persoonMaand(m2k, "A", c.geldigeDatum("2026-12-01"));
+const totaalNetto = c.nettoJaarPersoon(m2k, 3500 * 12, 3500 * 12, false, c.geldigeDatum("2026-12-01")) / 12;
+ok("korting bij hoogste inkomen", pk.kortingBij === "Hoofdbaan", pk.kortingBij);
+ok("totaal netto = netto van het totale bruto (korting één keer)", Math.abs(pk.netto - totaalNetto) < 1, Math.round(pk.netto) + " vs " + Math.round(totaalNetto));
+ok("tweede baan krijgt het restant (zonder extra korting)", Math.abs(pk.lijst[1].netto - (totaalNetto - 2300)) < 1, Math.round(pk.lijst[1].netto));
+const pOud = c.persoonMaand(c.maakModel(Object.assign({}, S2, { profiel: Object.assign({}, S2.profiel, { geboorteA: "1950-01-01" }) }), c.geldigeDatum("2026-10-18")), "A", c.geldigeDatum("2026-12-01"));
+ok("na AOW-leeftijd geen loon meer en AOW telt (ouderenkorting-regels)", pOud.naAOW === true && pOud.lijst.some(x => x.soort === "aow"));

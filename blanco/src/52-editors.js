@@ -147,7 +147,7 @@ function foutenAlgemeen(c) {
 /* ----- Inkomensbronnen: vaste omschrijvingen ----- */
 function nieuweBron(pid, cat) {
   var vrij = cat.soort === "toeslag";
-  return { id: nieuwId(), persoon: pid, code: cat.code, naam: cat.code === "overig" ? "" : cat.label, soort: cat.soort, bruto: "", netto: "", freq: cat.freq, eersteMaand: 1, start: "", einde: "", werktijd: 100, index: vrij ? "geen" : "cpi", indexPct: "", kortingInNetto: true, wijzigDatum: "", wijzigBruto: "", wijzigNetto: "" };
+  return { id: nieuwId(), persoon: pid, code: cat.code, naam: cat.code === "overig" ? "" : cat.label, soort: cat.soort, bruto: "", netto: "", freq: cat.freq, eersteMaand: 1, start: "", einde: "", werktijd: 100, index: vrij ? "geen" : "cpi", indexPct: "", wijzigDatum: "", wijzigBruto: "", wijzigNetto: "" };
 }
 function foutenBron(b) {
   var n = b.naam || "Inkomen";
@@ -186,8 +186,7 @@ function BronnenEditor(p) {
         : h("div", null,
           h("div", { className: "raster" },
             h(BedragVeld, { label: "Bruto per maand" + (b.soort === "loon" ? " (bij 100% werktijd)" : ""), value: b.bruto, onChange: function (v) { w({ bruto: v }); }, naam: "bron-bruto" }),
-            h(BedragVeld, { label: "Netto per maand", hint: "Leeg laten: de app schat het netto uit het bruto.", value: b.netto, onChange: function (v) { w({ netto: v }); }, naam: "bron-netto" })),
-          b.netto !== "" ? h(Vink, { label: "Dit netto bedrag is al na heffingskorting", hint: "Vink uit als het netto zonder heffingskorting is; de app telt dan de korting er één keer bij.", value: b.kortingInNetto !== false, onChange: function (v) { w({ kortingInNetto: v }); } }) : null,
+            h(BedragVeld, { label: "Netto per maand", hint: "Zoals op je specificatie. Leeg laten: de app schat het netto. De heffingskorting past de app automatisch toe op je hoogste inkomen.", value: b.netto, onChange: function (v) { w({ netto: v }); }, naam: "bron-netto" })),
           b.soort === "loon" ? h(BedragVeld, { label: "Werktijd (%)", hint: "100 = het ingevulde bedrag; 67 = tweederde.", value: b.werktijd, pct: true, onChange: function (v) { w({ werktijd: v }); }, naam: "bron-werktijd" }) : null),
         h("div", { className: "raster" },
           h(DatumVeld, { label: "Start (leeg = loopt al)", value: b.start, onChange: function (v) { w({ start: v }); }, naam: "bron-start" }),
