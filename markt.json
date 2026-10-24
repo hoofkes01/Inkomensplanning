@@ -1,0 +1,128 @@
+{
+  "versie": 1,
+  "bijgewerkt": "2026-10-24",
+  "marktdatum": "2026-10-23",
+  "punten": [
+    {
+      "kop": "Aandelen Verenigde Staten",
+      "tekst": "Wall Street sloot vrijdag 23 oktober lager: Dow 52.215 (−1,2%), Nasdaq 25.955 (−0,2%), S&P 500 circa −0,5%. Een dag eerder verloor de S&P 500 1,2% (7.663) en de Nasdaq 2,6%. Chip- en AI-aandelen werden hard geraakt: Nvidia −4,4%, Intel −8%, AMD −8,1%.",
+      "bron": "De Aandeelhouder 23-10-2026, Saxo Beurswekker 23-10-2026"
+    },
+    {
+      "kop": "Aandelen Europa en Azië",
+      "tekst": "De Euro Stoxx 50 verloor donderdag 2%; ASML −5%, Infineon −8,6%. De Bel20 steeg 2% door een verhoogde omzetverwachting van UCB. Vrijdagochtend: Hang Seng +0,8%, Topix −1,2%.",
+      "bron": "Saxo Beurswekker 23-10-2026"
+    },
+    {
+      "kop": "Rente ECB en Euribor",
+      "tekst": "De ECB-depositorente staat op 2,50% (verhoogd in juni en september). Het volgende besluit is op 28 oktober; de markt geeft 93% kans op een pauze en rekent op een verhoging in december. De Euribor 12 maanden stond op 22 oktober op 3,262% (1 oktober: 3,303%).",
+      "bron": "Raisin 21-10-2026 (ECB Watch Tool), euribor-rates.eu 22-10-2026"
+    },
+    {
+      "kop": "Inflatie",
+      "tekst": "Nederland (CBS, september): consumentenprijzen +3,4%, geharmoniseerd (HICP) +3,0%. Eurozone HICP +3,8% (augustus 3,2%). Motorbrandstoffen zijn 27,2% duurder dan een jaar geleden. De snelle raming voor oktober volgt begin november.",
+      "bron": "CBS 13-10-2026"
+    },
+    {
+      "kop": "Obligaties, goud en olie",
+      "tekst": "De Amerikaanse tienjaarsrente zakte donderdag onder de 5% doordat beleggers naar staatsobligaties vluchtten. Goud staat boven de 4.100 dollar per troy ounce (stand 17-10) en olie is hoger door spanning rond Iran.",
+      "bron": "Saxo Beurswekker 23-10-2026, usmarkets.nl week 42 (17-10-2026)"
+    },
+    {
+      "kop": "Sparen",
+      "tekst": "Spaarders kunnen via Raisin op een deposito tot 3,90% per jaar krijgen. Banken passen hun rente aan op de verwachte ECB-verhoging in december.",
+      "bron": "Raisin 21-10-2026"
+    }
+  ],
+  "etfs": {
+    "datum": "2026-10-24",
+    "uitleg": "Mijn verwachting voor de komende 12 maanden, vergeleken met de brede wereldindex (MSCI World): fondsen die waarschijnlijk beter presteren, of minder slecht als de markt verder daalt. Uitgangspunt is de situatie van nu: verkoop in chips en AI, hogere rente (verhoging ECB verwacht in december, Fed-verhoging gevreesd), inflatie van 3 tot 4% en een hoge olie- en goudprijs. Het zijn verwachtingen, geen zekerheden. Er is geen overlap met je huidige bezit (wereld, Europa, opkomende landen, small cap, value en chips).",
+    "lijst": [
+      {
+        "naam": "Xtrackers S&P 500 Equal Weight UCITS ETF 1C",
+        "isin": "IE00BLNMYC90",
+        "ter": "0,20%",
+        "omvang": "circa 8,5 tot 12,6 mld USD",
+        "verwachting": "beter",
+        "overtuiging": "middel",
+        "thema": "VS, elk bedrijf even zwaar",
+        "reden": "Veel minder gewicht in de mega-caps en chipfondsen die nu het hardst dalen. Deze index deed het in juli 2026 relatief sterk tegenover de Nasdaq-100.",
+        "risico": "Blijft Amerikaanse aandelen; een brede correctie of hogere rente raakt ook kleinere bedrijven.",
+        "bron": "Nasdaq.com July 2026 Review and Outlook, Saxo 23-10-2026"
+      },
+      {
+        "naam": "iShares Edge MSCI World Quality Factor UCITS ETF USD Acc",
+        "isin": "IE00BP3QZ601",
+        "ter": "0,25% (bronnen: 0,25 tot 0,30%)",
+        "omvang": "circa 3,7 tot 4 mld EUR",
+        "verwachting": "minder slecht",
+        "overtuiging": "middel",
+        "thema": "Wereld, bedrijven met hoge kwaliteit",
+        "reden": "Winstgevende bedrijven met weinig schuld zijn minder gevoelig voor een hogere rente, en die komt eraan (Euribor 3,26%, ECB-verhoging verwacht in december).",
+        "risico": "Hoge waardering; kwaliteitsaandelen kunnen achterblijven als de markt scherp herstelt.",
+        "bron": "Raisin 21-10-2026, euribor-rates.eu 22-10-2026"
+      },
+      {
+        "naam": "Xtrackers MSCI World Minimum Volatility UCITS ETF 1C",
+        "isin": "IE00BL25JN58",
+        "ter": "0,25%",
+        "omvang": "circa 1,1 mld EUR",
+        "verwachting": "minder slecht",
+        "overtuiging": "hoog",
+        "thema": "Wereld, lage koersschommeling",
+        "reden": "Weinig chips en AI, veel gezondheidszorg, voeding en nutsbedrijven. Bij een verdere uitverkoop daalt dit fonds meestal minder dan de wereldindex.",
+        "risico": "Blijft achter als de chips snel herstellen; nutsbedrijven zijn gevoelig voor stijgende rente.",
+        "bron": "Saxo 23-10-2026"
+      },
+      {
+        "naam": "iShares S&P 500 Health Care Sector UCITS ETF USD Acc",
+        "isin": "IE00B43HR379",
+        "ter": "0,15%",
+        "omvang": "circa 2,9 mld USD",
+        "verwachting": "minder slecht",
+        "overtuiging": "middel",
+        "thema": "VS gezondheidszorg",
+        "reden": "Weinig overlap met de chip- en AI-cyclus, en de vraag is minder conjunctuurgevoelig. Een farmaceut als UCB verhoogde op 22 oktober zijn omzetverwachting.",
+        "risico": "Prijsdruk op medicijnen in de VS en grote uitschieters per bedrijf (Moderna −17% op 22 oktober).",
+        "bron": "Saxo 23-10-2026"
+      },
+      {
+        "naam": "iShares S&P 500 Financials Sector UCITS ETF USD Acc",
+        "isin": "IE00B4JNQZ49",
+        "ter": "0,15%",
+        "omvang": "circa 1,1 mld USD",
+        "verwachting": "beter",
+        "overtuiging": "laag",
+        "thema": "VS financiële sector",
+        "reden": "Een hogere rente ondersteunt de rentemarge van banken, en de sector heeft weinig met AI en chips te maken.",
+        "risico": "Kredietverliezen als inflatie en rente de economie afremmen; kleiner fonds.",
+        "bron": "Raisin 21-10-2026"
+      },
+      {
+        "naam": "iShares S&P 500 Energy Sector UCITS ETF USD Acc",
+        "isin": "IE00B42NKQ00",
+        "ter": "0,15%",
+        "omvang": "circa 0,6 tot 1,5 mld USD",
+        "verwachting": "beter",
+        "overtuiging": "laag",
+        "thema": "VS energiesector",
+        "reden": "De olieprijs is hoger door spanning rond Iran en brandstof is 27,2% duurder dan een jaar geleden. Energie beschermt tegen verdere inflatie.",
+        "risico": "De olieprijs kan snel zakken bij ontspanning; de stijging zit mogelijk al in de koers; kleiner fonds.",
+        "bron": "CBS 13-10-2026, usmarkets.nl week 42"
+      },
+      {
+        "naam": "iShares Physical Gold ETC",
+        "isin": "IE00B4ND3602",
+        "ter": "0,12%",
+        "omvang": "circa 30 mld EUR",
+        "verwachting": "minder slecht",
+        "overtuiging": "laag",
+        "thema": "Goud (ETC, geen aandelen)",
+        "reden": "Goud geldt als veilige haven bij onrust en inflatie van 3 tot 4%. De beleggers die donderdag naar staatsobligaties vluchtten, laten zien dat de vraag naar veiligheid groot is.",
+        "risico": "Geen rente of dividend, sterke schommelingen na de grote stijging en de dollarkoers werkt mee of tegen.",
+        "bron": "usmarkets.nl week 42 (17-10-2026)"
+      }
+    ]
+  },
+  "disclaimer": "Dit is een verwachting op basis van openbare bronnen, geen persoonlijk beleggingsadvies en geen garantie. Controleer in DEGIRO of het fonds beschikbaar is, op welke beurs en tegen welke kosten. De fondsomvang is een afgeronde schatting uit verschillende bronnen."
+}
