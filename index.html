@@ -857,6 +857,34 @@ function NumInput({
     onBlur: () => setTekst(null)
   });
 }
+
+// Kleine invoer per reservering: opname of bijstorting met omschrijving, datum en bedrag.
+function ResMutatieForm({ standaardDatum, onToevoegen }) {
+  const [label, setLabel] = React.useState("");
+  const [datum, setDatum] = React.useState(standaardDatum || "");
+  const [soort, setSoort] = React.useState("opname");
+  const [bedrag, setBedrag] = React.useState("");
+  const veld = "border border-slate-300 rounded px-2 py-1.5 text-sm";
+  return React.createElement("div", { className: "mt-3 pt-3 border-t border-slate-100" },
+    React.createElement("div", { className: "text-xs text-slate-500 mb-1" }, "Opname of bijstorting"),
+    React.createElement("div", { className: "flex flex-wrap gap-2 items-center" },
+      React.createElement("select", { value: soort, onChange: e => setSoort(e.target.value), className: veld },
+        React.createElement("option", { value: "opname" }, "Opname"),
+        React.createElement("option", { value: "bijstorting" }, "Bijstorting")),
+      React.createElement(NumInput, { placeholder: "Bedrag", value: bedrag, onChange: e => setBedrag(e.target.value), className: "w-24 " + veld + " text-right" }),
+      React.createElement("input", { type: "date", value: datum, onChange: e => setDatum(e.target.value), className: veld }),
+      React.createElement("input", { placeholder: "Omschrijving", value: label, onChange: e => setLabel(e.target.value), className: "flex-1 min-w-[120px] " + veld }),
+      React.createElement("button", {
+        type: "button",
+        onClick: () => {
+          const b = Number(bedrag) || 0;
+          if (!b || !datum) return;
+          onToevoegen({ label: label.trim() || (soort === "opname" ? "Opname" : "Bijstorting"), datum, bedrag: (soort === "opname" ? -1 : 1) * Math.abs(b) });
+          setLabel(""); setBedrag("");
+        },
+        className: "px-4 py-1.5 rounded-full bg-slate-900 text-white text-sm"
+      }, "Toevoegen")));
+}
 const PEILDATUM = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
 // De datum waarop de app wordt geopend is de "vandaag"-datum voor peildatumanalyses.
 // Deze datum blijft gedurende deze sessie het vaste vergelijkingspunt.
@@ -5235,6 +5263,22 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
 
   function potSaldoOpDatum(post, datum) {
     const startSaldo = Number(potSaldi[post.id]) || 0;
+    if (post.id === "vl_res_rente") {
+      // Rente kinderen: elke 22e komt het maandbedrag erbij; op 22 december gaat het hele saldo
+      // naar de kinderen, waarna de reservering op 0 staat.
+      const startR = new Date(PEILDATUM.getFullYear(), PEILDATUM.getMonth(), 22);
+      const doelR = new Date(datum.getFullYear(), datum.getMonth(), datum.getDate());
+      const mut = (potOnttrekkingen || []).filter(o => o.potId === post.id).map(o => ({ d: geldigeDatum(o.datum), b: Number(o.bedrag) || 0 })).filter(x => x.d && x.d <= doelR);
+      let stortingen = 0, uitbetaald = 0;
+      for (let c = new Date(startR); c <= doelR; c = new Date(c.getFullYear(), c.getMonth() + 1, 22)) {
+        stortingen += Number(post.bedrag) || 0;
+        if (c.getMonth() === 11) {
+          const huidig = startSaldo + stortingen + mut.filter(x => x.d <= c).reduce((a, x) => a + x.b, 0) + uitbetaald;
+          if (huidig > 0) uitbetaald -= huidig;
+        }
+      }
+      return startSaldo + stortingen + mut.reduce((a, x) => a + x.b, 0) + uitbetaald;
+    }
     const voeding = reserveringVoedingOpDatum(post, datum);
     const mutaties = potOnttrekkingen.filter(o => {
       const d = geldigeDatum(o.datum);
@@ -5892,45 +5936,41 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
 
   function renderReserveringenOverzicht() {
     const vandaag = new Date(PEILDATUM.getFullYear(), PEILDATUM.getMonth(), PEILDATUM.getDate());
+    const iso = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    const veld = "border border-slate-300 rounded px-2 py-1 text-xs";
     return React.createElement("section", null,
-      React.createElement("h2",{className:"font-serif text-xl mb-4"},"Reserveringen"),
-      React.createElement("div",{className:"bg-white rounded-lg border border-slate-200 p-5 space-y-4"},
-        React.createElement("p",{className:"text-xs text-slate-500"},"Beginsaldo + automatische storting op de 22e vanuit Vaste lasten + eigen stortingen/correcties − uitgaven. Elke mutatie is wijzigbaar."),
-        reserveringsPosten.map(post => React.createElement("div",{key:post.id,className:"border-b border-slate-100 pb-3"},
-          React.createElement("div",{className:"flex justify-between gap-2 flex-wrap"},
-            React.createElement("div",null,
-              React.createElement("div",{className:"font-medium"},post.naam),
-              React.createElement("div",{className:"text-xs text-slate-400"},"Automatisch op de 22e: ",euro(post.bedrag),"/mnd")
-            ),
-            React.createElement("div",null,
-              React.createElement("div",{className:"text-xs text-slate-400"},"Beginsaldo"),
-              React.createElement(NumInput,{value:potSaldi[post.id]??0,onChange:e=>setPotSaldi({...potSaldi,[post.id]:Number(e.target.value)||0}),className:"w-28 border border-slate-300 rounded px-2 py-1 font-mono text-right"})
-            )
-          ),
-          React.createElement("div",{className:"font-mono font-semibold mt-2"},"Saldo nu: ",euro(Math.round(potSaldoOpDatum(post,vandaag)))),
-          (potOnttrekkingen||[]).filter(o=>o.potId===post.id).map(o => React.createElement("div",{key:o.id,className:"mt-2 flex flex-wrap gap-2 items-center text-xs"},
-            React.createElement("input",{value:o.label,onChange:e=>setPotOnttrekkingen(prev=>prev.map(x=>x.id===o.id?{...x,label:e.target.value}:x)),className:"flex-1 min-w-[120px] border border-slate-300 rounded px-2 py-1"}),
-            React.createElement("input",{type:"date",value:o.datum,onChange:e=>setPotOnttrekkingen(prev=>prev.map(x=>x.id===o.id?{...x,datum:e.target.value}:x)),className:"border border-slate-300 rounded px-2 py-1"}),
-            React.createElement("select",{value:Number(o.bedrag)<0?"uitgave":"storting",onChange:e=>setPotOnttrekkingen(prev=>prev.map(x=>x.id===o.id?{...x,bedrag:(e.target.value==="uitgave"?-1:1)*Math.abs(Number(x.bedrag)||0)}:x)),className:"border border-slate-300 rounded px-2 py-1"},
-              React.createElement("option",{value:"uitgave"},"Uitgave"),
-              React.createElement("option",{value:"storting"},"Storting / correctie")
-            ),
-            React.createElement(NumInput,{value:Math.abs(Number(o.bedrag)||0),onChange:e=>setPotOnttrekkingen(prev=>prev.map(x=>x.id===o.id?{...x,bedrag:(Number(x.bedrag)<0?-1:1)*Math.abs(Number(e.target.value)||0)}:x)),className:"w-24 border border-slate-300 rounded px-2 py-1"}),
-            React.createElement("button",{type:"button",onClick:()=>setPotOnttrekkingen(prev=>prev.filter(x=>x.id!==o.id)),className:"text-rose-600 px-1"},"✕")
-          ))
-        )),
-        React.createElement("div",{className:"pt-3 border-t border-slate-200"},
-          React.createElement("div",{className:"flex flex-wrap gap-2 items-center"},
-            React.createElement("select",{value:nieuwePotId,onChange:e=>setNieuwePotId(e.target.value),className:"border rounded px-2 py-1.5"},reserveringsPosten.map(p=>React.createElement("option",{key:p.id,value:p.id},p.naam))),
-            React.createElement("input",{placeholder:"Omschrijving",value:nieuwePotLabel,onChange:e=>setNieuwePotLabel(e.target.value),className:"flex-1 min-w-[120px] border rounded px-2 py-1.5"}),
-            React.createElement("input",{type:"date",value:nieuwePotDatum,onChange:e=>setNieuwePotDatum(e.target.value),className:"border rounded px-2 py-1.5"}),
-            React.createElement("select",{value:nieuwePotSoort,onChange:e=>setNieuwePotSoort(e.target.value),className:"border rounded px-2 py-1.5"},React.createElement("option",{value:"uitgave"},"Uitgave"),React.createElement("option",{value:"storting"},"Storting / correctie")),
-            React.createElement(NumInput,{placeholder:"Bedrag",value:nieuwePotBedrag,onChange:e=>setNieuwePotBedrag(e.target.value),className:"w-24 border rounded px-2 py-1.5"}),
-            React.createElement("button",{type:"button",onClick:voegPotOnttrekkingToe,className:"px-4 py-1.5 rounded-full bg-slate-900 text-white"},"Toevoegen")
-          )
-        )
-      )
-    );
+      React.createElement("h2", { className: "font-serif text-xl mb-4" }, "Reserveringen"),
+      React.createElement("div", { className: "bg-white rounded-lg border border-slate-200 p-5 space-y-5" },
+        React.createElement("p", { className: "text-xs text-slate-500" }, "Per reservering zie je één saldo. Elke maand op de 22e komt het maandbedrag erbij. Klopt het saldo niet, pas het dan aan: de app rekent vanaf dat bedrag verder. Opnames en bijstortingen voeg je per reservering toe."),
+        reserveringsPosten.map(post => {
+          const saldoNu = potSaldoOpDatum(post, vandaag);
+          const isRente = post.id === "vl_res_rente";
+          const uitJaar = vandaag <= new Date(vandaag.getFullYear(), 11, 22) ? vandaag.getFullYear() : vandaag.getFullYear() + 1;
+          const verwachtUit = isRente ? Math.max(0, potSaldoOpDatum(post, new Date(uitJaar, 10, 30)) + (Number(post.bedrag) || 0)) : 0;
+          const mutaties = (potOnttrekkingen || []).filter(o => o.potId === post.id);
+          return React.createElement("div", { key: post.id, className: "border-b border-slate-100 pb-4 last:border-b-0 last:pb-0" },
+            React.createElement("div", { className: "flex justify-between items-start gap-3 flex-wrap" },
+              React.createElement("div", null,
+                React.createElement("div", { className: "font-medium" }, post.naam),
+                React.createElement("div", { className: "text-xs text-slate-400" }, "Elke 22e komt er " + euro(post.bedrag) + " bij" + (isRente ? "" : "; opnames zijn variabel"))),
+              React.createElement("div", { className: "text-right" },
+                React.createElement("div", { className: "text-xs text-slate-400" }, "Saldo nu"),
+                React.createElement(NumInput, {
+                  value: Math.round(saldoNu),
+                  onChange: e => setPotSaldi({ ...potSaldi, [post.id]: (Number(potSaldi[post.id]) || 0) + (Number(e.target.value) || 0) - saldoNu }),
+                  className: "w-32 border border-slate-300 rounded px-2 py-1 font-mono font-semibold text-right"
+                }))),
+            isRente ? React.createElement("p", { className: "text-xs text-slate-600 mt-2" }, "Op 22 december " + uitJaar + " gaat het saldo naar de kinderen (verwacht " + euro(Math.round(verwachtUit)) + (verwachtUit > 0 && verwachtUit % 1000 === 0 ? ", ieder kind € 1.000" : "") + "). Daarna staat deze reservering op € 0.") : null,
+            mutaties.map(o => React.createElement("div", { key: o.id, className: "mt-2 flex flex-wrap gap-2 items-center text-xs" },
+              React.createElement("input", { type: "date", value: o.datum, onChange: e => setPotOnttrekkingen(prev => prev.map(x => x.id === o.id ? { ...x, datum: e.target.value } : x)), className: veld }),
+              React.createElement("input", { value: o.label, onChange: e => setPotOnttrekkingen(prev => prev.map(x => x.id === o.id ? { ...x, label: e.target.value } : x)), className: "flex-1 min-w-[120px] " + veld }),
+              React.createElement("select", { value: Number(o.bedrag) < 0 ? "opname" : "bijstorting", onChange: e => setPotOnttrekkingen(prev => prev.map(x => x.id === o.id ? { ...x, bedrag: (e.target.value === "opname" ? -1 : 1) * Math.abs(Number(x.bedrag) || 0) } : x)), className: veld },
+                React.createElement("option", { value: "opname" }, "Opname"),
+                React.createElement("option", { value: "bijstorting" }, "Bijstorting")),
+              React.createElement(NumInput, { value: Math.abs(Number(o.bedrag) || 0), onChange: e => setPotOnttrekkingen(prev => prev.map(x => x.id === o.id ? { ...x, bedrag: (Number(x.bedrag) < 0 ? -1 : 1) * Math.abs(Number(e.target.value) || 0) } : x)), className: "w-24 text-right " + veld }),
+              React.createElement("button", { type: "button", onClick: () => setPotOnttrekkingen(prev => prev.filter(x => x.id !== o.id)), className: "text-rose-600 px-1" }, "✕"))),
+            isRente ? null : React.createElement(ResMutatieForm, { key: post.id + "-form", standaardDatum: iso(vandaag), onToevoegen: m => setPotOnttrekkingen(prev => [...(prev || []), { id: "po_" + Date.now(), potId: post.id, label: m.label, bedrag: m.bedrag, datum: m.datum }]) }));
+        })));
   }
 
   function renderGroteBoekingenOverzicht() {
@@ -7560,7 +7600,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     className: "font-mono text-xs uppercase tracking-widest bg-slate-700/60 border border-slate-500 rounded-full px-3 py-1"
   }, "peildatum ", fmtDate(PEILDATUM)), /*#__PURE__*/React.createElement("span", {
     className: "w-full text-xs text-slate-400 no-print"
-  }, "App-versie ", "24-10-2026 · 09:55")), /*#__PURE__*/React.createElement("p", {
+  }, "App-versie ", "24-10-2026 · 10:05")), /*#__PURE__*/React.createElement("p", {
     className: "mt-2 text-slate-300 text-sm max-w-2xl"
   }, "Bedragen zijn nominaal per peildatum, tenzij een indexatiepercentage is ingevuld. Alle basisbedragen zijn zelf aanpasbaar bij \"Basisgegevens\"." + (actieveTab === "fiscaliteit" ? " Alle aannames staan onderaan bij \"Aannames & beperkingen\". Bij het openen checkt dit bestand automatisch vier fiscale kerncijfers (zie bovenaan) — bij een afwijking wordt er niets automatisch aangepast, dat blijft een bewuste stap." : "")), /*#__PURE__*/React.createElement("div", {
     className: "mt-4 flex flex-wrap gap-2 items-center no-print"
