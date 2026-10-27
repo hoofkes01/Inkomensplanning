@@ -1,27 +1,27 @@
 {
   "versie": 1,
-  "bijgewerkt": "2026-10-24",
-  "marktdatum": "2026-10-23",
+  "bijgewerkt": "2026-10-27",
+  "marktdatum": "2026-10-26",
   "punten": [
     {
       "kop": "Aandelen Verenigde Staten",
-      "tekst": "Wall Street sloot vrijdag 23 oktober lager: S&P 500 7.624 (−0,5%; week −0,9%), Nasdaq 25.955 (−0,2%; week −1,8%), Dow 52.215 (−1,2%). De volatiliteitsindex VIX staat op 19,5 (maand +24%). Donderdag werden chip- en AI-aandelen hard geraakt: Nvidia −4,4%, Intel −8%, AMD −8,1%.",
-      "bron": "Bigdata.com (marktgegevens FMP, slot 23-10-2026), Saxo Beurswekker 23-10-2026"
+      "tekst": "Wall Street sloot maandag 26 oktober hoger: S&P 500 7.677 (+0,7%; week +0,2%), Nasdaq 26.169 (+0,8%), Dow 52.362 (+0,3%). De volatiliteitsindex VIX staat op 18,4 (maand +24%). Technologie steeg maandag 1,7%, maar staat over een maand nog 5,1% lager; communicatiebedrijven daalden 1,6%.",
+      "bron": "Bigdata.com (marktgegevens FMP, slot 26-10-2026)"
     },
     {
-      "kop": "Aandelen Europa en Azië",
-      "tekst": "Euro Stoxx 50 6.071 (−0,5%; maand −3,7%), STOXX Europe 600 636 (−0,3%), AEX 1.132 (+0,2%; dit jaar +19%). Nikkei 62.693 (−0,3%; week −3,4%), Hang Seng 23.093 (+0,7%; week −4,5%). De Zuid-Koreaanse KOSPI is in een maand 21,6% gedaald.",
-      "bron": "Bigdata.com (marktgegevens FMP, slot 23-10-2026)"
+      "kop": "Aandelen Europa, Azië en Brazilië",
+      "tekst": "Euro Stoxx 50 6.104 (0,0%; maand −3,9%), STOXX Europe 600 641 (+0,8%), AEX 1.133 (+0,1%; dit jaar +19%). Dinsdagochtend: Nikkei 63.376 (+1,9%), Hang Seng 23.039 (−0,7%), KOSPI 5.626 (+2,9%, maand −20,5%). Brazilië kelderde maandag na de verrassende herverkiezing van president Lula: de Bovespa daalde 13,9% en het iShares-fonds op Brazilië bijna 20%; de real verloor tot circa 12% tegenover de dollar.",
+      "bron": "Bigdata.com (marktgegevens FMP, 26-10 en 27-10-2026), WSJ en Bloomberg 26-10-2026"
     },
     {
       "kop": "Sectoren en stijlen (VS, 1 maand)",
-      "tekst": "Energie +10,8%, nutsbedrijven +8,1%, consumentenstaples +8,0%, gezondheidszorg +5,5%; technologie −5,9% en communicatie −7,4%. Waardefondsen doen het dit jaar 10,9 procentpunt beter dan de S&P 500, groeifondsen 10,4 punt slechter. Fondsen met lage schommeling lopen de afgelopen maand 5,7 punt voor.",
-      "bron": "Bigdata.com (marktgegevens FMP, slot 23-10-2026)"
+      "tekst": "Energie +12,3% in een maand, nutsbedrijven +7,7%, consumentenstaples +7,2%, gezondheidszorg +5,0%; technologie −5,1% en communicatie −8,1%. Waardefondsen doen het dit jaar 10,6 procentpunt beter dan de S&P 500, groeifondsen 10,1 punt slechter. Fondsen met lage schommeling lopen de afgelopen maand 5,9 punt voor.",
+      "bron": "Bigdata.com (marktgegevens FMP, slot 26-10-2026)"
     },
     {
       "kop": "Rente ECB en Euribor",
-      "tekst": "De ECB-depositorente staat op 2,50% (verhoogd in juni en september). Het volgende besluit is op 28 oktober; de markt geeft 93% kans op een pauze en rekent op een verhoging in december. De Euribor 12 maanden stond op 22 oktober op 3,262% (1 oktober: 3,303%).",
-      "bron": "Raisin 21-10-2026 (ECB Watch Tool), euribor-rates.eu 22-10-2026"
+      "tekst": "De ECB-depositorente staat op 2,50% (verhoogd in juni en september). Het volgende besluit is morgen, 28 oktober; de markt gaf op 21 oktober 93% kans op een pauze en rekent op een verhoging in december. De Euribor 12 maanden stond op 23 oktober op 3,267% (22 oktober 3,262%; 2 oktober 3,323%).",
+      "bron": "Raisin 21-10-2026 (ECB Watch Tool), Suomen Pankki/EMMI Euribor 23-10-2026"
     },
     {
       "kop": "Inflatie",
@@ -30,8 +30,8 @@
     },
     {
       "kop": "Obligaties, olie, goud en valuta",
-      "tekst": "De Amerikaanse tienjaarsrente staat op 5,00% (2 jaar 4,69%, 30 jaar 5,33%). Brent kost 116,72 dollar (dit jaar +91%), WTI 103,27 (+79%). Goud staat op 4.008 dollar en is in een maand 6,8% gedaald (dit jaar −8,6%). De euro is 1,12 dollar waard (dit jaar −4,7%).",
-      "bron": "Bigdata.com (marktgegevens FMP, slot 23-10-2026)"
+      "tekst": "De Amerikaanse tienjaarsrente staat op 5,00% (2 jaar 4,68%, 30 jaar 5,31%). Brent kost 114,89 dollar (dit jaar +88%), WTI 101,19 (+75%). Goud staat op 4.022 dollar en is in een maand 6,9% gedaald (dit jaar −8,3%). De euro is 1,12 dollar waard (dit jaar −5,0%).",
+      "bron": "Bigdata.com (marktgegevens FMP, 26-10 en 27-10-2026)"
     },
     {
       "kop": "Sparen",
