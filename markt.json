@@ -1,22 +1,22 @@
 {
   "versie": 1,
-  "bijgewerkt": "2026-10-30",
-  "marktdatum": "2026-10-29",
+  "bijgewerkt": "2026-10-31",
+  "marktdatum": "2026-10-30",
   "punten": [
     {
       "kop": "Aandelen Verenigde Staten",
-      "tekst": "Wall Street sloot donderdag 29 oktober lager: S&P 500 7.720 (−0,3%; week +1,3%), Nasdaq 26.185 (−1,4%), Dow 52.343 (−0,3%). De volatiliteitsindex VIX staat op 17,2. Technologie daalde 1,2% en communicatiebedrijven 1,9%; gezondheidszorg steeg 2,4% en nutsbedrijven 1,5%.",
-      "bron": "Bigdata.com (marktgegevens FMP, slot 29-10-2026)"
+      "tekst": "Wall Street sloot vrijdag 30 oktober fors lager: S&P 500 7.580 (−1,8%; week −1,3%), Nasdaq 25.437 (−2,9%, grootste daling sinds 5 juni), Dow 51.770 (−1,1%). De volatiliteitsindex VIX steeg 12,9% naar 19,4. Aanleiding waren tegenvallende cijfers van Intel (−29% in één dag) en Amazon en zorgen over de hoge AI-uitgaven; de chipindex daalde 7,2% en technologie 4,9%. Alphabet daalde donderdag al ruim 12%.",
+      "bron": "Bigdata.com (marktgegevens FMP, slot 30-10-2026), Reuters en CNBC 30-10-2026"
     },
     {
       "kop": "Aandelen Europa, Azië en Brazilië",
-      "tekst": "Euro Stoxx 50 6.183 (−0,4%; week +1,8%), STOXX Europe 600 649 (+0,8%), AEX 1.142 (+0,6%; dit jaar +20%). Vrijdagochtend: Nikkei 63.160 (−2,3%), Hang Seng 23.340 (+1,7%), KOSPI 5.713 (−3,8%; maand −16,5%). Brazilië staat na de koersval van maandag (herverkiezing van president Lula) donderdag opnieuw 1,1% lager: de Bovespa is in een week 17,5% gedaald en het iShares-fonds op Brazilië 22,2%.",
-      "bron": "Bigdata.com (marktgegevens FMP, 29-10 en 30-10-2026), WSJ en Bloomberg 26-10-2026"
+      "tekst": "Beurzen zijn in het weekend gesloten; dit is de stand van vrijdag. Euro Stoxx 50 6.127 (−1,3%; week +0,4%), STOXX Europe 600 647 (−0,4%), AEX 1.134 (−0,7%; dit jaar +19%). Nikkei 63.290 (−2,1%), Hang Seng 23.294 (+1,5%), KOSPI 5.731 (−3,5%; maand −17,8%). Brazilië blijft onder druk na de koersval van maandag 26 oktober (herverkiezing van president Lula): de Bovespa staat in een maand 10,3% lager.",
+      "bron": "Bigdata.com (marktgegevens FMP, 30-10 en 31-10-2026), WSJ en Bloomberg 26-10-2026"
     },
     {
       "kop": "Sectoren en stijlen (VS, 1 maand)",
-      "tekst": "Energie +11,7% in een maand, nutsbedrijven +9,4%, consumentenstaples +9,4%, gezondheidszorg +9,3%; communicatie −8,8% en technologie −3,6%. Waardefondsen doen het dit jaar 11,2 procentpunt beter dan de S&P 500, groeifondsen 10,5 punt slechter. Fondsen met lage schommeling lopen de afgelopen maand 5,0 punt voor.",
-      "bron": "Bigdata.com (marktgegevens FMP, slot 29-10-2026)"
+      "tekst": "Energie +11,7% in een maand, consumentenstaples +11,3%, gezondheidszorg +11,2%, nutsbedrijven +9,5%; technologie −9,3% en communicatie −9,1%. Waardefondsen doen het dit jaar ruim 12 procentpunt beter dan de S&P 500 (12,2), groeifondsen 11,4 punt slechter. Fondsen met lage schommeling lopen de afgelopen maand 6,1 punt voor; momentumfondsen blijven 10,4 punt achter.",
+      "bron": "Bigdata.com (marktgegevens FMP, slot 30-10-2026)"
     },
     {
       "kop": "Rente ECB en Euribor",
@@ -25,13 +25,13 @@
     },
     {
       "kop": "Inflatie",
-      "tekst": "Nederland (CBS, september): consumentenprijzen +3,4%, geharmoniseerd (HICP) +3,0%. Eurozone HICP +3,8% (augustus 3,2%). Motorbrandstoffen zijn 27,2% duurder dan een jaar geleden. De snelle raming voor oktober volgt begin november.",
-      "bron": "CBS 13-10-2026"
+      "tekst": "Nederland (CBS, september): consumentenprijzen +3,4%, geharmoniseerd (HICP) +3,0%. Eurozone HICP +3,8% in september (augustus 3,2%). Motorbrandstoffen zijn 27,2% duurder dan een jaar geleden. De snelle raming van Eurostat voor oktober volgt op 4 november; die van het CBS begin november.",
+      "bron": "CBS 13-10-2026, Eurostat 15-10-2026"
     },
     {
       "kop": "Obligaties, olie, goud en valuta",
-      "tekst": "De Amerikaanse tienjaarsrente staat op 4,98% (2 jaar 4,61%, 30 jaar 5,32%). Brent kost 112,32 dollar (dit jaar +84%), WTI 103,32 (+79%). Goud staat op 4.000 dollar en is in een maand 4,5% gedaald (dit jaar −8,8%). De euro is 1,12 dollar waard (dit jaar −4,8%).",
-      "bron": "Bigdata.com (marktgegevens FMP, 29-10 en 30-10-2026)"
+      "tekst": "De Amerikaanse tienjaarsrente staat op 4,94% (2 jaar 4,56%, 30 jaar 5,31%). Brent kost 113,10 dollar (dit jaar +85%), WTI 104,12 (+81%). Goud staat op 3.899 dollar en daalde vrijdag 3,3% (maand −7,2%, dit jaar −11,1%). De euro is 1,12 dollar waard (dit jaar −4,7%).",
+      "bron": "Bigdata.com (marktgegevens FMP, 30-10 en 31-10-2026)"
     },
     {
       "kop": "Sparen",
