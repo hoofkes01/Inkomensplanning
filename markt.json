@@ -1,17 +1,17 @@
 {
   "versie": 1,
-  "bijgewerkt": "2026-11-08",
+  "bijgewerkt": "2026-11-09",
   "marktdatum": "2026-11-06",
   "punten": [
     {
       "kop": "Aandelen Verenigde Staten",
-      "tekst": "Weekend: de beurzen zijn gesloten; dit is de stand van vrijdag 6 november. Wall Street herstelde deels van de zware val van donderdag: S&P 500 7.377 (+0,3%; week −2,7%), Nasdaq 24.579 (+1,1%; week −3,4%, de vierde wekelijkse daling op rij en nog altijd in correctie), Dow 51.286 (−0,5%; week −0,9%). De VIX daalde 9% naar 25,6. Het banenrapport viel mee: 165.000 nieuwe banen in oktober (verwacht circa 60.000) en werkloosheid 4,1% (was 4,2%). Technologie steeg 1,5%.",
-      "bron": "Bigdata.com (marktgegevens FMP, slot 06-11-2026), Reuters 06-11-2026, BLS via Benzinga 06-11-2026"
+      "tekst": "De Amerikaanse stand is nog die van vrijdag 6 november; Wall Street opent later vandaag (Dow-futures maandagochtend ongeveer +150 punten, S&P-futures vlak). Wall Street herstelde deels van de zware val van donderdag: S&P 500 7.377 (+0,3%; week −2,7%), Nasdaq 24.579 (+1,1%; week −3,4%, de vierde wekelijkse daling op rij en nog altijd in correctie), Dow 51.286 (−0,5%; week −0,9%). De VIX daalde 9% naar 25,6. Het banenrapport viel mee: 165.000 nieuwe banen in oktober (verwacht circa 60.000) en werkloosheid 4,1% (was 4,2%). Technologie steeg 1,5%.",
+      "bron": "Bigdata.com (marktgegevens FMP, slot 06-11-2026), Reuters 06-11-2026, BLS via Benzinga 06-11-2026, CNBC-TV18 09-11-2026"
     },
     {
       "kop": "Aandelen Europa, Azië en Brazilië",
-      "tekst": "STOXX Europe 600 sloot vrijdag op 648 (−1,0%; week +0,4%), AEX 1.121 (−0,8%; dit jaar +18%). Azië kreeg zware klappen: Nikkei 57.435 (−6,0%; week −9,0%), KOSPI 5.060 (−6,0%; week −10,4%), Taiwan −4,5%; Hang Seng 24.482 (+2,4%). Brazilië steeg vrijdag 1,4%, maar de Bovespa staat na de koersval van 26 oktober (herverkiezing van president Lula) in een maand nog 19,4% lager.",
-      "bron": "Bigdata.com (marktgegevens FMP, 06-11-2026), Finchannel 06-11-2026, WSJ en Bloomberg 26-10-2026"
+      "tekst": "STOXX Europe 600 sloot vrijdag op 648 (−1,0%), AEX 1.121 (−0,8%; dit jaar +18%). Maandagochtend herstellen de Aziatische beurzen deels van de klappen van vrijdag (Nikkei −6,0%, KOSPI −6,0%): Nikkei 58.846 (+2,5%), Taiwan 41.662 (+4,9%), KOSPI 5.013 (−0,9%), Hang Seng 24.545 (+0,3%). Brazilië steeg vrijdag 1,4%, maar de Bovespa staat na de koersval van 26 oktober (herverkiezing van president Lula) in een maand nog 19,4% lager.",
+      "bron": "Bigdata.com (marktgegevens FMP, 06-11 en 09-11-2026), Finchannel 06-11-2026, WSJ en Bloomberg 26-10-2026"
     },
     {
       "kop": "Sectoren en stijlen (VS, 1 maand)",
@@ -30,8 +30,8 @@
     },
     {
       "kop": "Obligaties, olie, goud en valuta",
-      "tekst": "De Amerikaanse tienjaarsrente staat op 4,86% (2 jaar 4,51%, 30 jaar 5,26%). Brent kost 98,32 dollar (maand −6,1%; dit jaar +61%), WTI 90,83 (+58%). Goud staat op 4.080 dollar (week +3,5%, dit jaar −7,0%). De euro is 1,11 dollar waard (dit jaar −5,2%).",
-      "bron": "Bigdata.com (marktgegevens FMP, 06-11 en 08-11-2026)"
+      "tekst": "De Amerikaanse tienjaarsrente stond vrijdag op 4,86% (2 jaar 4,51%, 30 jaar 5,26%). Maandagochtend kost Brent 96,72 dollar (maand −7,6%; dit jaar +58%) en WTI 89,80 (+56%). Goud staat op 4.127 dollar (+1,3%; dit jaar −5,9%). De euro is 1,12 dollar waard (dit jaar −5,0%).",
+      "bron": "Bigdata.com (marktgegevens FMP, 06-11 en 09-11-2026)"
     },
     {
       "kop": "Sparen",
@@ -40,8 +40,8 @@
     }
   ],
   "etfs": {
-    "datum": "2026-11-08",
-    "uitleg": "Mijn verwachting voor de komende 12 maanden, vergeleken met de brede wereldindex (MSCI World): fondsen die waarschijnlijk beter presteren, of minder slecht als de markt verder daalt. Uitgangspunt is de situatie van nu: verkoop in chips en AI, hogere rente (verhoging ECB verwacht in december, Fed-verhoging gevreesd), inflatie van 3 tot 4% en een hoge olieprijs. Herbeoordeeld op 2 november na de uitverkoop in chips en AI van 30 oktober: de lijst blijft ongewijzigd. Gezondheidszorg is de afgelopen maand al 8% gestegen, dus nu instappen is deels achter de koers aanlopen. De olieprijs staat een maand later 6% lager op hoop dat de Iran-oorlog eindigt: het energiefonds heeft daardoor een zwakkere onderbouwing en staat alleen nog met lage overtuiging in de lijst. Op 8 november zit de Nasdaq nog in een correctie (vierde wekelijkse daling op rij, donderdag 5 november −5,5%) en staat technologie 17% lager in een maand; de fondsen met lage schommeling en hoge kwaliteit sluiten daar het best bij aan, ook al daalt in zo'n markt vrijwel alles mee. De lijst blijft ongewijzigd. Volgende herbeoordeling: maandag 9 november. Het zijn verwachtingen, geen zekerheden. Er is geen overlap met je huidige bezit (wereld, Europa, opkomende landen, small cap, value en chips).",
+    "datum": "2026-11-09",
+    "uitleg": "Mijn verwachting voor de komende 12 maanden, vergeleken met de brede wereldindex (MSCI World): fondsen die waarschijnlijk beter presteren, of minder slecht als de markt verder daalt. Uitgangspunt is de situatie van nu: verkoop in chips en AI, hogere rente (verhoging ECB verwacht in december, Fed-verhoging gevreesd), inflatie van 3 tot 4% en een hoge olieprijs. Herbeoordeeld op 2 november na de uitverkoop in chips en AI van 30 oktober: de lijst blijft ongewijzigd. Gezondheidszorg is de afgelopen maand al 8% gestegen, dus nu instappen is deels achter de koers aanlopen. De olieprijs staat een maand later 6% lager op hoop dat de Iran-oorlog eindigt: het energiefonds heeft daardoor een zwakkere onderbouwing en staat alleen nog met lage overtuiging in de lijst. Op 9 november zit de Nasdaq nog in een correctie (vierde wekelijkse daling op rij, donderdag 5 november −5,5%) en staat technologie 17% lager in een maand; de fondsen met lage schommeling en hoge kwaliteit sluiten daar het best bij aan, ook al daalt in zo'n markt vrijwel alles mee. De lijst blijft ongewijzigd. Wekelijks herbeoordeeld op 9 november: de lijst blijft ongewijzigd. Consumentenstaples (+8% in een maand) en nutsbedrijven passen bij het huidige beeld, maar zijn al gestegen; ze komen pas in de lijst na controle van ISIN, kosten en omvang. Volgende herbeoordeling: maandag 16 november. Het zijn verwachtingen, geen zekerheden. Er is geen overlap met je huidige bezit (wereld, Europa, opkomende landen, small cap, value en chips).",
     "lijst": [
       {
         "naam": "Xtrackers S&P 500 Equal Weight UCITS ETF 1C",
@@ -111,8 +111,8 @@
         "verwachting": "beter",
         "overtuiging": "laag",
         "thema": "VS energiesector",
-        "reden": "Brent staat op 98,32 dollar (dit jaar +61%, maar in een maand 6% lager) en brandstof is in Nederland 27,2% duurder dan een jaar geleden. Energie beschermt tegen verdere inflatie; de sector staat de afgelopen maand 5,3% lager.",
-        "risico": "De stijging (dit jaar +38%) zit grotendeels al in de koers en de olieprijs zakt nu snel op hoop dat de Iran-oorlog eindigt (Brent −6% in een maand); kleiner fonds.",
+        "reden": "Brent staat op 98,32 dollar (dit jaar +58%, maar in een maand 8% lager) en brandstof is in Nederland 27,2% duurder dan een jaar geleden. Energie beschermt tegen verdere inflatie; de sector staat de afgelopen maand 5,3% lager.",
+        "risico": "De stijging (dit jaar +38%) zit grotendeels al in de koers en de olieprijs zakt nu snel op hoop dat de Iran-oorlog eindigt (Brent −8% in een maand); kleiner fonds.",
         "bron": "Bigdata.com (marktgegevens FMP, slot 06-11-2026), CBS 13-10-2026"
       }
     ]
