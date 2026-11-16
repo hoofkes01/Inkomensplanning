@@ -1,17 +1,17 @@
 {
   "versie": 1,
-  "bijgewerkt": "2026-11-15",
+  "bijgewerkt": "2026-11-16",
   "marktdatum": "2026-11-13",
   "punten": [
     {
       "kop": "Aandelen Verenigde Staten",
-      "tekst": "De beurzen zijn in het weekend gesloten; dit zijn de standen van vrijdag 13 november. Wall Street sloot lager: S&P 500 7.562 (−0,4%; in een maand −1,3%), Nasdaq 25.136 (−0,9%; in een maand −3,8%), Dow 52.348 (+0,1%), Russell 2000 −0,3%. De volatiliteitsindex VIX steeg 3% naar 19,3. Chipbedrijven stonden onder druk na het vertrek van Nvidia-topman Jensen Huang: AMD daalde ruim 10%. Energiebedrijven stegen en consumentenstaples steeg 1,4%. Komende week: dinsdag 17 november cijfers van Nvidia en de Amerikaanse detailhandelsverkopen, woensdag de notulen van de Fed, en rond donderdag wordt de beursgang van Anthropic verwacht.",
-      "bron": "Bigdata.com (marktgegevens FMP, slot 13-11-2026), Reuters 13-11-2026 (vooruitblik)"
+      "tekst": "Wall Street is pas maandagmiddag open; dit zijn de standen van vrijdag 13 november. Wall Street sloot lager: S&P 500 7.562 (−0,4%; in een maand −1,3%), Nasdaq 25.136 (−0,9%; in een maand −3,8%), Dow 52.348 (+0,1%), Russell 2000 −0,3%. De volatiliteitsindex VIX steeg 3% naar 19,3. Chipbedrijven stonden onder druk na het vertrek van Nvidia-topman Jensen Huang: AMD daalde ruim 10%. Energiebedrijven stegen en consumentenstaples steeg 1,4%. Maandagochtend wezen de Amerikaanse futures iets lager (S&P 500 −0,2%, Nasdaq-100 −0,5%). Deze week: maandag een toespraak van Fed-voorzitter Warsh, dinsdag cijfers van Nvidia en de Amerikaanse detailhandelsverkopen, woensdag de notulen van de Fed, donderdag de top van Xi, Trump en Poetin in Shenzhen, en rond donderdag wordt de beursgang van Anthropic verwacht.",
+      "bron": "Bigdata.com (marktgegevens FMP, slot 13-11-2026), Reuters 13-11-2026, investingLive 16-11-2026"
     },
     {
       "kop": "Aandelen Europa, Azië en Brazilië",
-      "tekst": "STOXX Europe 600 sloot vrijdag op 664 (±0,0%; week +0,9%), AEX 1.141 (+0,1%; dit jaar +20%). In Azië sloten de beurzen vrijdag gemengd: Nikkei 61.142 (+0,5%; week +1,1%), Taiwan 43.675 (−1,3%), KOSPI 5.291 (−1,0%), Hang Seng 23.638 (−2,8%). De Bovespa in Brazilië steeg vrijdag 0,7% maar staat na de koersval van 26 oktober (herverkiezing van president Lula) in een maand nog 16,1% lager.",
-      "bron": "Bigdata.com (marktgegevens FMP, slot 13-11-2026), WSJ en Bloomberg 26-10-2026"
+      "tekst": "Europa sloot vrijdag vrijwel onveranderd: STOXX Europe 600 664 (±0,0%; week +0,2%), AEX 1.141 (+0,1%; dit jaar +20%). Maandagochtend daalden de Aziatische beurzen, geleid door chipbedrijven (SK Hynix −6%) en zwakke cijfers: Nikkei −2,3% op 59.735, KOSPI −3,9%, Taiwan −6,0%, terwijl de Hang Seng 0,6% steeg. De Japanse economie kromp in het derde kwartaal met 0,1% op jaarbasis en de Chinese detailhandel groeide in oktober slechts 0,4%. De Bovespa in Brazilië staat na de koersval van 26 oktober (herverkiezing van president Lula) in een maand nog 16,1% lager.",
+      "bron": "Bigdata.com (marktgegevens FMP, 13-11 en 16-11-2026), investingLive 16-11-2026, WSJ en Bloomberg 26-10-2026"
     },
     {
       "kop": "Sectoren en stijlen (VS, 1 maand)",
@@ -20,8 +20,8 @@
     },
     {
       "kop": "Rente ECB en Euribor",
-      "tekst": "De ECB liet de depositorente op 29 oktober ongewijzigd op 2,50% (laatste verhoging in september); de Raad zegt goed gepositioneerd te zijn om af te wachten ondanks hogere energieprijzen en langetermijnrentes. De Fed liet de rente op 28 oktober ongewijzigd op 3,75 tot 4,00% (10 tegen 2; twee leden wilden verhogen). Na het sterke banenrapport van 6 november ziet de markt ongeveer 80% kans op een Fed-verhoging in december; de Amerikaanse inflatiecijfers van 10 november (oktober: +0,4% op maandbasis, kerninflatie +0,3%) versterkten die verwachting. De Euribor 12 maanden stond op 23 oktober op 3,267% (laatste gecontroleerde stand). De Amerikaanse tienjaarsrente stond op 13 november op 5,15%.",
-      "bron": "CNBC 29-10-2026 (ECB-besluit), federalreserve.gov 28-10-2026, Suomen Pankki/EMMI Euribor 23-10-2026, Benzinga 06-11-2026, BLS 10-11-2026, Bigdata.com 13-11-2026"
+      "tekst": "De ECB liet de depositorente op 29 oktober ongewijzigd op 2,50% (laatste verhoging in september); de Raad zegt goed gepositioneerd te zijn om af te wachten ondanks hogere energieprijzen en langetermijnrentes. De Fed liet de rente op 28 oktober ongewijzigd op 3,75 tot 4,00% (10 tegen 2; twee leden wilden verhogen). Na het sterke banenrapport van 6 november ziet de markt ongeveer 80% kans op een Fed-verhoging in december; de Amerikaanse inflatiecijfers van 10 november (oktober: +0,4% op maandbasis, kerninflatie +0,3%) versterkten die verwachting. De Euribor 12 maanden stond op 23 oktober op 3,267% (laatste gecontroleerde stand). De Amerikaanse tienjaarsrente stond op 13 november op 5,15%. Meerdere Fed-leden (Schmid, Collins, Jefferson) leggen de nadruk op inflatie, waardoor een verhoging in december stevig ingeprijsd blijft; ECB-bestuurder Nagel noemt een nieuwe verhoging 'zeer waarschijnlijk'.",
+      "bron": "CNBC 29-10-2026 (ECB-besluit), federalreserve.gov 28-10-2026, Suomen Pankki/EMMI Euribor 23-10-2026, Benzinga 06-11-2026, BLS 10-11-2026, Bigdata.com 13-11-2026, investingLive 15 en 16-11-2026"
     },
     {
       "kop": "Inflatie",
@@ -30,8 +30,8 @@
     },
     {
       "kop": "Obligaties, olie, goud en valuta",
-      "tekst": "De Amerikaanse tienjaarsrente stond vrijdag op 5,15% (2 jaar 4,88%, 30 jaar 5,47%). Brent kost 95,84 dollar (maand −12,8%; dit jaar +57%), WTI 88,56 (+54%). Goud staat op 3.886 dollar (week −3,6%, dit jaar −11,4%). De euro is 1,10 dollar waard (dit jaar −6,2%).",
-      "bron": "Bigdata.com (marktgegevens FMP, 13-11-2026)"
+      "tekst": "De Amerikaanse tienjaarsrente stond vrijdag op 5,15% (2 jaar 4,88%, 30 jaar 5,47%). Brent kost 95,84 dollar (maand −12,8%; dit jaar +57%), WTI 88,56 (+54%). Goud staat op 3.886 dollar (week −3,6%, dit jaar −11,4%). De euro is 1,10 dollar waard (dit jaar −6,2%). Maandagochtend zakte goud verder onder 3.880 dollar en verloor zilver ruim 3%.",
+      "bron": "Bigdata.com (marktgegevens FMP, 13-11 en 16-11-2026), investingLive 16-11-2026"
     },
     {
       "kop": "Sparen",
@@ -40,8 +40,8 @@
     }
   ],
   "etfs": {
-    "datum": "2026-11-09",
-    "uitleg": "Mijn verwachting voor de komende 12 maanden, vergeleken met de brede wereldindex (MSCI World): fondsen die waarschijnlijk beter presteren, of minder slecht als de markt verder daalt. Uitgangspunt is de situatie van nu: verkoop in chips en AI, hogere rente (verhoging ECB verwacht in december, Fed-verhoging gevreesd), inflatie van 3 tot 4% en een hoge olieprijs. Herbeoordeeld op 2 november na de uitverkoop in chips en AI van 30 oktober: de lijst blijft ongewijzigd. Gezondheidszorg is de afgelopen maand al 7% gestegen, dus nu instappen is deels achter de koers aanlopen. De olieprijs staat een maand later ruim 12% lager op hoop dat de Iran-oorlog eindigt: het energiefonds heeft daardoor een zwakkere onderbouwing en staat alleen nog met lage overtuiging in de lijst. Op 13 november staat de Nasdaq (vrijdag −0,9%) 4% lager dan een maand geleden en technologie 7% lager; de fondsen met lage schommeling en hoge kwaliteit sluiten daar het best bij aan, ook al daalt in zo'n markt vrijwel alles mee. De lijst blijft ongewijzigd. Wekelijks herbeoordeeld op 9 november: de lijst blijft ongewijzigd. Consumentenstaples (+5,4% in een maand) en nutsbedrijven passen bij het huidige beeld, maar zijn al gestegen; ze komen pas in de lijst na controle van ISIN, kosten en omvang. Volgende herbeoordeling: maandag 16 november. Het zijn verwachtingen, geen zekerheden. Er is geen overlap met je huidige bezit (wereld, Europa, opkomende landen, small cap, value en chips).",
+    "datum": "2026-11-16",
+    "uitleg": "Mijn verwachting voor de komende 12 maanden, vergeleken met de brede wereldindex (MSCI World): fondsen die waarschijnlijk beter presteren, of minder slecht als de markt verder daalt. Uitgangspunt is de situatie van nu: verkoop in chips en AI, hogere rente (verhoging ECB verwacht in december, Fed-verhoging gevreesd), inflatie van 3 tot 4% en een hoge olieprijs. Herbeoordeeld op 2 november na de uitverkoop in chips en AI van 30 oktober: de lijst blijft ongewijzigd. Gezondheidszorg is de afgelopen maand al 7% gestegen, dus nu instappen is deels achter de koers aanlopen. De olieprijs staat een maand later ruim 12% lager op hoop dat de Iran-oorlog eindigt: het energiefonds heeft daardoor een zwakkere onderbouwing en staat alleen nog met lage overtuiging in de lijst. Op 13 november staat de Nasdaq (vrijdag −0,9%) 4% lager dan een maand geleden en technologie 7% lager; de fondsen met lage schommeling en hoge kwaliteit sluiten daar het best bij aan, ook al daalt in zo'n markt vrijwel alles mee. De lijst blijft ongewijzigd. Wekelijks herbeoordeeld op 16 november, na de nieuwe verkoop in chips in Azië en de hawkish Fed: de lijst blijft ongewijzigd. Consumentenstaples (+5,4% in een maand) en nutsbedrijven passen bij het huidige beeld, maar zijn al gestegen; ze komen pas in de lijst na controle van ISIN, kosten en omvang. Volgende herbeoordeling: maandag 23 november. Het zijn verwachtingen, geen zekerheden. Er is geen overlap met je huidige bezit (wereld, Europa, opkomende landen, small cap, value en chips).",
     "lijst": [
       {
         "naam": "Xtrackers S&P 500 Equal Weight UCITS ETF 1C",
