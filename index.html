@@ -6508,6 +6508,15 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     c.push({ ok: Math.abs(som - n(nu.vrijBesteedbaar)) < 1, fout: "De delen tellen niet op tot het totaal (" + vmEuro(som) + " tegen " + vmEuro(nu.vrijBesteedbaar) + ")." });
     const somLijst = lijst.filter(d => d.gestart).reduce((s, d) => s + d.bedrag + d.opgebouwd, 0);
     c.push({ ok: Math.abs(somLijst - n(nu.depositos)) < 1, fout: "De lijst met deposito's inclusief opgebouwde rente (" + vmEuro(somLijst) + ") wijkt af van het totaal bij deposito's (" + vmEuro(nu.depositos) + ")." });
+    // Rente komt maar één keer binnen: wat net voor de einddatum is opgebouwd (en nu al in je vermogen zit)
+    // moet gelijk zijn aan de rente die op de einddatum naar Vrij sparen gaat. Zo niet, dan zou rente dubbel tellen of ontbreken.
+    const renteAfwijkend = lijst.filter(d => d.gestart && d.verval && d.verval > APP_VANDAAG && !vmRenteJaarlijks(d.item) && !d.item.renteAlVerwerkt).filter(d => {
+      const voor = new Date(d.verval.getTime() - 86400000);
+      const uit = vmDepositoBetalingen(d.item, d.verval).filter(b => /^Rente/.test(b.omschrijving) && b.datum <= d.verval).reduce((x, b) => x + b.bedrag, 0);
+      const opg = vmDepositoOpgebouwd(d.item, voor);
+      return Math.abs(opg - uit) > Math.max(5, uit * 0.02);
+    });
+    c.push({ ok: renteAfwijkend.length === 0, fout: "Bij " + renteAfwijkend.length + " deposito(s) komt de opgebouwde rente niet overeen met de rente die op de einddatum wordt uitgekeerd (" + renteAfwijkend.map(d => d.bank).join(", ") + "). Controleer startdatum, rente en einddatum." });
     c.push({ ok: Math.abs(n(nu.sparen) - n(spaarStartsaldo)) < 1, fout: "Vrij sparen (" + vmEuro(nu.sparen) + ") wijkt af van het ingevoerde saldo (" + vmEuro(spaarStartsaldo) + "). Er is een grote post van vandaag of eerder die nog meetelt." });
     const verleden = (mutaties || []).filter(m => { const d = geldigeDatum(m.datum); return d && d <= PEILDATUM && !(m && m.type === "override"); }).length;
     c.push({ ok: verleden === 0, fout: verleden + " grote post(en) hebben een datum in het verleden en zijn nog niet gecontroleerd (tabblad Grote posten)." });
@@ -7734,7 +7743,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     className: "font-mono text-xs uppercase tracking-widest bg-slate-700/60 border border-slate-500 rounded-full px-3 py-1"
   }, "peildatum ", fmtDate(PEILDATUM)), /*#__PURE__*/React.createElement("span", {
     className: "w-full text-xs text-slate-400 no-print"
-  }, "App-versie ", "19-11-2026 · 05:49")), /*#__PURE__*/React.createElement("p", {
+  }, "App-versie ", "19-11-2026 · 05:50")), /*#__PURE__*/React.createElement("p", {
     className: "mt-2 text-slate-300 text-sm max-w-2xl"
   }, "Bedragen zijn nominaal per peildatum, tenzij een indexatiepercentage is ingevuld. Alle basisbedragen zijn zelf aanpasbaar bij \"Basisgegevens\"." + (actieveTab === "fiscaliteit" ? " Alle aannames staan onderaan bij \"Aannames & beperkingen\". Bij het openen checkt dit bestand automatisch vier fiscale kerncijfers (zie bovenaan) — bij een afwijking wordt er niets automatisch aangepast, dat blijft een bewuste stap." : "")), /*#__PURE__*/React.createElement("div", {
     className: "mt-4 flex flex-wrap gap-2 items-center no-print"
