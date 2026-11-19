@@ -5992,14 +5992,10 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
       const rendementPct = rendementen[i.id] || 0;
       if (!rendementPct) return;
       const eindwaarde = i.renteAlVerwerkt ? Number(i.bedrag) || 0 : berekenDepositoMetRente(i, rendementPct).waarde;
-      // Wat al is opgebouwd, zit vanaf het begin van het tijdvak al in het vermogen.
-      const renteBedrag = eindwaarde - (Number(i.bedrag) || 0) - (i.renteAlVerwerkt ? 0 : vmDepositoOpgebouwd(i, begin));
+      // De rente staat als inkomst op de dag van uitkering (vervaldatum), ook als een deel al is opgebouwd
+      // en in het vermogen meetelt: de uitkering zelf komt pas op die dag binnen.
+      const renteBedrag = eindwaarde - (Number(i.bedrag) || 0);
       voeg(verval, renteBedrag, `Rente ${i.label || 'deposito'} (bij vervaldatum)`, 'rente');
-    });
-    // Deposito's die na dit tijdvak vervallen: de rente die in het tijdvak bijkomt telt wel al mee in het vermogen.
-    VERMOGENS_ITEMS.filter(i => i.deposito && geldigeDatum(i.vervaldatum) && geldigeDatum(i.vervaldatum) > eind && vmDepositoGestart(i, begin)).forEach(i => {
-      const bij = vmDepositoOpgebouwd(i, eind) - vmDepositoOpgebouwd(i, begin);
-      if (Math.abs(bij) > 0.5) voeg(eind, bij, `Opgebouwde rente ${i.label || 'deposito'}`, 'rente');
     });
 
     // 7. Waardemutatie vrij beleggen. Alleen het echte resultaat; interne stortingen
@@ -7738,7 +7734,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     className: "font-mono text-xs uppercase tracking-widest bg-slate-700/60 border border-slate-500 rounded-full px-3 py-1"
   }, "peildatum ", fmtDate(PEILDATUM)), /*#__PURE__*/React.createElement("span", {
     className: "w-full text-xs text-slate-400 no-print"
-  }, "App-versie ", "19-11-2026 · 05:47")), /*#__PURE__*/React.createElement("p", {
+  }, "App-versie ", "19-11-2026 · 05:49")), /*#__PURE__*/React.createElement("p", {
     className: "mt-2 text-slate-300 text-sm max-w-2xl"
   }, "Bedragen zijn nominaal per peildatum, tenzij een indexatiepercentage is ingevuld. Alle basisbedragen zijn zelf aanpasbaar bij \"Basisgegevens\"." + (actieveTab === "fiscaliteit" ? " Alle aannames staan onderaan bij \"Aannames & beperkingen\". Bij het openen checkt dit bestand automatisch vier fiscale kerncijfers (zie bovenaan) — bij een afwijking wordt er niets automatisch aangepast, dat blijft een bewuste stap." : "")), /*#__PURE__*/React.createElement("div", {
     className: "mt-4 flex flex-wrap gap-2 items-center no-print"
