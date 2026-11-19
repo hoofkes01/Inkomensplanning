@@ -6951,7 +6951,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
       vmH("div", { className: vmRij }, vmH("span", null, "Opgebouwde rente tot nu (telt mee in je vermogen)"), vmH("b", null, vmEuro(somOpgebouwd))),
       vmH("div", { className: vmRij }, vmH("span", null, "Nog te verdienen tot het einde van de looptijd"), vmH("b", null, vmEuro(Math.max(0, somTotaal - somOpgebouwd)))),
       vmH("div", { className: vmRij }, vmH("span", null, "Nog uit te keren rente in totaal (opgebouwd + nog te verdienen)"), vmH("b", null, vmEuro(somTotaal))),
-      vmH("p", { className: "text-xs text-slate-500 my-1" }, "Gesorteerd op einddatum. Het deposito blijft zijn hoofdsom waard. De rente gaat standaard pas bij het einde van de looptijd naar Vrij sparen (rente op rente per jaardag), samen met de hoofdsom, De rente is de rente van dat deposito zelf, berekend over zijn eigen looptijd. Wordt de rente van een deposito jaarlijks uitgekeerd, dan gaat zij elke jaardag naar Vrij sparen. De opgebouwde rente zit nog niet in het vrij vermogen. Tik op een deposito voor de uitkeringen en om het aan te passen."),
+      vmH("p", { className: "text-xs text-slate-500 my-1" }, "Gesorteerd op einddatum. Het deposito blijft zijn hoofdsom waard. De rente gaat standaard pas bij het einde van de looptijd naar Vrij sparen (rente op rente per jaardag), samen met de hoofdsom, De rente is de rente van dat deposito zelf, berekend over zijn eigen looptijd. Wordt de rente van een deposito jaarlijks uitgekeerd, dan gaat zij elke jaardag naar Vrij sparen. De opgebouwde rente telt wel mee in het totaal Deposito's bij het vrij vermogen, maar niet in de hoofdsom hieronder en niet als inkomen: die komt pas op de einddatum binnen. Tik op een deposito voor de uitkeringen en om het aan te passen."),
       lijst.map(d => {
         const open = vmOpenDep === d.item.id;
         const bijna = d.dagen != null && d.dagen <= 90;
@@ -7743,7 +7743,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     className: "font-mono text-xs uppercase tracking-widest bg-slate-700/60 border border-slate-500 rounded-full px-3 py-1"
   }, "peildatum ", fmtDate(PEILDATUM)), /*#__PURE__*/React.createElement("span", {
     className: "w-full text-xs text-slate-400 no-print"
-  }, "App-versie ", "19-11-2026 · 05:50")), /*#__PURE__*/React.createElement("p", {
+  }, "App-versie ", "19-11-2026 · 05:52")), /*#__PURE__*/React.createElement("p", {
     className: "mt-2 text-slate-300 text-sm max-w-2xl"
   }, "Bedragen zijn nominaal per peildatum, tenzij een indexatiepercentage is ingevuld. Alle basisbedragen zijn zelf aanpasbaar bij \"Basisgegevens\"." + (actieveTab === "fiscaliteit" ? " Alle aannames staan onderaan bij \"Aannames & beperkingen\". Bij het openen checkt dit bestand automatisch vier fiscale kerncijfers (zie bovenaan) — bij een afwijking wordt er niets automatisch aangepast, dat blijft een bewuste stap." : "")), /*#__PURE__*/React.createElement("div", {
     className: "mt-4 flex flex-wrap gap-2 items-center no-print"
