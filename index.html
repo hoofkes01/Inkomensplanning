@@ -5835,9 +5835,10 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     const degiroVrij = basis.degiroVrij * Math.pow(1 + rBel, jarenTot) + geplandBeleggen + depositosNaarBeleggen;
     // Alleen deposito's die op de doeldatum nog lópen; vrijgevallen deposito's zitten al in
     // het rekening-courantsaldo en zouden anders dubbel tellen.
-    const depositosLopend = VERMOGENS_ITEMS.filter(i => i.deposito && vmDepositoGestart(i, doelDatum) && (!i.vervaldatum || new Date(i.vervaldatum) > doelDatum)).reduce((s, i) => s + depositoWaardeOpDatum(i, rendementen[i.id] || 0, doelDatum), 0);
+    // Hoofdsom plus de rente die tot de doeldatum is opgebouwd maar nog niet is uitgekeerd.
+    const depositosLopend = VERMOGENS_ITEMS.filter(i => i.deposito && vmDepositoGestart(i, doelDatum) && (!i.vervaldatum || new Date(i.vervaldatum) > doelDatum)).reduce((s, i) => s + depositoWaardeOpDatum(i, rendementen[i.id] || 0, doelDatum) + vmDepositoOpgebouwd(i, doelDatum), 0);
     // Verlengde deposito's blijven hun hoofdsom waard; de rente gaat steeds naar Vrij sparen.
-    const depositosVerlengd = VERMOGENS_ITEMS.filter(i => i.deposito && geldigeDatum(i.vervaldatum) && geldigeDatum(i.vervaldatum) <= doelDatum && vrijvalKeuze(i) === "verleng").reduce((s, i) => s + (Number(i.bedrag) || 0), 0);
+    const depositosVerlengd = VERMOGENS_ITEMS.filter(i => i.deposito && geldigeDatum(i.vervaldatum) && geldigeDatum(i.vervaldatum) <= doelDatum && vrijvalKeuze(i) === "verleng").reduce((s, i) => s + (Number(i.bedrag) || 0) + vmDepositoOpgebouwd(i, doelDatum), 0);
     const depositos = depositosLopend + depositosVerlengd;
     // Overige eigen vermogensbestanddelen (geen deposito, geen sparen/degiro/leningen)
     const overigeItems = VERMOGENS_ITEMS.filter(i => !i.deposito && i.custom).reduce((s, i) => {
@@ -5991,8 +5992,14 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
       const rendementPct = rendementen[i.id] || 0;
       if (!rendementPct) return;
       const eindwaarde = i.renteAlVerwerkt ? Number(i.bedrag) || 0 : berekenDepositoMetRente(i, rendementPct).waarde;
-      const renteBedrag = eindwaarde - (Number(i.bedrag) || 0);
+      // Wat al is opgebouwd, zit vanaf het begin van het tijdvak al in het vermogen.
+      const renteBedrag = eindwaarde - (Number(i.bedrag) || 0) - (i.renteAlVerwerkt ? 0 : vmDepositoOpgebouwd(i, begin));
       voeg(verval, renteBedrag, `Rente ${i.label || 'deposito'} (bij vervaldatum)`, 'rente');
+    });
+    // Deposito's die na dit tijdvak vervallen: de rente die in het tijdvak bijkomt telt wel al mee in het vermogen.
+    VERMOGENS_ITEMS.filter(i => i.deposito && geldigeDatum(i.vervaldatum) && geldigeDatum(i.vervaldatum) > eind && vmDepositoGestart(i, begin)).forEach(i => {
+      const bij = vmDepositoOpgebouwd(i, eind) - vmDepositoOpgebouwd(i, begin);
+      if (Math.abs(bij) > 0.5) voeg(eind, bij, `Opgebouwde rente ${i.label || 'deposito'}`, 'rente');
     });
 
     // 7. Waardemutatie vrij beleggen. Alleen het echte resultaat; interne stortingen
@@ -6503,8 +6510,8 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     const n = x => Number(x) || 0;
     const som = n(nu.sparen) + n(nu.depositos) + n(nu.degiroVrij) + n(nu.geoormerkt) + n(nu.overigeItems) + n(nu.overbrugging);
     c.push({ ok: Math.abs(som - n(nu.vrijBesteedbaar)) < 1, fout: "De delen tellen niet op tot het totaal (" + vmEuro(som) + " tegen " + vmEuro(nu.vrijBesteedbaar) + ")." });
-    const somLijst = lijst.filter(d => d.gestart).reduce((s, d) => s + d.bedrag, 0);
-    c.push({ ok: Math.abs(somLijst - n(nu.depositos)) < 1, fout: "De lijst met deposito's (" + vmEuro(somLijst) + ") wijkt af van het totaal bij deposito's (" + vmEuro(nu.depositos) + ")." });
+    const somLijst = lijst.filter(d => d.gestart).reduce((s, d) => s + d.bedrag + d.opgebouwd, 0);
+    c.push({ ok: Math.abs(somLijst - n(nu.depositos)) < 1, fout: "De lijst met deposito's inclusief opgebouwde rente (" + vmEuro(somLijst) + ") wijkt af van het totaal bij deposito's (" + vmEuro(nu.depositos) + ")." });
     c.push({ ok: Math.abs(n(nu.sparen) - n(spaarStartsaldo)) < 1, fout: "Vrij sparen (" + vmEuro(nu.sparen) + ") wijkt af van het ingevoerde saldo (" + vmEuro(spaarStartsaldo) + "). Er is een grote post van vandaag of eerder die nog meetelt." });
     const verleden = (mutaties || []).filter(m => { const d = geldigeDatum(m.datum); return d && d <= PEILDATUM && !(m && m.type === "override"); }).length;
     c.push({ ok: verleden === 0, fout: verleden + " grote post(en) hebben een datum in het verleden en zijn nog niet gecontroleerd (tabblad Grote posten)." });
@@ -6893,6 +6900,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
             vmH("td", { className: "py-1.5 font-sans text-left" }, "Totaal"),
             vmH("td", { className: "py-1.5 text-right" }, vmGetal(totNu)),
             vmH("td", { className: "py-1.5 text-right" }, vmH("button", { type: "button", onClick: () => setVmDetail("Totaal"), style: { textDecoration: "underline dotted", font: "inherit", fontWeight: 600 } }, vmGetal(totLater)))))),
+      vmH("p", { className: "text-xs text-slate-600 mt-2" }, "Deposito's bevatten ook de opgebouwde rente: ", vmH("b", null, vmEuro(somOpgebouwd)), ". Nog uit te keren rente in totaal: ", vmH("b", null, vmEuro(somTotaal)), "."),
       vmH("p", { className: "text-xs text-slate-500 mt-2" }, "Tik op een bedrag onder 'Over " + horizon + " mnd' voor de belangrijkste mutaties ten opzichte van nu."),
       vmDetail ? vmDetailPaneel(vmDetail, horizon) : null,
       vmH("div", { className: "flex gap-2 flex-wrap mt-3" }, [3, 6, 12, 24].map(m => vmH("button", {
@@ -6935,8 +6943,9 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     const deposito = vmH("div", { className: vmKaart + " vm-breekbaar" },
       vmH("div", { className: "text-xs uppercase tracking-wide text-slate-500 mb-1" }, "2. Deposito's"),
       vmH("div", { className: vmRij }, vmH("span", null, "Totaal hoofdsom"), vmH("b", null, vmEuro(somBedrag))),
-      vmH("div", { className: vmRij }, vmH("span", null, "Opgebouwde rente, nog niet uitgekeerd"), vmH("b", null, vmEuro(somOpgebouwd))),
-      vmH("div", { className: vmRij }, vmH("span", null, "Nog uit te keren rente (huidige looptijd)"), vmH("b", null, vmEuro(somTotaal))),
+      vmH("div", { className: vmRij }, vmH("span", null, "Opgebouwde rente tot nu (telt mee in je vermogen)"), vmH("b", null, vmEuro(somOpgebouwd))),
+      vmH("div", { className: vmRij }, vmH("span", null, "Nog te verdienen tot het einde van de looptijd"), vmH("b", null, vmEuro(Math.max(0, somTotaal - somOpgebouwd)))),
+      vmH("div", { className: vmRij }, vmH("span", null, "Nog uit te keren rente in totaal (opgebouwd + nog te verdienen)"), vmH("b", null, vmEuro(somTotaal))),
       vmH("p", { className: "text-xs text-slate-500 my-1" }, "Gesorteerd op einddatum. Het deposito blijft zijn hoofdsom waard. De rente gaat standaard pas bij het einde van de looptijd naar Vrij sparen (rente op rente per jaardag), samen met de hoofdsom, De rente is de rente van dat deposito zelf, berekend over zijn eigen looptijd. Wordt de rente van een deposito jaarlijks uitgekeerd, dan gaat zij elke jaardag naar Vrij sparen. De opgebouwde rente zit nog niet in het vrij vermogen. Tik op een deposito voor de uitkeringen en om het aan te passen."),
       lijst.map(d => {
         const open = vmOpenDep === d.item.id;
@@ -7729,7 +7738,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     className: "font-mono text-xs uppercase tracking-widest bg-slate-700/60 border border-slate-500 rounded-full px-3 py-1"
   }, "peildatum ", fmtDate(PEILDATUM)), /*#__PURE__*/React.createElement("span", {
     className: "w-full text-xs text-slate-400 no-print"
-  }, "App-versie ", "19-11-2026 · 05:41")), /*#__PURE__*/React.createElement("p", {
+  }, "App-versie ", "19-11-2026 · 05:47")), /*#__PURE__*/React.createElement("p", {
     className: "mt-2 text-slate-300 text-sm max-w-2xl"
   }, "Bedragen zijn nominaal per peildatum, tenzij een indexatiepercentage is ingevuld. Alle basisbedragen zijn zelf aanpasbaar bij \"Basisgegevens\"." + (actieveTab === "fiscaliteit" ? " Alle aannames staan onderaan bij \"Aannames & beperkingen\". Bij het openen checkt dit bestand automatisch vier fiscale kerncijfers (zie bovenaan) — bij een afwijking wordt er niets automatisch aangepast, dat blijft een bewuste stap." : "")), /*#__PURE__*/React.createElement("div", {
     className: "mt-4 flex flex-wrap gap-2 items-center no-print"
