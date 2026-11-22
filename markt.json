@@ -1,12 +1,12 @@
 {
   "versie": 1,
-  "bijgewerkt": "2026-11-21",
+  "bijgewerkt": "2026-11-22",
   "marktdatum": "2026-11-20",
   "punten": [
     {
       "kop": "Aandelen Verenigde Staten",
-      "tekst": "De beurzen zijn in het weekend gesloten; dit zijn de standen van vrijdag 20 november, na een zeer zware beursdag. S&P 500 6.910 (−3,7%), Nasdaq 22.618 (−5,3%; per saldo nu onder het begin van het jaar), Dow 48.147 (−1,9%, bijna 950 punten), Russell 2000 −2,8%. De S&P 500 en de Dow sloten in een correctie (meer dan 10% onder het record) en de S&P 500 had zijn zevende verliesdag op rij, de langste reeks sinds begin 2020. Over de week verloren de S&P 500 8,6%, de Dow 8,0% en de Nasdaq 10,0%: de zwaarste weekverliezen sinds april 2025 (Nasdaq: sinds maart 2020). De volatiliteitsindex VIX steeg 26% naar 35,9. Technologie daalde 7,3%; geheugenchipbedrijven als Micron (circa −14%) en SanDisk (circa −14%) leidden de uitverkoop. Anthropic verloor op de tweede handelsdag 9,1% en gaf daarmee een groot deel van het winstje van dag één weer weg. Alleen consumentenstaples (+0,7%) steeg.",
-      "bron": "Bigdata.com (marktgegevens FMP, slot 20-11-2026), Reuters, CNBC, WSJ en AP 20-11-2026"
+      "tekst": "De beurzen zijn in het weekend gesloten; dit zijn de standen van vrijdag 20 november, na een zeer zware beursdag. S&P 500 6.910 (−3,7%), Nasdaq 22.618 (−5,3%; per saldo nu onder het begin van het jaar), Dow 48.147 (−1,9%, bijna 950 punten), Russell 2000 −2,8%. De S&P 500 en de Dow sloten in een correctie (meer dan 10% onder het record) en de S&P 500 had zijn zevende verliesdag op rij, de langste reeks sinds begin 2020. Over de week verloren de S&P 500 8,6%, de Dow 8,0% en de Nasdaq 10,0%: de zwaarste weekverliezen sinds april 2025 (Nasdaq: sinds maart 2020). De volatiliteitsindex VIX steeg 26% naar 35,9. Technologie daalde 7,3%; geheugenchipbedrijven als Micron (circa −14%) en SanDisk (circa −14%) leidden de uitverkoop. Anthropic verloor op de tweede handelsdag 9,1% en gaf daarmee een groot deel van het winstje van dag één weer weg. Alleen consumentenstaples (+0,7%) steeg. Komende week: woensdag 25 november de Amerikaanse inflatiecijfers (Core PCE, oktober) en de tweede raming van de groei in het derde kwartaal; donderdag 26 november is de Amerikaanse beurs dicht (Thanksgiving) en vrijdag sluit zij om 19.00 uur Nederlandse tijd. De markt vreest een renteverhoging van 0,50 procentpunt op de Fed-vergadering van 9 december; koelere inflatiecijfers zouden die vrees kunnen verminderen. De S&P 500 staat technisch 'oververkocht' (RSI onder 30), maar analisten verwachten nog veel schommelingen.",
+      "bron": "Bigdata.com (marktgegevens FMP, slot 20-11-2026), Reuters, CNBC, WSJ en AP 20-11-2026, CNBC vooruitblik 20-11-2026"
     },
     {
       "kop": "Aandelen Europa, Azië en Brazilië",
@@ -30,8 +30,8 @@
     },
     {
       "kop": "Obligaties, olie, goud en valuta",
-      "tekst": "De Amerikaanse tienjaarsrente sloot vrijdag op 4,92% (2 jaar 4,63%, 30 jaar 5,31%). Brent kost 92,57 dollar (week +0,1%; maand −18,2%; dit jaar +51%), WTI 83,41 (dit jaar +45%). Goud zakte vrijdag 4,6% naar 3.515 dollar (week −8,8%, dit jaar −19,9%) en zilver 7,4% naar 41,07 dollar (week −12,4%). Bitcoin staat op ongeveer 55.500 dollar (maand −32%). De euro is 1,10 dollar waard (dit jaar −6,7%).",
-      "bron": "Bigdata.com (marktgegevens FMP, 20 en 21-11-2026)"
+      "tekst": "De Amerikaanse tienjaarsrente sloot vrijdag op 4,92% (2 jaar 4,63%, 30 jaar 5,31%). Brent kost 92,57 dollar (week +0,1%; maand −18,2%; dit jaar +51%), WTI 83,41 (dit jaar +45%). Goud zakte vrijdag 4,6% naar 3.515 dollar (week −8,8%, dit jaar −19,9%) en zilver 7,4% naar 41,07 dollar (week −12,4%). Bitcoin staat zondagochtend op ongeveer 59.000 dollar (maand −27%). De euro is 1,10 dollar waard (dit jaar −6,7%).",
+      "bron": "Bigdata.com (marktgegevens FMP, 20 en 22-11-2026)"
     },
     {
       "kop": "Sparen",
