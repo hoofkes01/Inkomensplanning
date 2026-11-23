@@ -3994,6 +3994,9 @@ function nettoMarginaal(bestaandBrutoJaar, extraBrutoJaar, naAOW, datum, metExtr
       return { ...b, urenPerJaar: per };
     }));
   }
+  function zetBronStappen(id, stappen) {
+    setInkomensBronnenExtra(prev => prev.map(b => b.id === id ? { ...b, stappen } : b));
+  }
   function verwijderBron(id) {
     setInkomensBronnenExtra(prev => prev.filter(b => b.id !== id));
   }
@@ -4045,6 +4048,15 @@ function nettoMarginaal(bestaandBrutoJaar, extraBrutoJaar, naAOW, datum, metExtr
   function bronWaardeOpDatum(b, atDate) {
     const basis0 = bronBasisMaand(b, atDate), cpi = Number(cpiPrognose) || 0, eigen = Number(b.index) || 0;
     const startJaar = (geldigeDatum(b.start) || PEILDATUM).getFullYear();
+    if (b.soort === "uurloon" && b.indexType === "cao") {
+      // Cao-stappen: elke verhoging geldt vanaf haar eigen datum (ook midden in een jaar). Na afloop van de cao
+      // (veld "Cao loopt t/m") volgt het uurloon elk jaar op 1 januari de CPI-aanname.
+      let f = 1;
+      (b.stappen || []).forEach(st => { const d = geldigeDatum(st.datum); if (d && d <= atDate) f *= 1 + (Number(st.pct) || 0) / 100; });
+      const caoEind = geldigeDatum(b.caoTot);
+      if (caoEind && atDate.getFullYear() > caoEind.getFullYear()) f *= Math.pow(1 + cpi / 100, atDate.getFullYear() - caoEind.getFullYear());
+      return basis0 * f;
+    }
     if (b.soort === "uurloon") {
       const j = Math.max(0, atDate.getFullYear() - startJaar);
       if ((b.indexType || "vast") === "cpi") return basis0 * Math.pow(1 + cpi / 100, j);
@@ -4068,7 +4080,7 @@ function nettoMarginaal(bestaandBrutoJaar, extraBrutoJaar, naAOW, datum, metExtr
   function renderInkomensBronnen() {
     const H = React.createElement;
     const soortLabel = { werk: "Inkomen uit werk (netto per maand)", uurloon: "Werk per uur (bruto uurloon)", uitkering: "Uitkering of pensioen" };
-    const typeLabel = { vast: "Vast % per jaar", cpi: "Volgt CPI", cao_cpi: "CAO, daarna CPI" };
+    const typeLabel = { vast: "Vast % per jaar", cpi: "Volgt CPI", cao_cpi: "CAO, daarna CPI", cao: "Cao-stappen (eigen data), daarna CPI" };
     const inp = "w-full border border-slate-300 rounded px-2 py-1.5 text-sm";
     const veld = (label, el) => H("label", { className: "block text-xs text-slate-500" }, label, H("div", { className: "mt-0.5" }, el));
     const sel = (waarde, opties, onChange) => H("select", { value: waarde, onChange: e => onChange(e.target.value), className: inp }, Object.keys(opties).map(k => H("option", { key: k, value: k }, opties[k])));
@@ -4083,8 +4095,8 @@ function nettoMarginaal(bestaandBrutoJaar, extraBrutoJaar, naAOW, datum, metExtr
         veld("Vakantiegeld bovenop uurloon (%, 0 = niet meenemen)", H(NumInput, { step: "0.1", value: b.vakantiegeldPct === undefined ? 0 : b.vakantiegeldPct, onChange: e => zet("vakantiegeldPct", e.target.value), className: inp + " font-mono text-right" }))
       ] : [veld("Netto per maand (€)", H(NumInput, { value: b.bedrag, onChange: e => zet("bedrag", e.target.value), className: inp + " font-mono text-right" }))]),
       veld("Indexatie", sel(b.indexType || "vast", typeLabel, v => zet("indexType", v))),
-      (b.indexType || "vast") !== "cpi" && veld((b.indexType === "cao_cpi" ? "CAO-stijging per jaar (%)" : "Stijging per jaar (%)"), H(NumInput, { step: "0.1", value: b.index, onChange: e => zet("index", e.target.value), className: inp + " font-mono text-right" })),
-      b.indexType === "cao_cpi" && veld("CAO loopt t/m", H("input", { type: "date", value: b.caoTot || "", onChange: e => zet("caoTot", e.target.value), className: inp })),
+      (b.indexType || "vast") !== "cpi" && (b.indexType || "vast") !== "cao" && veld((b.indexType === "cao_cpi" ? "CAO-stijging per jaar (%)" : "Stijging per jaar (%)"), H(NumInput, { step: "0.1", value: b.index, onChange: e => zet("index", e.target.value), className: inp + " font-mono text-right" })),
+      (b.indexType === "cao_cpi" || b.indexType === "cao") && veld("CAO loopt t/m", H("input", { type: "date", value: b.caoTot || "", onChange: e => zet("caoTot", e.target.value), className: inp })),
       veld("Start", H("input", { type: "date", value: b.start || "", onChange: e => zet("start", e.target.value), className: inp })),
       veld("Einde (leeg = loopt door)", H("input", { type: "date", value: b.eind || "", onChange: e => zet("eind", e.target.value), className: inp }))
     ];
@@ -4106,6 +4118,19 @@ function nettoMarginaal(bestaandBrutoJaar, extraBrutoJaar, naAOW, datum, metExtr
               H("div", { className: "text-xs text-slate-500" }, (personen[b.persoon] || "") + " · " + (soortLabel[b.soort || "werk"]) + " · " + status)),
             H("button", { type: "button", onClick: () => { if (window.confirm("Bron '" + (b.naam || "") + "' verwijderen?")) verwijderBron(b.id); }, className: "text-sm text-rose-700 border border-rose-200 rounded px-2 py-1 shrink-0" }, "Verwijderen")),
           H("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-2" }, formVelden(b, (k, v) => wijzigBron(b.id, k, v))),
+          b.soort === "uurloon" && b.indexType === "cao" && (() => {
+            const stappen = (b.stappen || []).slice();
+            const zet = (i, k, v) => zetBronStappen(b.id, stappen.map((st, n) => n === i ? { ...st, [k]: k === "pct" ? Number(v) || 0 : v } : st));
+            return H("div", { className: "mt-3 pt-3 border-t border-slate-100" },
+              H("div", { className: "text-xs uppercase tracking-wide text-slate-500" }, "Loonstappen volgens de cao (na de startdatum)"),
+              H("div", { className: "mt-2 space-y-1" }, stappen.map((st, i) => H("div", { key: i, className: "flex items-center gap-2 text-sm" },
+                H("input", { type: "date", value: st.datum || "", onChange: ev => zet(i, "datum", ev.target.value), className: "border border-slate-300 rounded px-2 py-1 text-sm" }),
+                H(NumInput, { step: "0.1", value: st.pct, onChange: ev => zet(i, "pct", ev.target.value), className: "w-16 border border-slate-300 rounded px-2 py-1 text-sm font-mono text-right" }),
+                H("span", { className: "text-xs text-slate-500" }, "%"),
+                H("button", { type: "button", onClick: () => zetBronStappen(b.id, stappen.filter((_, n) => n !== i)), className: "text-xs text-rose-700 border border-rose-200 rounded px-2 py-1" }, "Weg")))),
+              H("button", { type: "button", onClick: () => zetBronStappen(b.id, [...stappen, { datum: "", pct: 0 }]), className: "mt-2 text-xs px-3 py-1.5 rounded-full border border-slate-300" }, "Stap toevoegen"),
+              H("p", { className: "text-xs text-slate-400 mt-1" }, "Het uurloon hierboven is het loon op de startdatum. Elke stap verhoogt het uurloon vanaf de genoemde datum. Na de einddatum van de cao (\"Cao loopt t/m\") stijgt het uurloon elk jaar op 1 januari met de CPI-aanname."));
+          })(),
           b.soort === "uurloon" && (() => {
             const startJaar = (s || PEILDATUM).getFullYear();
             const aow = b.persoon === "vrouw" ? vrouwAOWDate : manAOWDate;
@@ -5140,6 +5165,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     inkomensBronnenExtra.forEach(b => {
       const st = geldigeDatum(b.start), ei = geldigeDatum(b.eind);
       if (st) events.push({ date: st, kind: "extraBronStart" });
+      (b.stappen || []).forEach(stp => { const sd = geldigeDatum(stp.datum); if (sd) events.push({ date: sd, kind: "extraBronStap" }); });
       if (ei) events.push({ date: new Date(ei.getFullYear(), ei.getMonth(), ei.getDate() + 1), kind: "extraBronEind" });
     });
     events.sort((a, b) => a.date - b.date);
@@ -7526,6 +7552,14 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     });
     try { window.localStorage.setItem(sleutel, "1"); } catch (e) {}
   }, []);
+  // Eenmalig: uurloon Picnic volgt de Cao E-commerce 2025-2028 (art. 4.2): +1% per 1-7-2027 en +1% per 1-1-2028;
+  // de cao loopt t/m 30-6-2028, daarna volgt het uurloon de CPI.
+  React.useEffect(() => {
+    const sleutel = "inkomensplanning_migratiePicnicCao_2026_11_23";
+    try { if (window.localStorage.getItem(sleutel)) return; } catch (e) { return; }
+    setInkomensBronnenExtra(prev => (prev || []).map(b => b && b.id === "ib_picnic" && !b.stappen ? { ...b, indexType: "cao", caoTot: "2028-06-30", stappen: [{ datum: "2027-07-01", pct: 1 }, { datum: "2028-01-01", pct: 1 }] } : b));
+    try { window.localStorage.setItem(sleutel, "1"); } catch (e) {}
+  }, []);
   // Rapport: actuele en toekomstige situatie, bedoeld om als PDF af te drukken.
   function printRapport() {
     document.title = "Financieel overzicht " + vmIso(APP_VANDAAG);
@@ -7845,7 +7879,7 @@ function extraBrutoNettoPerMaand(bestaandBrutoMaand, extraBrutoMaand, naAOW, atD
     className: "font-mono text-xs uppercase tracking-widest bg-slate-700/60 border border-slate-500 rounded-full px-3 py-1"
   }, "peildatum ", fmtDate(PEILDATUM)), /*#__PURE__*/React.createElement("span", {
     className: "w-full text-xs text-slate-400 no-print"
-  }, "App-versie ", "23-11-2026 · 22:32")), /*#__PURE__*/React.createElement("p", {
+  }, "App-versie ", "23-11-2026 · 22:41")), /*#__PURE__*/React.createElement("p", {
     className: "mt-2 text-slate-300 text-sm max-w-2xl"
   }, "Bedragen zijn nominaal per peildatum, tenzij een indexatiepercentage is ingevuld. Alle basisbedragen zijn zelf aanpasbaar bij \"Basisgegevens\"." + (actieveTab === "fiscaliteit" ? " Alle aannames staan onderaan bij \"Aannames & beperkingen\". Bij het openen checkt dit bestand automatisch vier fiscale kerncijfers (zie bovenaan) — bij een afwijking wordt er niets automatisch aangepast, dat blijft een bewuste stap." : "")), /*#__PURE__*/React.createElement("div", {
     className: "mt-4 flex flex-wrap gap-2 items-center no-print"
